@@ -1,0 +1,43 @@
+# Canonical execution state.
+# Edit through the repository context CLI when available.
+# Product requirements, architecture, ADRs, and verification details do not belong here.
+
+schema_version: 1
+project:
+  id: "{{PROJECT_ID}}"
+  name: "{{PROJECT_NAME}}"
+  stage: discovery
+  current_release: unreleased
+
+tracks:
+  - id: product
+    name: Product and Design
+  - id: engineering
+    name: Engineering
+
+features: []
+# Example:
+# features:
+#   - id: F-001
+#     name: Example Feature
+#     track: engineering
+#     status: approved
+#     spec_path: docs/specs/F-001-example-feature
+#     active_phase: implementation
+#     tasks:
+#       - id: TASK-001
+#         title: Implement example vertical slice
+#         status: pending
+#         commit: null
+#         blocker: null
+
+active:
+  feature_id: null
+  task_id: null
+  branch: null
+
+blockers: []
+risks: []
+
+last_updated: "{{YYYY-MM-DD}}"
+last_verified_commit: null

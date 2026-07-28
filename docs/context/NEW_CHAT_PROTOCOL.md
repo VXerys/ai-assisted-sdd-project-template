@@ -1,104 +1,58 @@
-# New Chat Protocol
+---
+id: CONTEXT-NEW-CHAT
+title: New Coding-Agent Session Protocol
+status: template
+owner: "{{OWNER}}"
+last_updated: "{{YYYY-MM-DD}}"
+---
 
-Use this protocol whenever an AI coding session starts without reliable conversational memory.
+# New Coding-Agent Session Protocol
 
-## Before opening the agent
+This protocol is for Codex, Claude Code, or another repository-integrated coding agent.
 
-Run:
-
-```bash
-git branch --show-current
-git status --short
-git log -5 --oneline
-npm run context:validate
-```
-
-Select exactly one primary task, for example:
+## Opening prompt
 
 ```text
-F-004 / TASK-006 — Add reading-insight repository contract
+Continue work in this repository. Do not implement immediately.
+
+1. Read AGENTS.md.
+2. Run the repository context sync and validation commands when available.
+3. Read docs/context/PROJECT_STATE.md.
+4. Read docs/handoff/current.md.
+5. Identify the active feature and task from docs/context/state.yaml.
+6. Read that feature's requirements, design, tasks, and relevant ADRs.
+7. Inspect Git status, branch, recent commits, and relevant code/tests.
+
+Return:
+- current objective and requirement references;
+- whether generated context and handoff are still valid;
+- repository conflicts or stale information;
+- expected change surface;
+- constraints and approval gates;
+- verification commands;
+- a small execution plan.
+
+Do not resolve conflicts silently. Implement only the selected task after context confirmation.
 ```
 
-Do not start with a vague instruction such as "continue the project".
+## Session close
 
-## Context loading order
+Before ending:
 
-```text
-Permanent repository instructions
-  -> durable project state
-  -> temporary session handoff
-  -> active requirements
-  -> approved design
-  -> active tasks
-  -> relevant ADRs
-  -> relevant implementation and tests
-```
+1. review `git diff` and `git status`;
+2. run required checks;
+3. record acceptance evidence;
+4. update task status through the context system;
+5. regenerate and validate context;
+6. update `docs/handoff/current.md`;
+7. report the exact next task.
 
-## Reusable opening prompt
+## When context tooling is not implemented
 
-```text
-You are continuing work on this repository. Do not begin implementation immediately.
+The coding agent first completes the bootstrap task in `docs/context/CONTEXT_SYSTEM.md`.
 
-Read the following context in order:
+Do not create a manual second progress document as a shortcut.
 
-1. AGENTS.md
-2. docs/context/CONTEXT_INDEX.md
-3. docs/context/PROJECT_STATE.md
-4. docs/handoff/current.md
-5. docs/specs/{{ACTIVE_FEATURE}}/requirements.md
-6. docs/specs/{{ACTIVE_FEATURE}}/design.md
-7. docs/specs/{{ACTIVE_FEATURE}}/tasks.md
-8. docs/specs/{{ACTIVE_FEATURE}}/verification.md
-9. ADRs referenced by the active design
-10. Git status, current branch, recent commits, and files related to {{TASK_ID}}
+## Chat-based AI distinction
 
-The target for this session is:
-
-{{TASK_ID}} — {{TASK_TITLE}}
-
-Before editing, return these sections:
-
-1. Current Objective
-   - selected task and requirement references;
-2. Verified Project State
-   - branch, worktree, active feature and task;
-   - whether the handoff matches the repository;
-   - stale or conflicting context;
-3. Constraints
-   - architecture rules, scope exclusions, protected behavior;
-   - decisions requiring human approval;
-4. Expected Change Surface
-   - likely code, test, migration, and documentation files;
-5. Execution Plan
-   - ordered steps, verification commands, and main risks.
-
-Do not silently resolve conflicts between code, requirements, design, ADRs, project state, or handoff.
-
-After confirmation, implement only the selected task unless a blocking conflict is found.
-
-At the end:
-
-- run required checks;
-- review the diff;
-- update tasks.md;
-- update verification.md;
-- update docs/handoff/current.md;
-- report changed files, evidence, residual risk, and the exact next task.
-```
-
-## Session close prompt
-
-```text
-Before ending this session:
-
-1. Inspect git diff and git status.
-2. Mark only work that is actually complete.
-3. Record reproducible evidence in verification.md.
-4. Update docs/handoff/current.md to match the worktree.
-5. Do not mark the feature complete without full acceptance evidence.
-6. State one exact next action for the next session.
-```
-
-## Session size guidance
-
-A session should normally contain one implementation objective. Multiple tasks may share one session only when they are small, sequential, use the same context, and require no new product or architecture decision.
+A ChatGPT or website-based planning chat may help draft the next specification or decision. It is not the session-state mechanism. Final artifacts must be committed into the repository and checked by the coding agent.

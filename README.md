@@ -1,98 +1,151 @@
-# AI-Assisted Spec-Driven Development Template
+# AI-Assisted SDD Project Template
 
-A reusable repository operating system for building new software projects with AI coding agents while keeping product intent, architecture, execution, verification, and session context traceable.
-
-## What this template solves
-
-This template prevents four recurring problems:
-
-- implementation starts before requirements and design are approved;
-- project context becomes stale, duplicated, or mixed with raw chat history;
-- AI agents silently make product or architecture decisions;
-- completed tasks lack acceptance evidence.
+A repository operating system for spec-driven development, modular project knowledge, and AI-assisted implementation.
 
 ## Core workflow
 
 ```text
-Idea Intake
+Idea
   -> PRD
-  -> Project Constitution
-  -> Architecture Baseline
-  -> Feature Map
-  -> Feature Specification
-  -> Sprint Commitment
-  -> Task Execution
-  -> Verification
-  -> Merge / Release
-  -> Context Refresh
+  -> architecture baseline
+  -> roadmap
+  -> feature requirements
+  -> feature design
+  -> tasks
+  -> implementation
+  -> verification
+  -> release
+  -> context refresh
 ```
 
-Each feature uses four canonical artifacts:
+## Two AI surfaces
+
+### Conversational AI
+
+Use ChatGPT Projects or another planning/research assistant for:
+
+- idea and problem framing;
+- PRD;
+- UX and flow exploration;
+- architecture alternatives;
+- feature requirements and preliminary design;
+- ADR proposals;
+- documentation review.
+
+Its result becomes authoritative only after review and commit.
+
+### Repository-integrated coding agent
+
+Use Codex, Claude Code, or another agent with code and terminal access for:
+
+- repository inspection;
+- project command discovery;
+- context-system bootstrap;
+- provider hooks and commands;
+- implementation;
+- tests, build, migration, and validation;
+- task status, verification evidence, and handoff updates.
+
+See [`docs/documentation/AI_COLLABORATION_MODEL.md`](docs/documentation/AI_COLLABORATION_MODEL.md).
+
+## Repository structure
 
 ```text
-docs/specs/F-XXX-feature-name/
-├── requirements.md
-├── design.md
-├── tasks.md
-└── verification.md
+/
+├── AGENTS.md
+├── CLAUDE.md
+├── docs/
+│   ├── documentation/
+│   ├── product/
+│   ├── architecture/
+│   ├── adr/
+│   ├── specs/
+│   ├── context/
+│   ├── handoff/
+│   ├── quality/
+│   └── runbooks/
+├── scripts/context/
+└── .github/
 ```
 
-## Authority model
+## Start a derived project
 
-- The human owner controls product scope, requirement approval, architecture approval, acceptance, and release.
-- AI agents may analyze, draft, implement approved tasks, run checks, and update execution records.
-- Code, tests, schemas, and migrations are authoritative for implemented behavior.
-- Specifications are authoritative for approved behavior.
-- ADRs are authoritative for architecture rationale.
-- `docs/context/PROJECT_STATE.md` is authoritative for current durable state.
-- `docs/handoff/current.md` records temporary session state only.
+### 1. Create the repository
 
-## Start a new project
+Use this repository as a GitHub template.
 
-1. Create a new repository from this template.
-2. Replace every `{{PLACEHOLDER}}` used by the active project.
-3. Complete `docs/product/idea-brief.md` and `docs/product/prd.md`.
-4. Customize `AGENTS.md` with the actual stack, commands, and architectural boundaries.
-5. Complete the minimum architecture baseline under `docs/architecture/`.
-6. Register the first feature in `docs/specs/_index.md`.
-7. Copy the four feature templates into `docs/specs/F-001-feature-name/`.
-8. Approve requirements and design before implementation.
-9. Run `npm run context:validate` before opening a pull request.
+### 2. Planning session
 
-## Core files
+With a conversational AI:
 
-| Path | Purpose |
-|---|---|
-| `AGENTS.md` | Permanent repository contract for AI agents |
-| `CLAUDE.md` | Claude Code entry point importing `AGENTS.md` |
-| `docs/product/prd.md` | Product intent, scope, outcomes, and constraints |
-| `docs/architecture/` | System boundaries and technical baseline |
-| `docs/adr/` | Architecture decision records |
-| `docs/specs/` | Feature requirements, design, tasks, and evidence |
-| `docs/context/CONTEXT_INDEX.md` | Reading order and source-of-truth map |
-| `docs/context/PROJECT_STATE.md` | Durable current project snapshot |
-| `docs/handoff/current.md` | Temporary session delta for the next chat |
-| `docs/quality/definition-of-done.md` | Global completion gates |
+1. complete `docs/product/idea-brief.md`;
+2. complete `docs/product/prd.md`;
+3. draft the architecture baseline;
+4. create the first feature specification;
+5. record unresolved assumptions.
 
-## Context validation
+### 3. Coding-agent bootstrap
 
-The validator uses Node.js built-ins only:
+Open the real repository with Codex or Claude Code and instruct it to:
+
+1. read `AGENTS.md`;
+2. validate planned architecture against actual project files;
+3. fill project commands and stack details;
+4. implement the context system in `docs/context/CONTEXT_SYSTEM.md`;
+5. create only the provider adapter needed for the active coding agent;
+6. run context validation.
+
+### 4. Disable template mode
+
+After core placeholders are filled, set:
+
+```json
+{
+  "templateMode": false
+}
+```
+
+in `context.config.json`.
+
+## Documentation modularity
+
+Do not build 1,000-line manual context files.
+
+Split by responsibility, authority, and change cadence. Start flat, then promote a concern into a folder when it gains independent subconcerns.
+
+Read:
+
+- [`docs/documentation/MODULARIZATION_GUIDE.md`](docs/documentation/MODULARIZATION_GUIDE.md)
+- [`docs/architecture/README.md`](docs/architecture/README.md)
+- [`docs/specs/README.md`](docs/specs/README.md)
+
+## Context model
+
+```text
+Durable contracts:
+  product + architecture + ADR + feature specs
+
+Mutable execution state:
+  docs/context/state.yaml
+
+Generated views:
+  docs/context/PROJECT_STATE.md
+  docs/context/PROGRESS.md
+
+Temporary session delta:
+  docs/handoff/current.md
+```
+
+Provider memory is an adapter, never the source of truth.
+
+## Validation
+
+The base template includes structural context validation and handoff tooling. A derived project's coding agent adapts the renderer and commands to the project's runtime and CI.
 
 ```bash
 npm run context:validate
 ```
 
-It checks required files, duplicate identifiers, valid statuses, active-spec references, unresolved placeholders in active artifacts, and relative Markdown links.
+## Existing projects
 
-## Operating rules
-
-1. Do not store raw chat history as project context.
-2. Do not duplicate task or feature status across multiple files.
-3. Do not modify approved requirements silently during implementation.
-4. Do not make architecture changes without an ADR when the decision is expensive or cross-cutting.
-5. Do not mark a feature complete until every acceptance criterion has evidence and human acceptance.
-6. Keep one primary task objective per AI coding session.
-
-## Template maturity
-
-This repository is intentionally stack-agnostic. Add stack-specific commands and boundaries only after the project stack is selected. Remove optional documents that do not support decisions, implementation, verification, or operations.
+This template is intended for new projects. Do not retrofit it into established repositories without a separate migration plan.
