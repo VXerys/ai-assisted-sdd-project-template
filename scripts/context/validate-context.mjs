@@ -2,7 +2,6 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
 
 const root = process.cwd();
 const configPath = path.join(root, 'context.config.json');
@@ -13,24 +12,28 @@ function normalize(filePath) {
   return filePath.split(path.sep).join('/');
 }
 
+function absolute(relativePath) {
+  return path.join(root, relativePath);
+}
+
 function exists(relativePath) {
-  return fs.existsSync(path.join(root, relativePath));
+  return fs.existsSync(absolute(relativePath));
 }
 
 function read(relativePath) {
-  return fs.readFileSync(path.join(root, relativePath), 'utf8');
+  return fs.readFileSync(absolute(relativePath), 'utf8');
 }
 
 function walk(directory) {
   if (!fs.existsSync(directory)) return [];
 
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const absolute = path.join(directory, entry.name);
-    const relative = normalize(path.relative(root, absolute));
+    const item = path.join(directory, entry.name);
+    const relative = normalize(path.relative(root, item));
 
     if (entry.isDirectory()) {
       if (['.git', 'node_modules', '.context-cache'].includes(entry.name)) return [];
-      return walk(absolute);
+      return walk(item);
     }
 
     return [relative];
@@ -58,20 +61,32 @@ function hasPlaceholder(value) {
   return /\{\{[^}]+\}\}/.test(value);
 }
 
-if (!fs.existsSync(configPath)) {
-  failures.push('Missing context.config.json.');
-}
+if (!fs.existsSync(configPath)) failures.push('Missing context.config.json.');
 
 const config = fs.existsSync(configPath)
   ? JSON.parse(fs.readFileSync(configPath, 'utf8'))
-  : { templateMode: false, requiredFiles: [], placeholderSensitiveFiles: [] };
+  : {
+      templateMode: false,
+      requiredFiles: [],
+      generatedFiles: [],
+      placeholderSensitiveFiles: []
+    };
 
 for (const file of config.requiredFiles ?? []) {
   if (!exists(file)) failures.push(`Missing required file: ${file}`);
 }
 
+for (const file of config.generatedFiles ?? []) {
+  if (!exists(file)) continue;
+  const content = read(file);
+  if (!/GENERATED FILE|GENERATED:/.test(content)) {
+    failures.push(`Generated file is missing a generated-file banner: ${file}`);
+  }
+}
+
 const markdownFiles = walk(root).filter((file) => file.endsWith('.md'));
 const validStatuses = new Set([
+  'template',
   'draft',
   'review',
   'approved',
@@ -98,18 +113,13 @@ for (const file of markdownFiles) {
 
   if (!isTemplateFile(file) && meta.id && !hasPlaceholder(meta.id)) {
     const previous = idOwners.get(meta.id);
-    if (previous) {
-      failures.push(`Duplicate frontmatter id '${meta.id}' in ${previous} and ${file}.`);
-    } else {
-      idOwners.set(meta.id, file);
-    }
+    if (previous) failures.push(`Duplicate frontmatter id '${meta.id}' in ${previous} and ${file}.`);
+    else idOwners.set(meta.id, file);
   }
 
   if (meta.status && !hasPlaceholder(meta.status)) {
     const status = meta.status.toLowerCase();
-    if (!validStatuses.has(status)) {
-      failures.push(`Invalid status '${meta.status}' in ${file}.`);
-    }
+    if (!validStatuses.has(status)) failures.push(`Invalid status '${meta.status}' in ${file}.`);
   }
 
   const linkPattern = /\[[^\]]*\]\(([^)]+)\)/g;
@@ -124,9 +134,20 @@ for (const file of markdownFiles) {
       ? path.join(root, target.slice(1))
       : path.resolve(root, path.dirname(file), target);
 
-    if (!fs.existsSync(resolved)) {
-      failures.push(`Broken relative link in ${file}: ${match[1]}`);
-    }
+    if (!fs.existsSync(resolved)) failures.push(`Broken relative link in ${file}: ${match[1]}`);
+  }
+}
+
+const statePath = 'docs/context/state.yaml';
+if (exists(statePath)) {
+  const state = read(statePath);
+  if (!/^schema_version:\s*\d+/m.test(state)) failures.push('state.yaml is missing schema_version.');
+  if (!/^features:\s*(\[\])?\s*$/m.test(state) && !/^features:\s*$/m.test(state)) {
+    warnings.push('Could not confidently detect the features collection in state.yaml.');
+  }
+
+  if (!config.templateMode && hasPlaceholder(state)) {
+    failures.push('Unresolved placeholder in docs/context/state.yaml.');
   }
 }
 
@@ -137,26 +158,9 @@ if (!config.templateMode) {
     }
   }
 
-  const stateFile = 'docs/context/PROJECT_STATE.md';
-  if (exists(stateFile)) {
-    const state = read(stateFile);
-    const activeSpecMatch = state.match(/- Active spec:\s*`?([^`\n]+)`?/);
-    if (activeSpecMatch) {
-      const activeSpec = activeSpecMatch[1].trim();
-      if (activeSpec && !hasPlaceholder(activeSpec) && !/none/i.test(activeSpec)) {
-        const normalizedSpec = activeSpec.replace(/^\//, '');
-        if (!exists(normalizedSpec)) {
-          failures.push(`PROJECT_STATE references a missing active spec: ${activeSpec}`);
-        } else {
-          for (const name of ['requirements.md', 'design.md', 'tasks.md', 'verification.md']) {
-            const featureFile = normalize(path.join(normalizedSpec, name));
-            if (!exists(featureFile)) failures.push(`Active feature is missing ${featureFile}.`);
-            else if (hasPlaceholder(read(featureFile))) {
-              failures.push(`Unresolved placeholder in active feature file: ${featureFile}`);
-            }
-          }
-        }
-      }
+  for (const file of config.generatedFiles ?? []) {
+    if (exists(file) && /renderer has not been bootstrapped/i.test(read(file))) {
+      failures.push(`Context renderer is not bootstrapped: ${file}`);
     }
   }
 }
@@ -180,4 +184,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Context validation passed: ${markdownFiles.length} Markdown files, ${idOwners.size} unique active IDs.`);
+console.log(
+  `Context validation passed: ${markdownFiles.length} Markdown files, ${idOwners.size} unique active IDs.`
+);

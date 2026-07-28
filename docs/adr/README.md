@@ -1,47 +1,63 @@
+---
+id: ADR-INDEX
+title: Architecture Decision Records
+status: template
+owner: "{{OWNER}}"
+last_updated: "{{YYYY-MM-DD}}"
+---
+
 # Architecture Decision Records
 
-ADRs preserve the context and consequences of decisions that are cross-cutting, expensive to reverse, or likely to be questioned later.
+## Rule
 
-## Naming
-
-```text
-NNNN-short-kebab-case-title.md
-```
-
-Example:
+One expensive-to-reverse decision equals one ADR.
 
 ```text
-0001-use-supabase-authentication.md
+0001-use-supabase-as-direct-backend.md
+0002-enforce-rls-for-tenant-isolation.md
+0003-use-supabase-auth.md
 ```
+
+Do not create one `all-architecture-decisions.md`.
+
+## When to create an ADR
+
+Create one when a decision:
+
+- changes system or trust boundaries;
+- introduces a framework, provider, database, or major dependency;
+- changes authentication or authorization;
+- changes persistence, public APIs, or event contracts;
+- creates migration or compatibility obligations;
+- affects multiple features;
+- is expensive to reverse.
+
+## Size guidance
+
+An ADR is normally 30–120 lines. Review ADRs over 200 lines for multiple decisions.
 
 ## Lifecycle
 
 ```text
-proposed -> accepted -> deprecated | superseded | rejected
+proposed -> accepted
+         -> rejected
+accepted -> deprecated
+accepted -> superseded
 ```
 
-Accepted ADRs are immutable except for status and supersession metadata. When a decision changes, create a new ADR and mark the previous record as superseded.
+Never rewrite accepted history to make the past look cleaner. Create a new ADR and link `supersedes` / `superseded_by`.
 
-## Create an ADR when a decision
+## Ownership
 
-- changes a system boundary;
-- introduces a major framework, provider, database, or dependency;
-- changes authentication, authorization, persistence, or API strategy;
-- creates migration or compatibility obligations;
-- affects multiple features;
-- has meaningful alternatives and consequences.
-
-## Do not create an ADR for
-
-- minor naming choices;
-- routine implementation details already governed by repository conventions;
-- easily reversible local refactors;
-- temporary session decisions.
+- Conversational AI may analyze alternatives and draft the ADR.
+- Repository-integrated coding agent verifies feasibility and affected code.
+- Human owner accepts or rejects the decision.
+- Automation may validate numbering, metadata, and links only.
 
 ## Index
 
-| ADR | Title | Status | Superseded by |
+| ADR | Status | Decision | Superseded by |
 |---|---|---|---|
-| — | No decisions recorded | — | — |
+| `NNNN` | proposed | {{DECISION}} | — |
 
-Copy `ADR.template.md`, assign the next number, and update this index.
+Use `ADR.template.md` for new records.

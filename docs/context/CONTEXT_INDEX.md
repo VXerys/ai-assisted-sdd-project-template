@@ -1,80 +1,75 @@
-# Context Index
+---
+id: CONTEXT-INDEX
+title: Context Reading Index
+status: template
+owner: "{{OWNER}}"
+last_updated: "{{YYYY-MM-DD}}"
+---
 
-This file defines how humans and AI agents load repository context. It is an index, not a project summary.
+# Context Reading Index
 
-## Required Reading Order
+## New coding-agent session
 
-### Starting or resuming implementation
+Read in order:
 
-1. `/AGENTS.md`
-2. `/docs/context/PROJECT_STATE.md`
-3. `/docs/handoff/current.md`
-4. active feature `requirements.md`
-5. active feature `design.md`
-6. active feature `tasks.md`
+1. `AGENTS.md`
+2. `docs/context/PROJECT_STATE.md`
+3. `docs/handoff/current.md`
+4. active feature requirements
+5. active feature design
+6. active feature tasks
 7. relevant ADRs
-8. relevant implementation and tests
+8. relevant code and tests
 
-### Product or scope work
+Read `docs/context/PROGRESS.md` only when the compact state is insufficient.
 
-1. `/docs/product/idea-brief.md`
-2. `/docs/product/prd.md`
-3. `/docs/product/roadmap.md`
-4. `/docs/specs/_index.md`
+## Planning or documentation session
 
-### Architecture work
+Read only the relevant durable artifacts:
 
-1. `/docs/product/prd.md`
-2. `/docs/architecture/overview.md`
-3. relevant architecture document
-4. `/docs/adr/README.md`
-5. related feature design
+1. `docs/product/`
+2. `docs/architecture/README.md`
+3. relevant architecture concern
+4. relevant ADRs
+5. relevant feature specs
 
-### Verification work
+Generated execution views are not substitutes for requirements or architecture.
 
-1. feature `requirements.md`
-2. feature `verification.md`
-3. feature `design.md`
-4. implementation, tests, migrations, and runtime evidence
+## Canonical map
 
-## Source-of-Truth Map
-
-| Information | Authoritative artifact |
+| Question | Source |
 |---|---|
-| Product intent and scope | `docs/product/prd.md` |
-| Roadmap sequence | `docs/product/roadmap.md` |
-| Architecture baseline | `docs/architecture/` |
-| Decision rationale | `docs/adr/` |
-| Feature behavior | `docs/specs/<feature>/requirements.md` |
-| Approved technical approach | `docs/specs/<feature>/design.md` |
-| Task progress | `docs/specs/<feature>/tasks.md` |
-| Acceptance evidence | `docs/specs/<feature>/verification.md` |
-| Feature registry | `docs/specs/_index.md` |
-| Durable current state | `docs/context/PROJECT_STATE.md` |
-| Temporary session state | `docs/handoff/current.md` |
-| Implemented runtime behavior | Code, tests, schemas, migrations |
+| Why and for whom? | `docs/product/` |
+| Shared system rules? | `docs/architecture/` |
+| Why a decision? | `docs/adr/` |
+| Approved feature behavior? | `docs/specs/<feature>/requirements.md` |
+| Approved feature approach? | `docs/specs/<feature>/design.md` |
+| Execution status? | `docs/context/state.yaml` |
+| Compact execution view? | `docs/context/PROJECT_STATE.md` |
+| Full execution board? | `docs/context/PROGRESS.md` |
+| Current session delta? | `docs/handoff/current.md` |
+| Actual implementation? | Code, tests, schemas, migrations |
 
-## Conflict Policy
+## Generated files
 
-When two sources disagree:
+These files are generated and must not be edited:
+
+- `docs/context/PROJECT_STATE.md`
+- `docs/context/PROGRESS.md`
+
+## Context-system implementation
+
+Read `docs/context/CONTEXT_SYSTEM.md`.
+
+The repository-integrated coding agent owns implementation and provider adapters. A conversational AI may draft the design but cannot determine real local commands or hooks without repository access.
+
+## Conflict protocol
+
+When two sources conflict:
 
 1. stop affected work;
-2. identify both sources and their last update;
-3. determine whether the conflict concerns intent, design, state, or implementation;
+2. identify each source and its authority;
+3. inspect Git and implementation;
 4. propose the smallest correction;
-5. obtain owner approval when product behavior or architecture changes.
-
-Never resolve a conflict by copying the newer text into every file.
-
-## Context Loading Limits
-
-Do not load by default:
-
-- raw chat transcripts;
-- all archived handoffs;
-- every ADR;
-- every feature specification;
-- generated build output;
-- unrelated source directories.
-
-Load the smallest context set that can safely support the current task.
+5. require human approval for product or architecture changes;
+6. update the canonical source, then regenerate derived views.

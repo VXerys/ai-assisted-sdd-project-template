@@ -5,46 +5,51 @@ session_date: "{{YYYY-MM-DD}}"
 branch: "{{BRANCH}}"
 base_commit: "{{COMMIT_BEFORE_SESSION}}"
 current_commit: "{{CURRENT_COMMIT_OR_UNCOMMITTED}}"
-active_feature: "{{FEATURE_ID_OR_NONE}}"
-active_task: "{{TASK_ID_OR_NONE}}"
+active_feature: "{{FEATURE_ID}}"
+active_task: "{{TASK_ID}}"
 expires_after: "{{YYYY-MM-DD}}"
 ---
 
 # Session Handoff
 
-This file records temporary session state. It is not a permanent requirement, decision, or project-history document.
+This file stores the current coding session delta. It does not replace product docs, architecture, ADRs, feature specs, or `docs/context/state.yaml`.
 
-## Session Objective
+The repository-integrated coding agent updates this file before ending implementation work.
 
-{{ONE_SESSION_OBJECTIVE_OR_NONE}}
+## Session objective
 
-## Context Used
+{{ONE_CONCRETE_OBJECTIVE}}
 
-- `../../AGENTS.md`
-- `../context/PROJECT_STATE.md`
-- `../specs/{{ACTIVE_FEATURE}}/requirements.md`
-- `../specs/{{ACTIVE_FEATURE}}/design.md`
-- `../specs/{{ACTIVE_FEATURE}}/tasks.md`
-- relevant ADRs
+## Context used
+
+- `AGENTS.md`
+- `docs/context/PROJECT_STATE.md`
+- `docs/context/state.yaml`
+- `docs/specs/{{FEATURE_PATH}}/requirements.md`
+- `docs/specs/{{FEATURE_PATH}}/design.md`
+- `docs/specs/{{FEATURE_PATH}}/tasks.md`
+- `docs/adr/{{RELEVANT_ADR_OR_NONE}}`
 
 ## Completed
 
-- {{COMPLETED_ITEM_OR_NONE}}
+- {{COMPLETED_ITEM}}
 
-## Requirement Coverage
+## Requirement coverage
 
-- {{REQUIREMENT_ID}}: {{HOW_ADDRESSED}}
+- {{REQUIREMENT_OR_ACCEPTANCE_ID}}: {{STATUS_AND_EVIDENCE}}
 
-## Changed Files
+## Changed files
 
-| File | Change | Status |
+| File | Change | State |
 |---|---|---|
-| `{{PATH}}` | {{DESCRIPTION}} | Complete / Partial |
+| `{{PATH}}` | {{DESCRIPTION}} | Complete/Partial |
 
-## Commands Executed
+## Commands executed
+
+### Command
 
 ```bash
-{{COMMAND_OR_NONE}}
+{{COMMAND}}
 ```
 
 Result:
@@ -53,11 +58,15 @@ Result:
 {{RESULT_SUMMARY}}
 ```
 
-## Current Implementation State
+## Current implementation state
 
-{{Describe observable working and incomplete behavior.}}
+{{OBSERVABLE_FACTS_ABOUT_WHAT_WORKS_AND_WHAT_IS_PARTIAL}}
 
-## Worktree State
+## Uncommitted work
+
+- {{UNCOMMITTED_CHANGE_OR_NONE}}
+
+Expected Git status:
 
 ```text
 {{GIT_STATUS_SUMMARY}}
@@ -67,22 +76,22 @@ Result:
 
 - {{BLOCKER_OR_NONE}}
 
-For each blocker, record cause, affected task, required decision, and safe next action.
+For each blocker, include cause, affected task, required decision/dependency, and safe next action.
 
-## Decisions Made During Session
+## Decisions made during session
 
 - {{DECISION_OR_NONE}}
 
-Permanent architecture decisions must also be recorded as ADRs.
+Permanent architecture decisions must be recorded as ADRs. Product decisions must update the approved specification. This handoff is not the permanent decision record.
 
-## Specification Impact
+## Context updates
 
-- Requirements changed: {{YES_OR_NO}}
-- Design changed: {{YES_OR_NO}}
-- Tasks changed: {{YES_OR_NO}}
-- Verification changed: {{YES_OR_NO}}
+- `state.yaml` updated: {{YES_OR_NO}}
+- generated views refreshed: {{YES_OR_NO}}
+- verification updated: {{YES_OR_NO}}
+- specification or ADR changed: {{YES_OR_NO}}
 
-## Exact Next Step
+## Exact next step
 
 ```text
 {{ONE_EXACT_NEXT_ACTION}}
@@ -98,11 +107,12 @@ Required verification:
 {{COMMAND}}
 ```
 
-## Do Not Do Next
+## Do not do next
 
 - Do not {{OUT_OF_SCOPE_ACTION}}.
+- Do not modify {{PROTECTED_AREA}}.
 - Do not mark {{TASK_OR_FEATURE}} complete before {{REQUIRED_CHECK}}.
 
 ## Validity
 
-This handoff is valid only for the recorded branch, worktree, active feature, and task. Revalidate it after a merge, branch change, specification change, or expiration date.
+This handoff is valid only for the recorded branch, commit/worktree, feature, and task. Revalidate it when any of them changes.
