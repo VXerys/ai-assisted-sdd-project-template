@@ -1,14 +1,24 @@
+---
+id: SPECS-INDEX
+title: Feature Specifications
+status: template
+owner: "{{OWNER}}"
+last_updated: "{{YYYY-MM-DD}}"
+---
+
 # Feature Specifications
 
-Each independently deliverable feature owns one folder:
+## Default package
 
 ```text
-F-001-feature-name/
+F-XXX-feature-name/
 ├── requirements.md
 ├── design.md
 ├── tasks.md
 └── verification.md
 ```
+
+Each feature is an independently approvable vertical capability.
 
 ## Lifecycle
 
@@ -16,25 +26,58 @@ F-001-feature-name/
 draft -> review -> approved -> implementing -> verification -> implemented -> superseded
 ```
 
-## Gate Rules
+Approved requirements and design are contracts. Implementation does not silently rewrite them.
 
-- Requirements must be approved before design approval.
-- Design must be approved before sprint commitment.
-- Tasks must reference requirement IDs and approved design sections.
-- Verification must map every acceptance criterion to evidence.
-- An implemented feature requires human acceptance.
+## Split the feature before splitting files
 
-## Feature Naming
+When a feature document becomes very large, first determine whether the feature combines independent user capabilities.
 
-- Stable ID: `F-XXX`
-- Folder: `F-XXX-short-kebab-case-name`
-- Requirement: `FR-XXX`
-- Acceptance criterion: `AC-XXX.Y`
-- Task: `TASK-XXX`
-- Blocker: `BLK-XXX`
+Prefer separate features such as:
 
-IDs remain stable after approval. Do not renumber completed requirements or tasks to make files look tidy.
+```text
+F-012-cart-management/
+F-013-discount-calculation/
+F-014-payment-processing/
+F-015-receipt-generation/
+```
 
-## Change Control
+over one oversized checkout specification.
 
-Approved behavior must not be silently rewritten during implementation. Create a change-impact note covering requirements, design, tasks, tests, migration, compatibility, and current work.
+## Advanced package
+
+Use this only after the feature remains complex despite scope reduction:
+
+```text
+F-XXX-feature/
+├── README.md
+├── requirements/
+│   ├── functional.md
+│   ├── business-rules.md
+│   └── non-functional.md
+├── design/
+│   ├── overview.md
+│   ├── data-flow.md
+│   ├── state-management.md
+│   ├── error-handling.md
+│   └── security.md
+├── tasks.md
+└── verification/
+    ├── acceptance-matrix.md
+    ├── automated-tests.md
+    └── manual-scenarios.md
+```
+
+The feature `README.md` defines reading order and canonical ownership.
+
+## Authoring responsibility
+
+- Conversational AI may draft requirements, design alternatives, tasks, and verification scenarios.
+- Human owner approves scope, requirements, design, and acceptance.
+- Repository-integrated coding agent validates file paths, existing architecture, commands, and feasibility against the real repo.
+- Coding agent updates execution status and evidence during implementation.
+
+## Traceability
+
+Every task references requirement IDs. Every acceptance criterion receives evidence. Architecture-level decisions link to ADRs.
+
+See `docs/documentation/MODULARIZATION_GUIDE.md`.
