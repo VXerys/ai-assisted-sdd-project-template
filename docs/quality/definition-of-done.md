@@ -1,43 +1,58 @@
+---
+id: QUALITY-DOD
+title: Definition of Done
+status: approved
+owner: "{{OWNER}}"
+last_updated: "{{YYYY-MM-DD}}"
+---
+
 # Definition of Done
 
-## Task Done
+## Task
 
 A task is done only when:
 
-- [ ] Every referenced requirement and acceptance criterion is addressed.
-- [ ] Implementation follows the approved design and repository boundaries.
-- [ ] Relevant format, lint, test, and build checks pass.
-- [ ] Success, empty, error, validation, and authorization paths are handled where relevant.
-- [ ] No secrets, personal production data, or unrelated changes are included.
-- [ ] Database changes use versioned migrations.
-- [ ] Public API or schema changes include compatibility analysis.
-- [ ] Task status and implementation notes are updated.
-- [ ] Verification evidence is recorded.
-- [ ] Session handoff reflects the actual worktree.
+- referenced requirements and acceptance criteria are addressed;
+- implementation follows approved design and ADRs;
+- relevant format, lint, tests, and build checks pass;
+- error and security paths are handled;
+- no unrelated change is included;
+- verification evidence is recorded;
+- execution state is updated through the context system;
+- generated context views are current;
+- `docs/handoff/current.md` reflects partial or continuing work.
 
-## Feature Done
+## Feature
 
 A feature is done only when:
 
-- [ ] Every requirement has acceptance evidence.
-- [ ] Automated tests cover critical business rules and regressions.
-- [ ] Critical manual scenarios pass in the target environment.
-- [ ] Security and authorization behavior is verified.
-- [ ] Migration and rollback behavior is verified when applicable.
-- [ ] Observability is sufficient for production support when applicable.
-- [ ] Documentation and runbooks are current.
-- [ ] No unresolved P0 or P1 defect remains.
-- [ ] The human product owner accepts the feature.
+- all committed tasks are complete or explicitly deferred;
+- every acceptance criterion has evidence;
+- migrations and compatibility obligations are verified;
+- critical manual flows are accepted;
+- documentation and ADR impact is resolved;
+- no unresolved P0/P1 defect remains;
+- human product acceptance is recorded;
+- feature lifecycle gate and execution state are synchronized.
 
-## Release Done
+## Documentation
 
-A release is done only when:
+A documentation change is done only when:
 
-- [ ] Included features are accepted.
-- [ ] Release notes describe user-visible and operational changes.
-- [ ] Deployment and rollback steps are confirmed.
-- [ ] Environment configuration is verified without exposing secrets.
-- [ ] Monitoring and incident ownership are clear.
-- [ ] `PROJECT_STATE.md`, roadmap, and feature registry are refreshed.
+- one canonical owner exists for each fact;
+- links and IDs validate;
+- generated files were not edited directly;
+- long files were reviewed for modularization by responsibility;
+- no raw chat history or duplicated status was introduced;
+- assumptions and approved facts are distinguished.
 
-A checked task is not evidence by itself. Completion requires reproducible checks or documented manual evidence.
+## Context system
+
+The context system is done only when:
+
+- `state.yaml` is canonical for execution state;
+- generated views match a clean render;
+- repeated sync is idempotent;
+- invalid IDs and statuses fail validation;
+- provider adapters are reproducible and non-canonical;
+- the repository works after moving to another machine.

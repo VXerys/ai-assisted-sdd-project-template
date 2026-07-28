@@ -1,25 +1,27 @@
+---
+id: FEATURE-REGISTRY
+title: Feature Registry
+status: template
+owner: "{{OWNER}}"
+last_updated: "{{YYYY-MM-DD}}"
+---
+
 # Feature Registry
 
-This is the canonical feature-level status registry. Detailed task status remains only in each feature's `tasks.md`.
+This file is the durable navigation registry for feature specifications.
 
-| ID | Feature | Status | Priority | Owner | Spec | Active sprint | Release |
-|---|---|---|---|---|---|---|---|
-| F-001 | {{FEATURE_NAME}} | Draft | P0 | {{OWNER}} | `F-001-feature-name/` | — | — |
+Mutable execution status, active task, blockers, and commits belong in `docs/context/state.yaml`.
 
-## Allowed Statuses
+| Feature ID | Feature | Spec path | Product priority | Lifecycle gate | Related milestone |
+|---|---|---|---|---|---|
+| `F-XXX` | {{FEATURE_NAME}} | `docs/specs/F-XXX-feature-name/` | P0 | draft | {{MILESTONE}} |
 
-- Draft
-- Review
-- Approved
-- Implementing
-- Verification
-- Implemented
-- Superseded
+## Lifecycle gate meaning
 
-## Registry Rules
+- `draft`: specification is being written;
+- `review`: awaiting product or architecture review;
+- `approved`: contract is approved and may enter execution planning;
+- `implemented`: accepted implementation exists;
+- `superseded`: replaced by another feature contract.
 
-1. Every feature folder has exactly one registry row.
-2. A feature can be `Approved` only when requirements and design are approved.
-3. A feature can be `Implemented` only when verification and human acceptance are complete.
-4. Do not put task-level progress in this file.
-5. Superseded features remain listed with a link to their replacement.
+Do not update this file for every task transition. The context system owns mutable progress.

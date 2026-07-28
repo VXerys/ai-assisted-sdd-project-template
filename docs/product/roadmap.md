@@ -1,39 +1,54 @@
 ---
+id: PRODUCT-ROADMAP
+title: Product Roadmap
 status: draft
 owner: "{{OWNER}}"
 last_updated: "{{YYYY-MM-DD}}"
-last_verified_commit: unverified
 ---
 
 # Product Roadmap
 
-## Roadmap Principles
+## Purpose
 
-1. Prioritize user outcomes, not technical layers.
-2. Deliver vertical slices that can be verified end to end.
-3. Do not commit a feature to a sprint before its requirements and design are approved.
-4. Keep deferred capabilities explicit.
+This file records strategic capability order, release intent, and dependency rationale.
 
-## Milestones
+It is not the execution-status board. Mutable feature/task status belongs in `docs/context/state.yaml` and its generated views.
 
-| Milestone | Outcome | Included capabilities | Exit criteria | Target |
-|---|---|---|---|---|
-| M-001 | {{OUTCOME}} | CAP-001 | {{CRITERIA}} | {{DATE}} |
+## Releases and milestones
 
-## Feature Sequence
+### {{MILESTONE_ID}} — {{MILESTONE_NAME}}
 
-| Feature | Outcome | Dependency | Priority | Status |
-|---|---|---|---|---|
-| F-001 | {{OUTCOME}} | None | P0 | Draft |
+Outcome:
 
-Canonical feature status is maintained in `../specs/_index.md`.
+{{MEASURABLE_PRODUCT_OUTCOME}}
 
-## Deferred Work
+Target capabilities:
 
-- {{CAPABILITY_AND_REASON}}
+- `{{FEATURE_ID}}` — {{CAPABILITY}}
+- `{{FEATURE_ID}}` — {{CAPABILITY}}
 
-## Roadmap Change Log
+Dependencies:
 
-| Date | Change | Reason | Approved by |
+- {{DEPENDENCY}}
+
+Explicitly excluded:
+
+- {{NON_GOAL}}
+
+Exit criteria:
+
+- {{MILESTONE_ACCEPTANCE}}
+
+## Capability ordering
+
+| Capability | Why now | Depends on | Intended milestone |
 |---|---|---|---|
-| {{DATE}} | {{CHANGE}} | {{REASON}} | {{OWNER}} |
+| {{CAPABILITY}} | {{RATIONALE}} | {{DEPENDENCY}} | {{MILESTONE}} |
+
+## Roadmap changes
+
+Record material priority or scope changes with date and rationale. Do not copy task progress here.
+
+| Date | Change | Rationale | Approved by |
+|---|---|---|---|
+| {{DATE}} | {{CHANGE}} | {{RATIONALE}} | {{OWNER}} |
