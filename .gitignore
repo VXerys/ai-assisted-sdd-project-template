@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build and coverage
+coverage/
+dist/
+build/
+.next/
+.dart_tool/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary context tooling
+.context-cache/
