@@ -1,0 +1,22 @@
+{
+  "templateMode": true,
+  "requiredFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "docs/product/prd.md",
+    "docs/architecture/overview.md",
+    "docs/adr/README.md",
+    "docs/specs/_index.md",
+    "docs/context/CONTEXT_INDEX.md",
+    "docs/context/PROJECT_STATE.md",
+    "docs/context/NEW_CHAT_PROTOCOL.md",
+    "docs/handoff/current.md",
+    "docs/quality/definition-of-done.md"
+  ],
+  "placeholderSensitiveFiles": [
+    "AGENTS.md",
+    "docs/product/prd.md",
+    "docs/architecture/overview.md",
+    "docs/context/PROJECT_STATE.md"
+  ]
+}

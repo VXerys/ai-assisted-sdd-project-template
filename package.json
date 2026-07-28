@@ -1,0 +1,15 @@
+{
+  "name": "ai-assisted-sdd-project-template",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Stack-agnostic spec-driven development and context-engineering repository template.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "context:validate": "node scripts/context/validate-context.mjs",
+    "context:refresh": "node scripts/context/refresh-project-state.mjs",
+    "context:archive-handoff": "node scripts/context/archive-handoff.mjs"
+  }
+}
