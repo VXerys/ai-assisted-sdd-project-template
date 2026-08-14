@@ -1,6 +1,6 @@
 # AI-Assisted SDD Project Template
 
-A repository operating system for spec-driven development, modular project knowledge, and AI-assisted implementation.
+A repository operating system for spec-driven development, modular project knowledge, system-architecture reasoning, and AI-assisted implementation.
 
 ## Core workflow
 
@@ -10,13 +10,16 @@ Idea
   -> architecture baseline
   -> roadmap
   -> feature requirements
-  -> feature design
+  -> module system architecture
+  -> feature implementation design
   -> tasks
   -> implementation
   -> verification
   -> release
   -> context refresh
 ```
+
+The architecture baseline defines shared project boundaries. Each meaningful Level 2/3 module then receives its own `system-architecture.md` so local decisions about data, consistency, communication, caching, scale, resilience, security, observability, cost, and trade-offs are explicit before implementation.
 
 ## Two AI surfaces
 
@@ -28,7 +31,8 @@ Use ChatGPT Projects or another planning/research assistant for:
 - PRD;
 - UX and flow exploration;
 - architecture alternatives;
-- feature requirements and preliminary design;
+- module system-architecture analysis;
+- feature requirements and preliminary implementation design;
 - ADR proposals;
 - documentation review.
 
@@ -40,6 +44,7 @@ Use Codex, Claude Code, or another agent with code and terminal access for:
 
 - repository inspection;
 - project command discovery;
+- validation of architecture assumptions against the actual repository/platform;
 - context-system bootstrap;
 - provider hooks and commands;
 - implementation;
@@ -68,6 +73,35 @@ See [`docs/documentation/AI_COLLABORATION_MODEL.md`](docs/documentation/AI_COLLA
 └── .github/
 ```
 
+## System architecture per module
+
+For a normal Level 2/3 capability, the default specification package is:
+
+```text
+docs/specs/F-XXX-feature-name/
+├── requirements.md
+├── system-architecture.md
+├── design.md
+├── tasks.md
+└── verification.md
+```
+
+The responsibilities are intentionally separated:
+
+- `requirements.md` defines what must be true;
+- `system-architecture.md` decides how the capability should behave as a system and records alternatives/pros/cons/trade-offs;
+- `design.md` maps the approved architecture into concrete repository components and contracts;
+- `tasks.md` defines executable work;
+- `verification.md` records evidence.
+
+Do not force distributed-system mechanisms into every module. Caching, sharding, queues, microservices, CDN/edge, load balancing, circuit breakers, or other techniques are evaluated only when the requirements and workload justify them.
+
+Read:
+
+- [`docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`](docs/architecture/MODULE_ARCHITECTURE_GUIDE.md)
+- [`docs/specs/_templates/system-architecture.template.md`](docs/specs/_templates/system-architecture.template.md)
+- [`docs/specs/README.md`](docs/specs/README.md)
+
 ## Start a derived project
 
 ### 1. Create the repository
@@ -80,16 +114,18 @@ With a conversational AI:
 
 1. complete `docs/product/idea-brief.md`;
 2. complete `docs/product/prd.md`;
-3. draft the architecture baseline;
-4. create the first feature specification;
-5. record unresolved assumptions.
+3. draft the project architecture baseline;
+4. create the first feature requirements;
+5. create the first module `system-architecture.md` when the feature is Level 2/3;
+6. draft the feature implementation design from the approved architecture;
+7. record unresolved assumptions and architecture questions.
 
 ### 3. Coding-agent bootstrap
 
 Open the real repository with Codex or Claude Code and instruct it to:
 
 1. read `AGENTS.md`;
-2. validate planned architecture against actual project files;
+2. validate planned architecture against actual project files, schemas, platform configuration, and available tooling;
 3. fill project commands and stack details;
 4. implement the context system in `docs/context/CONTEXT_SYSTEM.md`;
 5. create only the provider adapter needed for the active coding agent;
@@ -123,7 +159,8 @@ Read:
 
 ```text
 Durable contracts:
-  product + architecture + ADR + feature specs
+  product + global architecture + ADR + feature requirements
+  + module system architecture + implementation design
 
 Mutable execution state:
   docs/context/state.yaml
