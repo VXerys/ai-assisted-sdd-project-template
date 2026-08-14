@@ -2,13 +2,13 @@
 
 # Claude Code Adapter
 
-Claude Code is a repository-integrated coding agent in this project.
+Claude Code is a repository-integrated coding agent for this template and derived projects.
 
-- Treat repository artifacts as canonical project memory.
-- On first use in a derived project, implement or verify the context system described in `docs/context/CONTEXT_SYSTEM.md`.
-- Create a `SessionStart` hook only after discovering the real repository path and available commands.
-- The hook may sync and validate context, but must not write semantic decisions.
-- Expose concise project commands for context status and task transitions when useful.
-- Never make Claude's local memory directory the only source of project state.
-- Update `docs/handoff/current.md` before ending implementation work.
-- Do not place temporary session details in this file.
+- Read and follow the applicable `AGENTS.md` contract first.
+- Treat repository artifacts as durable project context; provider memory is an adapter, never the only source of truth.
+- Inspect actual code, tests, schemas, migrations, and project commands before asserting repository facts.
+- Do not duplicate the full repository contract in this file.
+- Context hooks, generated project-state views, handoff files, or task-transition commands are optional extensions. Use them only when the derived repository has explicitly adopted that subsystem.
+- Do not automatically bootstrap `docs/context/CONTEXT_SYSTEM.md` merely because the legacy template contains it.
+- Hooks may validate or surface deterministic repository state, but must not make semantic product, architecture, security, or acceptance decisions.
+- Keep provider-specific local paths and session details out of canonical project documentation.

@@ -1,151 +1,203 @@
-# AI-Assisted SDD Project Template
+# AI-Assisted Engineering / SDD Project Template
 
-A repository operating system for spec-driven development, modular project knowledge, and AI-assisted implementation.
+A reusable repository template for **spec-driven, context-efficient, evidence-based AI-assisted software engineering**.
 
-## Core workflow
+This repository is being evolved from the original AI-Assisted SDD template into the broader **AI-Assisted Engineering** operating model. The goal is to make AI coding agents useful across real production projects without requiring every repository to adopt the same amount of process or context automation.
+
+## Core operating model
 
 ```text
-Idea
-  -> PRD
-  -> architecture baseline
-  -> roadmap
-  -> feature requirements
-  -> feature design
-  -> tasks
-  -> implementation
-  -> verification
-  -> release
-  -> context refresh
+IDEA
+  → REQUIREMENTS
+  → SPECIFICATION
+  → ARCHITECTURE
+  → PLAN
+  → TASK
+  → IMPLEMENTATION
+  → VERIFICATION
+  → REVIEW
+  → RELEASE
+  → CONTEXT REFRESH
 ```
 
-## Two AI surfaces
+The sequence is a default, not bureaucracy. Documentation and verification depth scale with risk.
+
+## Core principles
+
+- **Specification before non-trivial implementation.** Resolve behavior, constraints, and acceptance before generating broad code.
+- **Repository artifacts are durable truth.** Chat history and provider memory are temporary context, not the only source of truth.
+- **Minimum sufficient context.** Load the relevant contract, feature, task, implementation, and evidence—not the whole repository by default.
+- **Small, verifiable changesets.** Prefer bounded tasks that can be reviewed and proven independently.
+- **Evidence over confidence.** Tests, builds, runtime checks, schema/data evidence, and diff inspection outrank an agent saying “done”.
+- **Architecture is a constraint.** Existing repository boundaries and contracts outrank generic framework preferences.
+- **Human control of high-impact decisions.** Security policy, destructive data changes, public contract breaks, major architecture changes, production infrastructure, and major dependency replacement require deliberate approval.
+- **Context automation is optional.** Generated state, handoff tooling, hooks, and provider adapters are extensions adopted only when they solve a demonstrated coordination problem.
+
+## Complexity scaling
+
+### Level 1 — Small change
+
+```text
+Task → Implement → Verify
+```
+
+Use for isolated, low-risk, reversible changes.
+
+### Level 2 — Normal feature
+
+```text
+Requirements → Lightweight Design → Tasks → Implement → Verify → Review
+```
+
+Use for normal feature development with bounded behavioral and architectural impact.
+
+### Level 3 — Complex / high-risk
+
+```text
+Requirements
+  → Design
+  → ADR when needed
+  → Tasks
+  → Implementation
+  → Multi-level Verification
+  → Review
+  → Release Controls
+  → Context Refresh
+```
+
+Use for authentication/authorization, payments, migrations, public contracts, destructive data work, security-sensitive changes, cross-module architecture, or difficult-to-reverse decisions.
+
+## Reusable templates
+
+The canonical reusable starter templates are stored in [`templates/`](templates/). Keeping them in GitHub avoids consuming ChatGPT Project source slots for artifacts that are mainly instantiated on demand.
+
+| Template | Purpose |
+|---|---|
+| [`AGENTS_TEMPLATE.md`](templates/AGENTS_TEMPLATE.md) | High-signal repository operating contract for developers and AI agents |
+| [`PROJECT_CONSTITUTION_TEMPLATE.md`](templates/PROJECT_CONSTITUTION_TEMPLATE.md) | Durable engineering governance and human/AI decision boundaries |
+| [`PRD_TEMPLATE.md`](templates/PRD_TEMPLATE.md) | Product context, goals, requirements, constraints, risks, and milestones |
+| [`ARCHITECTURE_BASELINE_TEMPLATE.md`](templates/ARCHITECTURE_BASELINE_TEMPLATE.md) | Shared system boundaries, ownership, data flow, security, testing, and deployment |
+| [`FEATURE_REQUIREMENTS_TEMPLATE.md`](templates/FEATURE_REQUIREMENTS_TEMPLATE.md) | Observable feature behavior, rules, constraints, edge cases, and acceptance criteria |
+| [`FEATURE_DESIGN_TEMPLATE.md`](templates/FEATURE_DESIGN_TEMPLATE.md) | Feature-local technical approach, contracts, failure handling, security, and trade-offs |
+| [`FEATURE_TASKS_TEMPLATE.md`](templates/FEATURE_TASKS_TEMPLATE.md) | Bounded executable task contracts and dependency ordering |
+| [`FEATURE_VERIFICATION_TEMPLATE.md`](templates/FEATURE_VERIFICATION_TEMPLATE.md) | Requirement-to-evidence mapping and verification results |
+| [`ADR_TEMPLATE.md`](templates/ADR_TEMPLATE.md) | Significant architecture/engineering decision record |
+| [`BUG_INVESTIGATION_TEMPLATE.md`](templates/BUG_INVESTIGATION_TEMPLATE.md) | Evidence-driven debugging and root-cause investigation |
+| [`AI_TASK_PROMPT_TEMPLATE.md`](templates/AI_TASK_PROMPT_TEMPLATE.md) | Minimum-sufficient-context package for repository coding agents |
+| [`CODE_REVIEW_TEMPLATE.md`](templates/CODE_REVIEW_TEMPLATE.md) | Correctness-, architecture-, security-, and risk-oriented review |
+| [`CONTEXT_REFRESH_TEMPLATE.md`](templates/CONTEXT_REFRESH_TEMPLATE.md) | Substantial truth-maintenance/context-refresh audit record |
+
+A template is **not project truth by itself**. Copy or instantiate only the artifact needed by the project, replace placeholders with verified repository facts, review it, then commit it in the appropriate canonical location.
+
+## Recommended derived-project documentation model
+
+```text
+repository/
+├── README.md
+├── AGENTS.md
+├── CLAUDE.md                 # optional thin provider adapter
+└── docs/
+    ├── product/
+    ├── architecture/
+    ├── features/
+    ├── decisions/
+    ├── operations/
+    └── references/
+```
+
+Typical ownership:
+
+- `README.md` — human repository entrypoint;
+- `AGENTS.md` — frequently relevant repository rules, commands, boundaries, prohibited actions, and Definition of Done;
+- `docs/product/` — product intent and scope;
+- `docs/architecture/` — cross-feature technical structure and invariants;
+- `docs/features/` — feature requirements/design/tasks/verification;
+- `docs/decisions/` — ADRs and durable technical rationale;
+- `docs/operations/` — deploy, migration, recovery, and operational procedures;
+- `docs/references/` — useful non-canonical supporting material.
+
+## AI collaboration model
 
 ### Conversational AI
 
-Use ChatGPT Projects or another planning/research assistant for:
+Best used for:
 
-- idea and problem framing;
-- PRD;
-- UX and flow exploration;
+- idea/problem framing;
+- PRD and requirements;
+- UX/flow analysis;
 - architecture alternatives;
-- feature requirements and preliminary design;
+- feature design;
+- task decomposition;
 - ADR proposals;
-- documentation review.
+- review and context-maintenance analysis.
 
-Its result becomes authoritative only after review and commit.
+Its output is a proposal until reviewed and stored in the project’s canonical system.
 
 ### Repository-integrated coding agent
 
-Use Codex, Claude Code, or another agent with code and terminal access for:
+Best used for work that depends on repository reality:
 
-- repository inspection;
-- project command discovery;
-- context-system bootstrap;
-- provider hooks and commands;
-- implementation;
-- tests, build, migration, and validation;
-- task status, verification evidence, and handoff updates.
+- inspecting actual code, tests, schemas, migrations, and commands;
+- validating planned artifacts against current implementation;
+- implementing approved tasks;
+- running verification;
+- inspecting diffs;
+- updating evidence and durable documentation when truth changed.
 
-See [`docs/documentation/AI_COLLABORATION_MODEL.md`](docs/documentation/AI_COLLABORATION_MODEL.md).
+A coding agent must not invent paths, APIs, schema fields, commands, or repository patterns it has not inspected.
 
-## Repository structure
+## Context automation: optional extension
 
-```text
-/
-├── AGENTS.md
-├── CLAUDE.md
-├── docs/
-│   ├── documentation/
-│   ├── product/
-│   ├── architecture/
-│   ├── adr/
-│   ├── specs/
-│   ├── context/
-│   ├── handoff/
-│   ├── quality/
-│   └── runbooks/
-├── scripts/context/
-└── .github/
-```
+The original template includes a repository context subsystem under `docs/context/`, `docs/handoff/`, automation scripts, and validation workflow. Those files are retained during the v2 transition for compatibility and as a reference implementation.
 
-## Start a derived project
+They are **not a universal requirement** of the new operating model.
 
-### 1. Create the repository
+Adopt machine-readable execution state, generated snapshots, handoff files, hooks, or provider commands only when a project demonstrates repeated needs such as:
 
-Use this repository as a GitHub template.
+- multi-agent or multi-developer handoffs;
+- repeated context-recovery cost;
+- complex parallel execution state;
+- stale status views that deterministic generation can prevent.
 
-### 2. Planning session
+When such automation is used, repository-native state remains canonical, generated views are one-way, repeated generation is deterministic/idempotent, and provider memory remains an adapter.
 
-With a conversational AI:
+## Starting a new project
 
-1. complete `docs/product/idea-brief.md`;
-2. complete `docs/product/prd.md`;
-3. draft the architecture baseline;
-4. create the first feature specification;
-5. record unresolved assumptions.
+1. Define the product problem and desired outcome.
+2. Instantiate `templates/PRD_TEMPLATE.md`.
+3. Instantiate `templates/PROJECT_CONSTITUTION_TEMPLATE.md` for durable governance when the project warrants it.
+4. Select technology deliberately and record expensive-to-reverse decisions with ADRs.
+5. Instantiate `templates/ARCHITECTURE_BASELINE_TEMPLATE.md`.
+6. Establish real repository structure and development commands.
+7. Instantiate `templates/AGENTS_TEMPLATE.md` as the project’s repository contract.
+8. Select the first vertical slice.
+9. Create proportional feature requirements/design/tasks.
+10. Implement one bounded task at a time and verify against evidence.
+11. Refresh durable context after meaningful truth changes.
 
-### 3. Coding-agent bootstrap
+Do not create every possible document or automation subsystem before the first useful vertical slice.
 
-Open the real repository with Codex or Claude Code and instruct it to:
+## Migration from the original template
 
-1. read `AGENTS.md`;
-2. validate planned architecture against actual project files;
-3. fill project commands and stack details;
-4. implement the context system in `docs/context/CONTEXT_SYSTEM.md`;
-5. create only the provider adapter needed for the active coding agent;
-6. run context validation.
+This update intentionally does **not** delete the original `docs/context/`, `docs/specs/_templates/`, handoff, automation, or validation files. Existing projects may already depend on them.
 
-### 4. Disable template mode
+Treat those artifacts as legacy/reference until the project explicitly calibrates which v2 protocols replace, retain, or simplify them. Migration should be deliberate rather than a mass rewrite.
 
-After core placeholders are filled, set:
+## Repository template philosophy
 
-```json
-{
-  "templateMode": false
-}
-```
+This repository should make good engineering behavior easy to adopt while avoiding a second failure mode: a framework so heavy that developers bypass it.
 
-in `context.config.json`.
-
-## Documentation modularity
-
-Do not build 1,000-line manual context files.
-
-Split by responsibility, authority, and change cadence. Start flat, then promote a concern into a folder when it gains independent subconcerns.
-
-Read:
-
-- [`docs/documentation/MODULARIZATION_GUIDE.md`](docs/documentation/MODULARIZATION_GUIDE.md)
-- [`docs/architecture/README.md`](docs/architecture/README.md)
-- [`docs/specs/README.md`](docs/specs/README.md)
-
-## Context model
+The target is:
 
 ```text
-Durable contracts:
-  product + architecture + ADR + feature specs
-
-Mutable execution state:
-  docs/context/state.yaml
-
-Generated views:
-  docs/context/PROJECT_STATE.md
-  docs/context/PROGRESS.md
-
-Temporary session delta:
-  docs/handoff/current.md
+clear requirements
++ minimum sufficient context
++ explicit architecture
++ bounded tasks
++ small changes
++ evidence-based verification
++ current durable documentation
++ human control of high-impact decisions
 ```
 
-Provider memory is an adapter, never the source of truth.
-
-## Validation
-
-The base template includes structural context validation and handoff tooling. A derived project's coding agent adapts the renderer and commands to the project's runtime and CI.
-
-```bash
-npm run context:validate
-```
-
-## Existing projects
-
-This template is intended for new projects. Do not retrofit it into established repositories without a separate migration plan.
+—not maximum document count or maximum AI autonomy.
