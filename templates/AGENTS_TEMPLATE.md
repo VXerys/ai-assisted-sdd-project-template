@@ -22,6 +22,7 @@ Use these sources in priority according to the question being answered:
 | Shared architecture | `{{PATH_TO_ARCHITECTURE}}` |
 | Significant technical decisions | `{{PATH_TO_ADRS}}` |
 | Feature behavior | `{{PATH_TO_FEATURE_REQUIREMENTS}}` |
+| Feature/module system architecture | `{{PATH_TO_FEATURE_SYSTEM_ARCHITECTURES_OR_NA}}` |
 | Feature implementation design | `{{PATH_TO_FEATURE_DESIGNS}}` |
 | API/data contracts | `{{PATH_TO_CONTRACT_DOCS_OR_SCHEMA}}` |
 | Database schema/migrations | `{{PATH_TO_SCHEMA_AND_MIGRATIONS}}` |
@@ -83,6 +84,37 @@ Do not add or replace major dependencies without following the dependency policy
 3. `{{ARCH_RULE_3}}`
 
 Detailed architecture: `{{ARCHITECTURE_REFERENCE}}`.
+
+### Module System Architecture
+
+For a Level 2/3 capability with meaningful system concerns, create and approve a feature/module `system-architecture.md` before implementation design and dependent coding tasks.
+
+The module architecture owns decisions such as:
+
+- architectural drivers and workload assumptions;
+- module/system boundaries and ownership;
+- data source of truth, storage model, consistency, concurrency, ordering, and idempotency;
+- synchronous, asynchronous, event-driven, or realtime communication;
+- caching and invalidation when justified;
+- scalability, hotspot, partitioning, load-balancing, and edge/CDN strategy when justified;
+- failure handling, retry/replay/recovery, and resilience;
+- trust boundaries, authorization ownership, sensitive data, and abuse considerations;
+- observability and operational signals;
+- cost and operational complexity;
+- credible alternatives, pros/cons, accepted trade-offs, risks, and redesign triggers.
+
+Rules:
+
+- Architecture starts from requirements, quality attributes, constraints, and workload—not from a preferred technology.
+- Do not add Redis, queues, microservices, sharding, CDN/edge, circuit breakers, or other distributed mechanisms merely because they are common system-design patterns.
+- A Level 1 change may omit module architecture when it does not create or change a module-level architecture decision.
+- `design.md` maps approved architecture into concrete repository components; it must not silently re-decide the architecture.
+- A module-local decision becomes global architecture only after deliberate promotion and, when significant, an ADR.
+
+Framework references:
+
+- `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`
+- `templates/FEATURE_SYSTEM_ARCHITECTURE_TEMPLATE.md`
 
 ## 5. Directory Responsibilities
 
@@ -252,28 +284,32 @@ Use actual commands. If a command is unavailable in the current environment, rep
 ### Before Coding
 
 1. Read this file and applicable nested instructions.
-2. Read the exact task and relevant requirements/design.
-3. Inspect relevant code, tests, schema, and call sites.
-4. Confirm the objective, scope, constraints, and verification.
-5. Identify blocking ambiguity or source conflicts.
-6. Create a concise plan for non-trivial work.
+2. Read the exact task and relevant requirements.
+3. Read the relevant module `system-architecture.md` constraints when present and implicated by the task; do not load unrelated sections by default.
+4. Read the relevant implementation design.
+5. Inspect relevant code, tests, schema, and call sites.
+6. Confirm the objective, scope, constraints, and verification.
+7. Identify blocking ambiguity or source conflicts.
+8. Create a concise plan for non-trivial work.
 
 ### During Coding
 
 1. Make the smallest complete change.
-2. Follow existing architecture and patterns.
+2. Follow existing global architecture, approved module architecture, and repository patterns.
 3. Do not introduce unrelated refactors/features.
 4. Add/update tests for changed behavior.
-5. Stop if a new product/architecture/security/data decision is required.
+5. Do not silently change data ownership, consistency, communication, caching, security, resilience, or other approved module-architecture decisions inside an implementation task.
+6. Stop if a new product/architecture/security/data decision is required.
 
 ### After Coding
 
 1. Inspect the complete diff.
 2. Run applicable verification.
 3. Map acceptance criteria to evidence.
-4. Report unrun checks and residual risk.
-5. Update durable docs only when truth changed.
-6. Perform context refresh when a significant shared truth changed.
+4. Verify architecture-sensitive claims proportional to risk when the task changed or exercised them.
+5. Report unrun checks and residual risk.
+6. Update durable docs only when truth changed.
+7. Perform context refresh when a significant shared truth changed.
 
 ## 13. Git Rules
 
@@ -300,6 +336,7 @@ Without the required explicit approval, do not:
 - disable tests to make CI pass;
 - modify unrelated code for cleanup;
 - edit generated files manually when a generator owns them;
+- add distributed-system mechanisms without a requirement/workload justification;
 - rewrite Git history.
 
 Project-specific prohibitions:
@@ -312,9 +349,10 @@ Project-specific prohibitions:
 A task is complete when applicable:
 
 - requirements/acceptance criteria are satisfied;
-- implementation follows approved architecture/design;
+- implementation follows approved global architecture, module system architecture, and implementation design;
 - required format/lint/typecheck/tests/build pass;
 - runtime/regression verification is complete for changed risk;
+- architecture-sensitive claims have evidence proportional to risk;
 - security/data constraints are satisfied;
 - no unrelated changes remain;
 - diff is reviewed;
@@ -330,6 +368,8 @@ Project-specific additional gates:
 - Product: `{{PRODUCT_DOC}}`
 - Constitution: `{{CONSTITUTION_DOC}}`
 - Architecture: `{{ARCHITECTURE_DOC}}`
+- Module architecture guide: `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`
+- Module architecture template: `templates/FEATURE_SYSTEM_ARCHITECTURE_TEMPLATE.md`
 - Feature index: `{{FEATURE_INDEX}}`
 - Decisions: `{{ADR_INDEX}}`
 - Operations: `{{OPERATIONS_INDEX}}`

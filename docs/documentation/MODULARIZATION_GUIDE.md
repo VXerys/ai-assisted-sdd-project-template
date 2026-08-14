@@ -91,6 +91,8 @@ After promotion:
 
 ## 5. Architecture split rules
 
+### Global architecture
+
 Global architecture contains cross-feature invariants:
 
 - dependency direction;
@@ -98,15 +100,48 @@ Global architecture contains cross-feature invariants:
 - shared persistence strategy;
 - global authentication and authorization;
 - deployment topology;
-- integration principles.
+- integration principles;
+- shared caching/eventing/partitioning policies when those are intentionally project-wide.
 
-Feature-specific decisions remain in:
+Canonical location:
+
+```text
+docs/architecture/
+```
+
+### Module system architecture
+
+A Level 2/3 capability with meaningful system concerns owns its local architecture in:
+
+```text
+docs/specs/F-XXX-feature/system-architecture.md
+```
+
+This artifact answers module-local questions such as:
+
+- workload and architecture drivers;
+- data source of truth and consistency;
+- sync/realtime/async communication;
+- caching and invalidation;
+- scale and capacity strategy;
+- reliability/failure handling;
+- security/trust boundaries;
+- observability and cost;
+- alternatives, pros/cons, accepted trade-offs, and review triggers.
+
+Do not copy this document into `docs/architecture/`.
+
+Promote a module-local decision into global architecture only after it becomes an approved reusable rule. Create or supersede an ADR when the promoted choice is significant or expensive to reverse.
+
+### Feature implementation design
+
+Repository-specific implementation decisions remain in:
 
 ```text
 docs/specs/F-XXX-feature/design.md
 ```
 
-Promote a local design into global architecture only after it becomes an approved reusable rule.
+`design.md` maps approved architecture into concrete components, paths, API/schema details, state management, UI behavior, rollout, and test implementation. It must not become a second system-architecture document.
 
 ## 6. ADR split rules
 
@@ -133,17 +168,20 @@ Keep ADRs in one flat numbered directory until navigation genuinely becomes diff
 
 ## 7. Feature specification split rules
 
-Default structure:
+Default Level 2/3 structure:
 
 ```text
 docs/specs/F-XXX-feature/
 ├── requirements.md
+├── system-architecture.md
 ├── design.md
 ├── tasks.md
 └── verification.md
 ```
 
-When a feature produces a 1,000-line design, first ask whether it combines independent vertical capabilities.
+A Level 1 change may omit `system-architecture.md` when it does not create/change a module-level architectural decision.
+
+When a feature produces a 1,000-line architecture/design package, first ask whether it combines independent vertical capabilities.
 
 Prefer:
 
@@ -165,20 +203,55 @@ F-014-payment-processing/
 │   ├── functional.md
 │   ├── business-rules.md
 │   └── non-functional.md
+├── system-architecture/
+│   ├── README.md
+│   ├── context-and-boundaries.md
+│   ├── data-and-consistency.md
+│   ├── communication-and-caching.md
+│   └── scalability-reliability-security.md
 ├── design/
 │   ├── overview.md
-│   ├── data-flow.md
+│   ├── repository-mapping.md
 │   ├── state-management.md
 │   ├── error-handling.md
-│   └── security.md
+│   └── ui-ux.md
 ├── tasks.md
 └── verification/
     ├── acceptance-matrix.md
+    ├── architecture-evidence.md
     ├── automated-tests.md
     └── manual-scenarios.md
 ```
 
-## 8. Context size limits
+The feature `README.md` defines canonical ownership and reading order.
+
+## 8. System-architecture modularization rule
+
+Do not split `system-architecture.md` simply because system design has many possible topics. First remove irrelevant sections and keep only concerns supported by requirements/workload.
+
+Promote it into a folder only when independent concerns genuinely need separate loading/ownership, for example:
+
+```text
+system-architecture/
+├── README.md
+├── context-and-boundaries.md
+├── data-and-consistency.md
+├── communication-and-caching.md
+└── scalability-reliability-security.md
+```
+
+The folder `README.md` must state:
+
+- architecture drivers;
+- canonical owner for each child;
+- required reading order;
+- approved alternatives/decision status;
+- links to relevant ADRs/global architecture;
+- which child documents a coding task must load for each concern.
+
+Do not create one file per system-design buzzword.
+
+## 9. Context size limits
 
 | Artifact | Target |
 |---|---|
@@ -189,7 +262,9 @@ F-014-payment-processing/
 
 If `PROJECT_STATE.md` contains full backlog history, architecture prose, or all completed tasks, move that material to its canonical artifact.
 
-## 9. Index requirement
+Module system architecture is durable context but should be loaded progressively. A task should carry the exact architecture constraints it needs and load the full artifact only when the task changes or depends on those decisions.
+
+## 10. Index requirement
 
 Every modular folder has a `README.md` containing:
 
@@ -200,7 +275,7 @@ Every modular folder has a `README.md` containing:
 - extension rules;
 - related artifacts.
 
-## 10. Safe modularization procedure
+## 11. Safe modularization procedure
 
 1. Identify the distinct questions answered by the original file.
 2. Assign one canonical destination per question.
