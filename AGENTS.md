@@ -46,7 +46,7 @@ Chat history and provider memory are never a source of truth. When sources confl
 
 ## Commands
 
-See the Commands table in `docs/steering/tech.md`. Context validation: `npm run context:validate`.
+See the Commands table in `docs/steering/tech.md`. Context: `npm run context:render`, then `npm run context:validate`.
 
 ## Definition of done
 

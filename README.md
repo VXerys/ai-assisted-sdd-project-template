@@ -2,7 +2,7 @@
 
 A repository template for spec-driven, context-efficient, evidence-based software engineering with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents.
 
-Version 2 is in progress; see `CHANGELOG.md` and `docs/adr/ADR-0001-v2-revamp.md`. Phase 1 (this state) ships the single template family, steering, and config. Rendering, adapters, hooks, and `init` with presets are available from 2.0.0.
+Version 2 is in progress; see `CHANGELOG.md` and `docs/adr/ADR-0001-v2-revamp.md`. Phases 1 and 2 (this state) ship the single template family, steering, config, the context renderer, and the v2 validator. Adapters, hooks, slash commands, and `init` with presets are available from 2.0.0.
 
 ## Operating model
 
@@ -54,7 +54,7 @@ The sequence is a default, not bureaucracy. Depth scales with the tier.
 │   ├── runbooks/              # local development, data store changes, deployment, recovery
 │   ├── documentation/         # how docs are split and owned
 │   └── automation/            # the context commands
-└── scripts/context/           # validate, refresh git facts, archive handoff
+└── scripts/context/           # render, validate, archive handoff; lib/ parsers; __fixtures__/ test repos
 ```
 
 ## Templates
@@ -89,15 +89,15 @@ Project level, in `docs/_templates/`:
 
 ## Context system
 
-`tasks.md` is the master for task status. `docs/context/state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, and `PROGRESS.md` are rendered views (available from 2.0.0) and never hand-edited. Read `docs/context/CONTEXT_SYSTEM.md` for the model and `docs/context/NEW_CHAT_PROTOCOL.md` for the opening prompt and fallback read order.
+`tasks.md` is the master for task status. `docs/context/state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, and `PROGRESS.md` are rendered by `npm run context:render` and never hand-edited; the validator fails when they are stale. Read `docs/context/CONTEXT_SYSTEM.md` for the model and `docs/context/NEW_CHAT_PROTOCOL.md` for the opening prompt and fallback read order.
 
 Commands available now:
 
 ```bash
 npm install
 npm test                      # node --test scripts/**/*.test.mjs
-npm run context:validate      # required files, ids, statuses, links, banners
-npm run context:refresh       # git facts block in PROJECT_STATE.md
+npm run context:render        # state.yaml, BRIEF.md, PROJECT_STATE.md, PROGRESS.md; --check, --quiet
+npm run context:validate      # structure, ids, traceability, evidence, staleness, freshness; --strict
 npm run context:archive-handoff
 ```
 
@@ -107,8 +107,8 @@ npm run context:archive-handoff
 2. Write `docs/product/prd.md` from `docs/_templates/prd.md`; add a constitution when governance warrants it.
 3. Record expensive-to-reverse choices as ADRs; write the architecture baseline from `docs/_templates/architecture-baseline.md`.
 4. Keep `AGENTS.md` in sync with steering by hand.
-5. Select the first vertical slice and create `docs/specs/F-001-name/` from the per-feature templates at the right tier.
-6. Implement one task at a time; record evidence; update `tasks.md` and `docs/handoff/current.md`; run `npm run context:validate`.
+5. Select the first vertical slice and create `docs/specs/F-XXX-name/` from the per-feature templates at the right tier.
+6. Implement one task at a time; record evidence; update `tasks.md` and `docs/handoff/current.md`; run `npm run context:render`, then `npm run context:validate`.
 7. Set `templateMode` to `false` in `sdd.config.json` once core placeholders are filled.
 
 Do not create every document before the first useful slice.

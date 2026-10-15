@@ -111,7 +111,7 @@ docs/architecture/
 
 ### Module system architecture
 
-A Level 2/3 capability with meaningful system concerns owns its local architecture in:
+A full-tier feature with meaningful system concerns owns its local architecture in:
 
 ```text
 docs/specs/F-XXX-feature/system-architecture.md
@@ -168,7 +168,7 @@ Keep ADRs in one flat numbered directory until navigation genuinely becomes diff
 
 ## 7. Feature specification split rules
 
-Default Level 2/3 structure:
+Default full-tier structure:
 
 ```text
 docs/specs/F-XXX-feature/
@@ -179,7 +179,7 @@ docs/specs/F-XXX-feature/
 └── verification.md
 ```
 
-A Level 1 change may omit `system-architecture.md` when it does not create/change a module-level architectural decision.
+A lite-tier feature omits `system-architecture.md` when it does not create/change a module-level architectural decision.
 
 When a feature produces a 1,000-line architecture/design package, first ask whether it combines independent vertical capabilities.
 

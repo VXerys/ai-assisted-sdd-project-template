@@ -41,8 +41,8 @@ Every check runs through the commands in `tech.md` and is recorded as an EV bloc
 ## Close a session
 
 1. Review `git diff` and `git status`.
-2. Run the commands in `tech.md` and `npm run context:validate`; record evidence.
-3. Update task status in `tasks.md`; re-render context (available from 2.0.0).
+2. Run the commands in `tech.md`; record evidence.
+3. Update task status in `tasks.md`; run `npm run context:render`, then `npm run context:validate`.
 4. Update `docs/handoff/current.md`: objective, changed files, commands and results, uncommitted work, blockers, exact next step.
 5. Report the next task.
 

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 2,
+  "project": { "name": "Todo API", "tier": "lite" },
+  "stack": { "app": "node-api", "database": "postgres" },
+  "tools": ["claude"],
+  "paths": {
+    "steering": "docs/steering",
+    "specs": "docs/specs",
+    "context": "docs/context",
+    "handoff": "docs/handoff/current.md",
+    "assumptions": "docs/context/ASSUMPTIONS.md"
+  },
+  "generated": [
+    "docs/context/state.yaml",
+    "docs/context/PROJECT_STATE.md",
+    "docs/context/PROGRESS.md",
+    "docs/context/BRIEF.md"
+  ],
+  "frozen": ["src/legacy/"],
+  "limits": { "lite": 80, "full": 200, "systemArchitecture": 300, "staleDays": 30, "briefTokens": 3000 },
+  "templateMode": false,
+  "validate": {
+    "requiredFiles": [
+      "docs/steering/product.md",
+      "docs/steering/tech.md",
+      "docs/steering/structure.md",
+      "docs/steering/rules.md",
+      "docs/steering/workflow.md",
+      "docs/context/ASSUMPTIONS.md",
+      "docs/handoff/current.md"
+    ],
+    "generatedFiles": [
+      "docs/context/state.yaml",
+      "docs/context/PROJECT_STATE.md",
+      "docs/context/PROGRESS.md",
+      "docs/context/BRIEF.md"
+    ],
+    "placeholderSensitiveFiles": ["docs/steering/product.md", "docs/steering/tech.md"]
+  }
+}

@@ -9,8 +9,8 @@
   },
   "scripts": {
     "test": "node --test scripts/**/*.test.mjs",
+    "context:render": "node scripts/context/render.mjs",
     "context:validate": "node scripts/context/validate-context.mjs",
-    "context:refresh": "node scripts/context/refresh-project-state.mjs",
     "context:archive-handoff": "node scripts/context/archive-handoff.mjs"
   },
   "dependencies": {

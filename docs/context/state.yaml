@@ -1,14 +1,14 @@
-# GENERATED FILE. Rendered by `npm run context:render` (available from 2.0.0). Do not edit by hand.
-# Source: docs/specs/*/tasks.md, feature frontmatter, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
+# GENERATED FILE. Rendered by `npm run context:render`. Do not edit by hand.
+# Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
 
 schema_version: 2
-project: ""
+project: "{{PROJECT_NAME}}"
 tier: lite
 features: []
 active:
-  feature: null
-  task: null
-assumptions_open: 0
+  feature_id: null
+  task_id: null
+assumptions_open: []
 blockers: []
-generated_at: null
-source_hash: null
+generated_at: 2026-10-15T03:23:02.546Z
+source_hash: 759ca882c87c925b066ab4276dcd2b7360ad5e2eb75bda36eda6e6376daccb2c

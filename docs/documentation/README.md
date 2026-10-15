@@ -27,7 +27,7 @@ A long generated reference can be valid. A shorter manual document should still 
 | Feature contracts | Requirements, design, tasks, acceptance | `docs/specs/` | Human + conversational AI; coding agent validates against repo |
 | Task status | Tasks, dependencies, evidence ids | `docs/specs/<feature>/tasks.md` | Coding agent |
 | Unknowns | Assumptions awaiting confirmation | `docs/context/ASSUMPTIONS.md` | Coding agent raises; human resolves |
-| Rendered context | State, brief, compact and full views | `docs/context/state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, `PROGRESS.md` | Renderer only (available from 2.0.0) |
+| Rendered context | State, brief, compact and full views | `docs/context/state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, `PROGRESS.md` | Renderer only (`npm run context:render`) |
 | Session delta | Worktree, commands, partial work, exact next step | `docs/handoff/current.md` | Coding agent |
 | Operations | Repeatable procedures | `docs/runbooks/` | Coding agent drafts and verifies |
 | Quality | Global gates and review rules | `docs/quality/` | Human approves; AI drafts |

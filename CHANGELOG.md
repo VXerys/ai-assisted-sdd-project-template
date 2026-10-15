@@ -4,7 +4,29 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ## [Unreleased] — 2.0.0
 
-Phase 1 of the v2 revamp (ADR-0001): foundation. Tooling phases follow.
+Phases 1 and 2 of the v2 revamp (ADR-0001): foundation and tooling. Adapters, hooks, slash commands, and init follow.
+
+### Phase 2 — tooling
+
+#### Added
+
+- `npm run context:render` (`scripts/context/render.mjs`): renders `docs/context/state.yaml` (schema 2, `source_hash`, derived `active` pair, `assumptions_open`, `blockers`), `BRIEF.md` (token-budgeted by `limits.briefTokens`, sections cut from the bottom with a note), `PROJECT_STATE.md` (feature table plus a git block outside the hash), and `PROGRESS.md` (full task board). `--check` exits 1 when a view would change; `--quiet`. Output is always LF.
+- `scripts/context/lib/`: `config`, `frontmatter`, `markdown`, `specs` (features, task blocks, evidence blocks, FR and AC ids), `assumptions`, `handoff`, `hash`, `git`, `model`, `views`, `render`, `checks`, as pure functions over strings and paths.
+- Validator checks (see the table in `docs/context/CONTEXT_SYSTEM.md`): per-type frontmatter keys and vocabulary, id uniqueness, tiered FR-to-task traceability, evidence completeness, `done` without evidence, `implemented` with open tasks or open assumptions, staleness, handoff expiry, size caps, backtick path resolution, rendered-view freshness, generated banners. `--strict` promotes warnings. Output is `path:line  level  message`.
+- Fixture repositories under `scripts/context/__fixtures__/` (`valid-lite`, `missing-evidence`, `implemented-with-open-task`, `stale-render`) and 22 `node:test` tests, including a smoke test against this repository.
+- `.gitattributes` with `* text=auto eol=lf`.
+- `limits.briefTokens` (3000) in `sdd.config.json`; `feature_id` and `task_id` keys in `docs/handoff/current.md` (`active_feature` and `active_task` stay as fallbacks).
+
+#### Changed
+
+- `scripts/context/validate-context.mjs` rewritten on the shared library; `archive-handoff.mjs` reads the handoff path from `sdd.config.json`, uses the parsed frontmatter, and renders after archiving.
+- Docs no longer mark `context:render`, `context:validate`, or `context:archive-handoff` as "available from 2.0.0"; `README.md`, `docs/automation/README.md`, `CONTEXT_SYSTEM.md`, `NEW_CHAT_PROTOCOL.md`, `steering/workflow.md`, and the definition of done describe the shipped commands. Remaining "Level 1/2/3" wording replaced by the `lite`/`full` tiers.
+
+#### Removed
+
+- `scripts/context/refresh-project-state.mjs` and `npm run context:refresh`; git facts are rendered into `PROJECT_STATE.md` by `context:render`.
+
+### Phase 1 — foundation
 
 ### Added
 

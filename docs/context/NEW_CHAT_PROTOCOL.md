@@ -41,9 +41,9 @@ Read the relevant `system-architecture.md` sections directly when the task touch
 ## Session close
 
 1. Review `git diff` and `git status`.
-2. Run the commands in `docs/steering/tech.md` and `npm run context:validate`.
+2. Run the commands in `docs/steering/tech.md`.
 3. Record evidence as EV blocks in `verification.md`; attach the ids to the task.
-4. Update task status in `tasks.md`; re-render context (available from 2.0.0).
+4. Update task status in `tasks.md`; run `npm run context:render`, then `npm run context:validate`.
 5. Update `docs/handoff/current.md` with the exact next step.
 6. Report the next task.
 
@@ -51,7 +51,7 @@ A new architectural constraint discovered during implementation is recorded as a
 
 ## When BRIEF.md is absent
 
-The brief is rendered (available from 2.0.0). Until then, or when it is stale, use the fallback read order in `docs/context/CONTEXT_SYSTEM.md`. Do not create a second manual progress document.
+Run `npm run context:render`. If the renderer is unavailable, use the fallback read order in `docs/context/CONTEXT_SYSTEM.md`. Do not create a second manual progress document.
 
 ## Planning chats
 

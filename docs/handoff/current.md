@@ -5,6 +5,8 @@ session_date: "{{YYYY-MM-DD}}"
 branch: "{{BRANCH}}"
 base_commit: "{{COMMIT_BEFORE_SESSION}}"
 current_commit: "{{CURRENT_COMMIT_OR_UNCOMMITTED}}"
+feature_id: "{{FEATURE_ID}}"
+task_id: "{{TASK_ID}}"
 active_feature: "{{FEATURE_ID}}"
 active_task: "{{TASK_ID}}"
 expires_after: "{{YYYY-MM-DD}}"
@@ -15,6 +17,8 @@ expires_after: "{{YYYY-MM-DD}}"
 This file stores the current coding session delta. It does not replace product docs, architecture, ADRs, feature specs, or `tasks.md`.
 
 The repository-integrated coding agent updates this file before ending implementation work.
+
+Frontmatter keys the renderer and validator read: `status` (`active | inactive`), `feature_id` and `task_id` (the active pair when no task is `in_progress`; `active_feature` and `active_task` are accepted as fallbacks), `session_date` (archive file name), `expires_after` (an active handoff past this date is a validation warning). The `## Exact next step` section is copied into `BRIEF.md`.
 
 ## Session objective
 
@@ -89,7 +93,7 @@ Permanent architecture decisions must be recorded as ADRs. Product decisions mus
 - `verification.md` EV blocks added: {{YES_OR_NO}}
 - `docs/context/ASSUMPTIONS.md` entries added or resolved: {{YES_OR_NO}}
 - specification or ADR changed: {{YES_OR_NO}}
-- context re-rendered (available from 2.0.0): {{YES_OR_NO}}
+- `npm run context:render` run and `npm run context:validate` passed: {{YES_OR_NO}}
 
 ## Exact next step
 

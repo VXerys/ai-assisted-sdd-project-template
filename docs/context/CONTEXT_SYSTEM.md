@@ -20,10 +20,10 @@ docs/specs/F-XXX/{requirements,design,    docs/context/BRIEF.md     (single entr
 docs/specs/F-XXX/tasks.md  <- task master docs/context/PROGRESS.md  (full board)
 docs/context/ASSUMPTIONS.md               AGENTS.md and tool adapters (from steering + sdd.config.json)
 docs/handoff/current.md
-                  ---- context:render, adapters:sync (available from 2.0.0) ---->
+                  ---- context:render; adapters:sync (available from 2.0.0) ---->
 ```
 
-`sdd.config.json` lists the rendered paths under `generated`. Editing one by hand is a validation error.
+`sdd.config.json` lists the rendered paths under `generated`. Editing one by hand is a validation error: `state.yaml` carries a `source_hash` (sha256 over `sdd.config.json`, `docs/steering/`, `docs/specs/F-*/`, `ASSUMPTIONS.md`, and the handoff), and the validator re-renders in memory and fails when any view differs from disk. Git facts are not part of the hash; they live only in the `## Git` block of `PROJECT_STATE.md`, which the freshness check ignores.
 
 ## Source rules
 
@@ -43,11 +43,13 @@ docs/handoff/current.md
 
 ## tasks.md is the master
 
-Each task is a parseable block: `### T-001 — title` followed by `status`, `requirements`, `depends_on`, and `evidence` lines (format in `docs/specs/_templates/tasks.md`). Status vocabulary: `planned | in_progress | blocked | review | done | deferred`. `done` requires an `EV-XXX` id from `verification.md`. There is no second place to record task status.
+Each task is a parseable block: `### T-001 — title` followed by `status`, `requirements`, `depends_on`, and `evidence` lines (format in `docs/specs/_templates/tasks.md`). An optional `- scope: [paths]` line lists the files the task may touch; the brief shows it. Status vocabulary: `planned | in_progress | blocked | review | done | deferred`. `done` requires an `EV-XXX` id from `verification.md` whose `covers` names at least one AC. There is no second place to record task status.
+
+The active pair is derived, never typed into a rendered file: the first `in_progress` task wins; otherwise `feature_id` and `task_id` from the handoff frontmatter.
 
 ## BRIEF.md is the entry point
 
-`docs/context/BRIEF.md` is rendered from steering, the active feature's `tasks.md`, open assumptions, and the handoff. It names the active feature and task, open assumptions, blockers, the verification commands, and the exact next action, within a token budget. A session starts there and loads other documents only as the brief or the task points to them.
+`docs/context/BRIEF.md` is rendered from steering, the active feature's `tasks.md` and `requirements.md`, open assumptions, and the handoff, within `limits.briefTokens` from `sdd.config.json` (default 3000, estimated at four characters per token). Sections in priority order: project one-liner (first prose line under `## Vision` in `product.md`); active feature and task with its body, acceptance criteria, and scope; the `## Stop conditions` and `## Prohibited` sections of `rules.md` verbatim; generated and frozen paths; open assumptions for the active feature; the handoff's `## Exact next step`; other open tasks of the active feature; the feature table. When the budget is exceeded the lowest-priority sections are cut first and a final line names what was cut. A session starts there and loads other documents only as the brief or the task points to them.
 
 ## Fallback read order when BRIEF.md is absent or stale
 
@@ -62,16 +64,37 @@ Each task is a parseable block: `### T-001 — title` followed by `status`, `req
 
 | Command | Status |
 |---|---|
-| `npm run context:validate` | available: required files, ids, statuses, links, generated banners |
-| `npm run context:refresh` | available: refreshes the git-facts block in `PROJECT_STATE.md` |
-| `npm run context:archive-handoff` | available: archives an active handoff and resets `current.md` |
-| `npm run context:render` | available from 2.0.0 |
+| `npm run context:render` | available: writes `state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, `PROGRESS.md` with LF endings; `--check` exits 1 when a view would change, `--quiet` prints nothing on success |
+| `npm run context:validate` | available: the checks below; `--strict` turns warnings into errors |
+| `npm run context:archive-handoff` | available: archives an active handoff by `session_date`, `feature_id`, `task_id`, resets `current.md`, then renders |
 | `npm run adapters:sync` | available from 2.0.0 |
+
+Validator output is one line per finding, `path:line  level  message`, sorted by file, then a count summary. `error` fails the run; `warning` only prints.
+
+| Check | Level |
+|---|---|
+| Required files from `validate.requiredFiles` exist | error |
+| Steering files have frontmatter with `inclusion` set to `always`, `fileMatch`, or `manual`; over `limits.steering` lines (120) | error; warning |
+| Every `docs/specs/F-*/` file and `docs/adr/ADR-*.md` has frontmatter with `id`, `title`, `type`, `status`, `tier`, `owner`, `created`, `last_updated`, `last_verified`; `id` matches the folder or file name; `type` matches the file name; `status` and `tier` in vocabulary | error |
+| Feature file `status` differs from `tasks.md`; `design.md` missing; full tier without `system-architecture.md` | warning |
+| `requirements.md`, `tasks.md`, or `verification.md` missing in a feature folder | error |
+| Duplicate `F-`, `ADR-`, `A-` ids repo-wide; duplicate `T-`, `FR-`, `AC-`, `EV-` ids within a feature; duplicate frontmatter `id` outside feature folders | error |
+| Task `status` in vocabulary; `requirements` ⊆ FR ids; `depends_on` ⊆ task ids; `evidence` ⊆ EV ids | error |
+| Task `done` without an evidence id whose `covers` is non-empty | error |
+| FR without a task | warning while the feature is `draft`, `review`, or `approved`; error from `implementing` |
+| Feature `implemented` with a task not `done` or `deferred`, or with an `open` assumption naming it | error |
+| EV block missing `command`, `output`, `date` (`YYYY-MM-DD`), or `commit`; `covers` empty or naming an unknown AC | error |
+| Assumption `status` not `open`, `confirmed`, or `rejected`; `feature` names an unknown feature | error; warning |
+| `last_verified` older than `limits.staleDays` while `implementing` or `verification`; active handoff past `expires_after`; handoff naming an unknown feature or task | warning |
+| Rendered view differs from an in-memory render (`run npm run context:render`); `state.yaml` not valid YAML or not `schema_version: 2`; generated file without its banner | error |
+| Spec file over its tier cap (`limits.lite`, `limits.full`, `limits.systemArchitecture`) | warning |
+| Relative Markdown link does not resolve; backtick path starting with `docs/` or `scripts/` does not exist (skipping `XXX`, globs, placeholders, `CHANGELOG.md`, the handoff archive) | error; warning |
+| `{{...}}` placeholder outside `_templates/` when `templateMode` is `false` (limited to `validate.placeholderSensitiveFiles` when that list is non-empty) | error |
 
 ## Lifecycle
 
 ```text
-task status changes      -> edit tasks.md -> render (available from 2.0.0) -> validate -> commit
+task status changes      -> edit tasks.md -> npm run context:render -> npm run context:validate -> commit
 session ends             -> update docs/handoff/current.md
 requirement or architecture changes -> update spec or ADR -> update affected tasks -> render -> validate
 unknown appears          -> add A-XXX to ASSUMPTIONS.md -> mark affected task blocked
@@ -83,4 +106,4 @@ Repository-relative paths and runtime discovery only. No usernames, absolute pat
 
 ## Acceptance
 
-The context system is complete when a new session identifies the active task from `BRIEF.md` alone, rendered views match a clean render, repeated rendering produces no diff, invalid ids and statuses fail validation, and deleting provider memory loses nothing.
+The context system is complete when a new session identifies the active task from `BRIEF.md` alone, rendered views match a clean render, repeated rendering produces no diff (`generated_at` is kept while `source_hash` is unchanged), invalid ids and statuses fail validation, and deleting provider memory loses nothing. The fixtures under `scripts/context/__fixtures__/` are the executable form of this list.

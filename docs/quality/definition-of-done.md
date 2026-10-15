@@ -19,7 +19,7 @@ A task is done only when:
 - no unrelated change is included;
 - verification evidence is recorded;
 - task status is updated in `tasks.md` with evidence ids;
-- rendered context views are current (available from 2.0.0);
+- rendered context views are current (`npm run context:render`, checked by `npm run context:validate`);
 - `docs/handoff/current.md` reflects partial or continuing work.
 
 ## Feature

@@ -46,7 +46,7 @@ Use a chat-based AI before implementation for:
 11. ADR proposal;
 12. documentation modularization review.
 
-For a Level 2/3 module, use this planning chain:
+For a full-tier feature with system concerns, use this planning chain:
 
 ```text
 requirements
@@ -88,7 +88,7 @@ The coding agent must not copy conversational assumptions into approved artifact
 
 ## 5. Context-system ownership
 
-The context system ships with the template (`docs/context/CONTEXT_SYSTEM.md`): `tasks.md` is the task master; `state.yaml`, `BRIEF.md`, and the views are rendered (available from 2.0.0). A project does not rebuild it. The coding agent keeps the hand-edited sources current and never edits a rendered file.
+The context system ships with the template (`docs/context/CONTEXT_SYSTEM.md`): `tasks.md` is the task master; `state.yaml`, `BRIEF.md`, and the views are rendered by `npm run context:render`. A project does not rebuild it. The coding agent keeps the hand-edited sources current and never edits a rendered file.
 
 ## 6. Provider adapters
 

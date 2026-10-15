@@ -53,7 +53,7 @@ Update:
 
 - feature verification evidence;
 - `tasks.md` status and evidence ids;
-- rendered context views (available from 2.0.0);
+- rendered context views (`npm run context:render`);
 - `docs/handoff/current.md`;
 - architecture or ADR artifacts when contracts changed.
 

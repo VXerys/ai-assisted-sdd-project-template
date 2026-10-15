@@ -31,7 +31,7 @@ Do not duplicate the same truth across all four artifacts. Link downward and upw
 
 ## 3. When the artifact is required
 
-Create `system-architecture.md` for every Level 2 or Level 3 capability that has one or more meaningful system concerns, including:
+Create `system-architecture.md` for every full-tier feature with one or more meaningful system concerns, including:
 
 - persistent or shared state;
 - client/server or service boundaries;
@@ -44,7 +44,7 @@ Create `system-architecture.md` for every Level 2 or Level 3 capability that has
 - meaningful performance or scale requirements;
 - operational or cost impact.
 
-Level 1 changes may omit the artifact when they do not introduce or change a module-level architectural decision. Record the reason in the task/design rather than creating an empty architecture document.
+Lite-tier features omit the artifact when they do not introduce or change a module-level architectural decision. Record the reason in the task/design rather than creating an empty architecture document.
 
 ## 4. Lifecycle
 

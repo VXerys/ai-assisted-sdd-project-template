@@ -60,7 +60,7 @@ Task status, in `tasks.md` only: `planned | in_progress | blocked | review | don
 
 Approved requirements, system architecture, and design are contracts. Implementation does not silently rewrite them.
 
-For a normal Level 2/3 module, approval order is:
+For a full-tier feature with system concerns, approval order is:
 
 ```text
 requirements approved

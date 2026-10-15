@@ -46,6 +46,6 @@ Data compatibility considerations:
 ## Closeout
 
 - [ ] Record release version and commit.
-- [ ] Update `../handoff/current.md`; re-render context (available from 2.0.0).
+- [ ] Update `../handoff/current.md`; run `npm run context:render`.
 - [ ] Update roadmap and feature registry.
 - [ ] Record incident or limitation when applicable.
