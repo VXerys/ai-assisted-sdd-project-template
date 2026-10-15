@@ -1,0 +1,14 @@
+{
+  "label": "MongoDB",
+  "migrationTool": "migrate-mongo",
+  "migrationCommand": "npx migrate-mongo up",
+  "migrationPath": "migrations/",
+  "notes": [
+    "Every change is a new file from `npx migrate-mongo create <name>` with `up` and `down`; an applied migration is never edited.",
+    "Collection schema validation (`$jsonSchema` validators) is the shape guard and is versioned in the migration that changes the shape.",
+    "Indexes are created in migrations, never from the console.",
+    "Authorization uses database roles per environment; tenant filtering lives in the application data layer and is tested.",
+    "Destructive updates (`$unset`, `$rename`, mass deletes) need owner approval and a `mongodump` first."
+  ],
+  "fileMatch": ["migrations/**", "src/db/**"]
+}

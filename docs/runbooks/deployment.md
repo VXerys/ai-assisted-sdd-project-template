@@ -4,7 +4,7 @@
 
 - Release owner: {{OWNER}}
 - Rollback approver: {{OWNER}}
-- Target environment: {{ENVIRONMENT}}
+- Target environment: name it (production, staging) once it exists.
 
 ## Preconditions
 
@@ -16,36 +16,25 @@
 
 ## Deployment
 
-```bash
-{{DEPLOY_COMMAND}}
-```
+The build and deploy commands come from `docs/steering/tech.md` and the deployment target recorded there; write the exact sequence here once the target is decided.
 
-## Post-Deployment Verification
+## Post-deployment verification
 
-1. {{SMOKE_CHECK}}
-2. {{OBSERVABILITY_CHECK}}
-3. {{CRITICAL_FLOW_CHECK}}
+1. Smoke check: the entry point answers.
+2. Observability check: logs or metrics show the new version.
+3. Critical flow check: the journey in `docs/steering/product.md` works end to end.
 
-## Rollback Trigger
+## Rollback trigger
 
-Rollback when:
+Roll back when the smoke or critical flow check fails, or when error rate or latency crosses the threshold agreed for the release.
 
-- {{TRIGGER}}
-- {{TRIGGER}}
+## Rollback procedure
 
-## Rollback Procedure
-
-```bash
-{{ROLLBACK_COMMAND}}
-```
-
-Data compatibility considerations:
-
-{{DETAILS}}
+Command or manual steps, and the data compatibility rule (which migrations are safe to leave applied).
 
 ## Closeout
 
 - [ ] Record release version and commit.
-- [ ] Update `../context/PROJECT_STATE.md`.
+- [ ] Update `../handoff/current.md`; run `npm run context:render`.
 - [ ] Update roadmap and feature registry.
 - [ ] Record incident or limitation when applicable.

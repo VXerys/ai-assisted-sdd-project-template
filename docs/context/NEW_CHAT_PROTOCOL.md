@@ -2,77 +2,57 @@
 id: CONTEXT-NEW-CHAT
 title: New Coding-Agent Session Protocol
 status: template
-owner: "{{OWNER}}"
-last_updated: "{{YYYY-MM-DD}}"
+owner: ""
+last_updated: 2026-10-15
 ---
 
 # New Coding-Agent Session Protocol
 
-This protocol is for Codex, Claude Code, or another repository-integrated coding agent.
+For Codex, Claude Code, Cursor, Gemini, Kiro, or any repository-integrated coding agent.
 
 ## Opening prompt
 
 ```text
-Continue work in this repository. Do not implement immediately.
+Continue work in this repository. Do not implement yet.
 
-1. Read AGENTS.md.
-2. Run the repository context sync and validation commands when available.
-3. Read docs/context/PROJECT_STATE.md.
-4. Read docs/handoff/current.md.
-5. Identify the active feature and task from docs/context/state.yaml.
-6. Read that feature's requirements.
-7. Read its system-architecture.md when present/required, prioritizing the sections relevant to the selected task.
-8. Read its design.md, tasks.md, and relevant ADRs.
-9. Inspect Git status, branch, recent commits, and relevant code/tests.
+1. Read docs/context/BRIEF.md. If it is absent or marked not rendered, follow the
+   fallback read order in docs/context/CONTEXT_SYSTEM.md.
+2. Read docs/steering/rules.md and docs/steering/tech.md.
+3. Read docs/handoff/current.md and confirm branch and worktree match it.
+4. Open the active feature's tasks.md and select the task the brief names, or the
+   first planned task whose dependencies are done.
+5. Read only the requirements, design, and system-architecture sections that task
+   references, plus the code and tests it touches.
+6. Read open entries in docs/context/ASSUMPTIONS.md.
 
-Return:
-- current objective and requirement references;
-- relevant module architecture constraints and trade-offs;
-- whether generated context and handoff are still valid;
-- repository conflicts or stale information;
-- expected change surface;
-- constraints and approval gates;
-- verification commands;
-- a small execution plan.
+Return: the task and its acceptance criteria; the constraints that apply; whether the
+brief and handoff are still valid; any conflict between sources; the expected change
+surface; the verification commands; a short plan.
 
-Do not resolve conflicts silently. Do not replace approved module architecture with a preferred generic pattern. Implement only the selected task after context confirmation.
+Do not resolve conflicts silently. Do not replace approved architecture with a
+preferred pattern. Log unknowns as A-XXX entries instead of guessing. Implement only
+the selected task after this confirmation.
 ```
 
-## Architecture-sensitive task rule
+## Architecture-sensitive tasks
 
-Read the relevant module system architecture directly when the selected task touches any of these concerns:
-
-- data ownership/storage/indexing/partitioning;
-- consistency, ordering, transactions, or idempotency;
-- realtime, asynchronous communication, events, queues, or external services;
-- caching or invalidation;
-- scale/capacity/load distribution;
-- reliability, retries, circuit breaking, recovery, or degradation;
-- authentication, authorization, tenant isolation, PII, or trust boundaries;
-- observability or material operational cost.
-
-For a small UI/local implementation task, prefer the minimum sufficient architecture context carried by the task/design instead of loading unrelated system-design sections.
+Read the relevant `system-architecture.md` sections directly when the task touches data ownership, storage, or indexing; consistency, ordering, transactions, or idempotency; realtime, async, events, queues, or external services; caching; scale or load; retries, recovery, or degradation; authentication, authorization, tenant isolation, personal data, or trust boundaries; observability or material cost. A local UI task carries its constraints in the task block and does not load the whole document.
 
 ## Session close
 
-Before ending:
+1. Review `git diff` and `git status`.
+2. Run the commands in `docs/steering/tech.md`.
+3. Record evidence as EV blocks in `verification.md`; attach the ids to the task.
+4. Update task status in `tasks.md`; run `npm run context:render`, then `npm run context:validate`.
+5. Update `docs/handoff/current.md` with the exact next step.
+6. Report the next task.
 
-1. review `git diff` and `git status`;
-2. run required checks;
-3. record acceptance evidence and architecture-sensitive evidence when applicable;
-4. update task status through the context system;
-5. regenerate and validate context;
-6. update `docs/handoff/current.md`;
-7. report the exact next task.
+A new architectural constraint discovered during implementation is recorded as a blocked task plus an assumption or ADR, never patched into code and carried on.
 
-If implementation exposed a new architectural constraint, do not silently update code and continue. Record the conflict and follow the specification/architecture change protocol.
+## When BRIEF.md is absent
 
-## When context tooling is not implemented
+Run `npm run context:render`. If the renderer is unavailable, use the fallback read order in `docs/context/CONTEXT_SYSTEM.md`. Do not create a second manual progress document.
 
-The coding agent first completes the bootstrap task in `docs/context/CONTEXT_SYSTEM.md`.
+## Planning chats
 
-Do not create a manual second progress document as a shortcut.
-
-## Chat-based AI distinction
-
-A ChatGPT or website-based planning chat may help draft the next requirements, module architecture, implementation design, or decision. It is not the session-state mechanism. Final artifacts must be committed into the repository and checked by the coding agent against repository/platform reality where necessary.
+A conversational AI may draft requirements, architecture alternatives, design, or a decision. It is not the session-state mechanism. Its output is a proposal until committed to the repository and checked against repository reality by the coding agent.

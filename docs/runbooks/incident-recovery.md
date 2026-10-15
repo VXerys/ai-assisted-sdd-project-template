@@ -1,6 +1,6 @@
 # Incident Recovery Runbook
 
-## Incident Classification
+## Incident classification
 
 | Severity | Definition | Response expectation |
 |---|---|---|
@@ -8,7 +8,7 @@
 | P1 | Major user flow unavailable or data integrity at risk | Prioritize before normal feature work |
 | P2 | Degraded or limited behavior with workaround | Schedule corrective work |
 
-## First Response
+## First response
 
 1. Confirm impact and affected environment.
 2. Preserve evidence and correlation identifiers.
@@ -18,28 +18,16 @@
 
 ## Evidence
 
-- Start time: {{TIME}}
-- Detected by: {{SOURCE}}
-- Affected release: {{VERSION}}
-- Symptoms: {{FACTS}}
-- Logs or metrics: {{REFERENCES}}
+Record start time, how it was detected, the affected release, the observed symptoms, and the log or metric references. Facts only.
 
 ## Recovery
 
-```bash
-{{RECOVERY_OR_ROLLBACK_COMMAND}}
-```
+The rollback or recovery command from `deployment.md`, or the forward-fix steps.
 
 ## Verification
 
-- {{CRITICAL_HEALTH_CHECK}}
-- {{DATA_INTEGRITY_CHECK}}
-- {{USER_FLOW_CHECK}}
+Critical health check, data integrity check, and the user flow that failed.
 
-## Follow-Up
+## Follow-up
 
-- Root cause: {{CAUSE}}
-- Corrective action: {{ACTION}}
-- Regression test: {{TEST}}
-- ADR or architecture impact: {{IMPACT}}
-- Owner and due date: {{OWNER_AND_DATE}}
+Root cause, corrective action, regression test, ADR or architecture impact, owner and due date. A complex incident gets a bug investigation from `docs/_templates/bug-investigation.md`.

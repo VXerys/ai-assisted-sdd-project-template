@@ -1,0 +1,15 @@
+---
+description: "Rules for the PostgreSQL layer; loaded only when a database file is edited."
+globs: "src/db/**,migrations/**"
+alwaysApply: false
+---
+<!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
+Source: docs/steering/, sdd.config.json.
+source_hash: 2f0709d98d3777b8e6588b4e18296ef112538b907a66d0a4cda1c4a7bc48856b -->
+# Database
+
+Rules for the PostgreSQL layer; loaded only when a database file is edited.
+
+## Migrations
+
+- Append-only; never edit an applied migration.

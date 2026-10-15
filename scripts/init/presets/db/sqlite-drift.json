@@ -1,0 +1,14 @@
+{
+  "label": "SQLite via drift (on-device)",
+  "migrationTool": "drift migrations (`MigrationStrategy`, `drift_dev` schema exports)",
+  "migrationCommand": "dart run build_runner build --delete-conflicting-outputs",
+  "migrationPath": "lib/data/db/",
+  "notes": [
+    "Every schema change bumps `schemaVersion` and adds a step to `MigrationStrategy.onUpgrade`; a shipped step is never edited.",
+    "Export each version with `dart run drift_dev schema dump` into `drift_schemas/` and test the upgrade path from every shipped version with the generated schema tests.",
+    "Data lives on the user's device: a destructive step cannot be repaired from a server, so it is reversible or explicitly accepted with a data-loss note.",
+    "There is no row-level security on device; the device owner owns the data, and sync code enforces the server's rules.",
+    "Generated `*.g.dart` files are rebuilt, never hand-edited."
+  ],
+  "fileMatch": ["lib/data/db/**", "drift_schemas/**"]
+}

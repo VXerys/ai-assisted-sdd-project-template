@@ -2,26 +2,9 @@ name: Context Integrity
 
 on:
   pull_request:
-    paths:
-      - "AGENTS.md"
-      - "CLAUDE.md"
-      - "context.config.json"
-      - "package.json"
-      - "docs/**"
-      - "scripts/context/**"
-      - ".github/workflows/context-integrity.yml"
   push:
     branches:
-      - Queen
       - main
-    paths:
-      - "AGENTS.md"
-      - "CLAUDE.md"
-      - "context.config.json"
-      - "package.json"
-      - "docs/**"
-      - "scripts/context/**"
-      - ".github/workflows/context-integrity.yml"
 
 permissions:
   contents: read
@@ -29,7 +12,7 @@ permissions:
 jobs:
   validate-context:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -38,7 +21,46 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
 
-      - name: Validate context artifacts
-        run: npm run context:validate
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Validate the template repository (strict)
+        run: npm run context:validate -- --strict
+
+      - name: Validate the example project
+        run: node ../../scripts/context/validate-context.mjs
+        working-directory: examples/todo-api
+
+  template-init:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Copy the template
+        run: rsync -a --exclude .git ./ ../template-init/
+
+      - name: Initialize a lite node-api project
+        run: node scripts/init/init.mjs --yes --name CI --tier lite --app node-api --db postgres --tools claude --owner ci
+        working-directory: ../template-init
+
+      - name: Validate the initialized project
+        run: node scripts/context/validate-context.mjs
+        working-directory: ../template-init

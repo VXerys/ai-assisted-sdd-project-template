@@ -2,8 +2,8 @@
 id: ADR-INDEX
 title: Architecture Decision Records
 status: template
-owner: "{{OWNER}}"
-last_updated: "{{YYYY-MM-DD}}"
+owner: ""
+last_updated: 2026-10-15
 ---
 
 # Architecture Decision Records
@@ -13,51 +13,45 @@ last_updated: "{{YYYY-MM-DD}}"
 One expensive-to-reverse decision equals one ADR.
 
 ```text
-0001-use-supabase-as-direct-backend.md
-0002-enforce-rls-for-tenant-isolation.md
-0003-use-supabase-auth.md
+ADR-0001-use-managed-backend-as-system-of-record.md
+ADR-0002-enforce-tenant-isolation-at-the-data-layer.md
+ADR-0003-adopt-offline-first-local-store.md
 ```
 
 Do not create one `all-architecture-decisions.md`.
 
 ## When to create an ADR
 
-Create one when a decision:
+- Changes system or trust boundaries.
+- Introduces or replaces a framework, provider, data store, or major dependency.
+- Changes authentication or authorization.
+- Changes persistence, public APIs, or event contracts.
+- Creates migration or compatibility obligations.
+- Affects multiple features or is expensive to reverse.
 
-- changes system or trust boundaries;
-- introduces a framework, provider, database, or major dependency;
-- changes authentication or authorization;
-- changes persistence, public APIs, or event contracts;
-- creates migration or compatibility obligations;
-- affects multiple features;
-- is expensive to reverse.
+## Size
 
-## Size guidance
-
-An ADR is normally 30–120 lines. Review ADRs over 200 lines for multiple decisions.
+Normally 30 to 80 lines. Review an ADR over 120 lines for multiple decisions.
 
 ## Lifecycle
 
 ```text
-proposed -> accepted
-         -> rejected
-accepted -> deprecated
-accepted -> superseded
+draft -> review -> approved -> superseded
 ```
 
-Never rewrite accepted history to make the past look cleaner. Create a new ADR and link `supersedes` / `superseded_by`.
+Status vocabulary matches the template frontmatter. A proposal that is not taken is closed as `superseded` by the ADR that records what was chosen instead, with a one-line note. Never rewrite approved history; write a new ADR and set `supersedes`.
 
 ## Ownership
 
 - Conversational AI may analyze alternatives and draft the ADR.
-- Repository-integrated coding agent verifies feasibility and affected code.
-- Human owner accepts or rejects the decision.
-- Automation may validate numbering, metadata, and links only.
+- The coding agent verifies feasibility and affected code.
+- The human owner approves.
+- Automation validates numbering, metadata, and links only.
 
 ## Index
 
 | ADR | Status | Decision | Superseded by |
 |---|---|---|---|
-| `NNNN` | proposed | {{DECISION}} | — |
+| [ADR-0001](ADR-0001-v2-revamp.md) | approved | Template v2 revamp: single source of truth, rendered context, enforced traceability | |
 
-Use `ADR.template.md` for new records.
+Use `docs/_templates/adr.md` for new records.

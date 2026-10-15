@@ -2,95 +2,65 @@
 id: CONTEXT-INDEX
 title: Context Reading Index
 status: template
-owner: "{{OWNER}}"
-last_updated: "{{YYYY-MM-DD}}"
+owner: ""
+last_updated: 2026-10-15
 ---
 
 # Context Reading Index
 
 ## New coding-agent session
 
-Read in order:
-
-1. `AGENTS.md`
-2. `docs/context/PROJECT_STATE.md`
+1. `docs/context/BRIEF.md`
+2. `docs/steering/rules.md`, `tech.md`, `structure.md`, `workflow.md`, `product.md`
 3. `docs/handoff/current.md`
-4. active feature requirements
-5. active feature system architecture when present/required
-6. active feature implementation design
-7. active feature tasks
-8. relevant ADRs
-9. relevant code and tests
+4. The active feature's `tasks.md`
+5. The `requirements.md`, `design.md`, and `system-architecture.md` sections the task references
+6. Relevant ADRs
+7. Relevant code and tests
 
-Read `docs/context/PROGRESS.md` only when the compact state is insufficient.
+When `BRIEF.md` is absent or stale, use the fallback read order in `CONTEXT_SYSTEM.md`. Read `PROGRESS.md` only when the brief is insufficient.
 
-Use progressive disclosure for module architecture. A task that only changes local UI may need only the architecture constraints already referenced by the task/design. A task that touches data ownership, consistency, realtime/async communication, caching, security, external services, reliability, scale, or cost-sensitive behavior should read the relevant `system-architecture.md` sections directly.
+Load module architecture progressively: a local UI task carries its constraints in the task block; a task touching data ownership, consistency, communication, caching, security, external services, reliability, scale, or cost reads the relevant `system-architecture.md` sections directly.
 
 ## Planning or documentation session
 
-Read only the relevant durable artifacts:
+1. `docs/steering/product.md`, then `docs/product/`
+2. `docs/architecture/README.md` and the relevant concern
+3. Relevant feature `requirements.md`, `system-architecture.md`, `design.md`
+4. Relevant ADRs
 
-1. `docs/product/`
-2. `docs/architecture/README.md`
-3. relevant global architecture concern
-4. relevant feature requirements
-5. relevant module `system-architecture.md`
-6. relevant feature implementation design
-7. relevant ADRs
-
-Generated execution views are not substitutes for requirements or architecture.
+Rendered views are not substitutes for requirements or architecture.
 
 ## Canonical map
 
 | Question | Source |
 |---|---|
-| Why and for whom? | `docs/product/` |
+| Why and for whom? | `docs/steering/product.md`, `docs/product/` |
+| Which commands and stack? | `docs/steering/tech.md` |
+| Where does code live, which paths are frozen? | `docs/steering/structure.md` |
+| Which rules and stop conditions apply? | `docs/steering/rules.md` |
 | Shared system rules? | `docs/architecture/` |
 | How does one module behave as a system? | `docs/specs/<feature>/system-architecture.md` |
 | Why a significant decision? | `docs/adr/` |
 | Approved feature behavior? | `docs/specs/<feature>/requirements.md` |
-| Approved repository implementation approach? | `docs/specs/<feature>/design.md` |
-| Execution status? | `docs/context/state.yaml` |
-| Compact execution view? | `docs/context/PROJECT_STATE.md` |
-| Full execution board? | `docs/context/PROGRESS.md` |
+| Approved repository mapping? | `docs/specs/<feature>/design.md` |
+| Task status? | `docs/specs/<feature>/tasks.md` |
+| What was proven? | `docs/specs/<feature>/verification.md` |
+| What is unknown? | `docs/context/ASSUMPTIONS.md` |
+| Where to start a session? | `docs/context/BRIEF.md` |
 | Current session delta? | `docs/handoff/current.md` |
-| Actual implementation? | Code, tests, schemas, migrations |
+| Actual implementation? | code, tests, schema, configuration |
 
-## Architecture relationship
+## Rendered files
 
-```text
-project architecture
-  -> feature requirements
-  -> module system architecture
-  -> implementation design
-  -> tasks
-```
+Never edited by hand; listed under `generated` in `sdd.config.json`:
 
-If a module-local architecture decision becomes cross-feature, evaluate promotion into `docs/architecture/` and an ADR rather than copying the same rule into multiple places.
-
-Read `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md` for the boundary between module architecture and implementation design.
-
-## Generated files
-
-These files are generated and must not be edited:
-
+- `docs/context/state.yaml`
+- `docs/context/BRIEF.md`
 - `docs/context/PROJECT_STATE.md`
 - `docs/context/PROGRESS.md`
-
-## Context-system implementation
-
-Read `docs/context/CONTEXT_SYSTEM.md`.
-
-The repository-integrated coding agent owns implementation and provider adapters. A conversational AI may draft requirements, architecture alternatives, and design but cannot determine real local commands, schemas, provider configuration, or hooks without repository access.
+- `AGENTS.md`, `CLAUDE.md`, and the other tool adapters listed under `generated` (rendered by `npm run adapters:sync`)
 
 ## Conflict protocol
 
-When two sources conflict:
-
-1. stop affected work;
-2. identify each source and its authority;
-3. inspect Git and implementation;
-4. determine whether requirements, module architecture, implementation design, or code is stale/incorrect;
-5. propose the smallest correction;
-6. require human approval for product or architecture changes;
-7. update the canonical source, then regenerate derived views.
+Stop the affected work; name each source and its authority; inspect git and implementation; decide whether requirements, architecture, design, or code is stale; propose the smallest correction; require owner approval for product or architecture changes; update the canonical source, then re-render.

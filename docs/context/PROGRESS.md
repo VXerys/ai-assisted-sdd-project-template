@@ -1,9 +1,7 @@
-<!-- GENERATED FILE — DO NOT EDIT.
-Source: docs/context/state.yaml
-Run the repository context sync command after state changes. -->
+<!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run context:render`.
+Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
+source_hash: e2c2181e6b10bb2c9884e737a3923150cb08f7927be0f404c48005bbd01bd378 -->
 
 # Project Progress
 
-_Context renderer has not been bootstrapped for this derived project._
-
-The repository-integrated coding agent must generate this full execution view from `docs/context/state.yaml`. Do not maintain a second manual progress board.
+No features yet. Task status lives in each feature's `tasks.md`.

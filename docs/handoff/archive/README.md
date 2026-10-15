@@ -5,7 +5,7 @@ Archive a handoff only when it contains a meaningful implementation delta, unres
 Naming:
 
 ```text
-YYYY-MM-DD-F-XXX-TASK-XXX.md
+YYYY-MM-DD-F-XXX-T-XXX.md
 ```
 
-Do not archive raw conversations or every minor session. Permanent decisions belong in ADRs; permanent behavior belongs in specifications; durable project status belongs in `../../context/PROJECT_STATE.md`.
+Do not archive raw conversations or every minor session. Permanent decisions belong in ADRs; permanent behavior belongs in specifications; durable task status belongs in each feature's `tasks.md`.

@@ -1,0 +1,27 @@
+{
+  "label": "Next.js",
+  "language": "TypeScript on Node 22",
+  "commands": {
+    "install": "npm ci",
+    "dev": "npm run dev",
+    "format": "npx prettier --check .",
+    "lint": "npm run lint",
+    "typecheck": "npx tsc --noEmit",
+    "test": "npm test",
+    "build": "npm run build"
+  },
+  "structure": [
+    { "path": "src/app/", "responsibility": "routes, layouts, route handlers", "rule": "Server Components by default; `'use client'` only where state or browser APIs are needed" },
+    { "path": "src/components/", "responsibility": "shared UI components", "rule": "no data fetching; props in, markup out" },
+    { "path": "src/lib/", "responsibility": "domain logic, data access, service facades", "rule": "framework-free; the only place that talks to the data store" },
+    { "path": "public/", "responsibility": "static assets", "rule": "no generated files committed" },
+    { "path": "src/**/*.test.ts", "responsibility": "tests next to the code they cover", "rule": "mirrors the source layout" }
+  ],
+  "fileMatch": ["src/**", "public/**"],
+  "notes": [
+    "Server Components by default; client components opt in with `'use client'` and stay leaf-sized.",
+    "Secrets are read in server code only; a variable reaches the browser only with the `NEXT_PUBLIC_` prefix.",
+    "Route handlers validate every request body at the boundary and return typed errors.",
+    "`npx tsc --noEmit` at 0 errors and `npm run lint` clean before a task is done."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "label": "Supabase (PostgreSQL)",
+  "migrationTool": "Supabase CLI",
+  "migrationCommand": "supabase db reset",
+  "migrationPath": "supabase/migrations/",
+  "notes": [
+    "Every change is a new file `supabase/migrations/<timestamp>_<name>.sql` created with `supabase migration new <name>`; an applied migration is never edited.",
+    "Row Level Security (RLS) is enabled on every table and its policies ship in the same migration as the table; a table without policies is a review blocker.",
+    "`supabase db reset` applies every migration to the local stack; `supabase db push` to a hosted project is a production action that needs owner approval.",
+    "A change made in the Supabase dashboard is captured with `supabase db diff -f <name>` before release.",
+    "Destructive changes (drop, type narrowing, policy removal) need owner approval and a backup first; the service role key never appears in the repository."
+  ],
+  "fileMatch": ["supabase/**"]
+}

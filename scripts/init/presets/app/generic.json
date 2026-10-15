@@ -1,0 +1,23 @@
+{
+  "label": "Generic",
+  "language": "unspecified; set in tech.md",
+  "commands": {
+    "install": null,
+    "dev": null,
+    "format": null,
+    "lint": null,
+    "typecheck": null,
+    "test": null,
+    "build": null
+  },
+  "structure": [
+    { "path": "src/", "responsibility": "application code", "rule": "replace with the real source root" },
+    { "path": "tests/", "responsibility": "tests", "rule": "mirrors the source layout" },
+    { "path": "docs/", "responsibility": "specs, steering, context", "rule": "see `docs/steering/structure.md`" }
+  ],
+  "fileMatch": ["src/**", "tests/**"],
+  "notes": [
+    "This preset sets no commands: replace every `none` in the Commands table of tech.md with the real command before the first task.",
+    "Replace the `src/` and `tests/` rows in structure.md with the real layout."
+  ]
+}

@@ -1,61 +1,58 @@
 ---
+id: IDEA-BRIEF
+title: "{{PROJECT_NAME}}"
+type: idea-brief
 status: draft
+tier: lite
 owner: "{{OWNER}}"
 created: "{{YYYY-MM-DD}}"
 last_updated: "{{YYYY-MM-DD}}"
-last_verified_commit: unverified
+last_verified: "{{YYYY-MM-DD}}"
+supersedes: null
 ---
 
 # Idea Brief: {{PROJECT_NAME}}
 
-## Problem Statement
+The problem before the product. Written once, before the PRD; the PRD supersedes it for scope.
 
-{{Describe the observed problem without prescribing a solution.}}
+## Problem statement
 
-## Affected Users
+The observed problem, without prescribing a solution.
 
-- Primary user: {{USER}}
-- Context: {{WHEN_AND_WHERE}}
-- Current workaround: {{WORKAROUND}}
+## Affected users
+
+- Primary user: who, and how often they meet the problem.
+- Context: when and where it happens.
+- Current workaround: what they do today and what it costs.
 
 ## Evidence
 
-- {{INTERVIEW_OBSERVATION_DATA_OR_REQUEST}}
-- {{INTERVIEW_OBSERVATION_DATA_OR_REQUEST}}
+One line per interview, observation, data point, or request, with its date and source. Separate confirmed evidence from assumptions; an unverified claim goes to `docs/context/ASSUMPTIONS.md`.
 
-Separate confirmed evidence from assumptions.
+## Desired outcome
 
-## Desired Outcome
-
-{{Describe the measurable change in user or business behavior.}}
+The measurable change in user or business behavior.
 
 ## Constraints
 
-- Time: {{CONSTRAINT}}
-- Budget: {{CONSTRAINT}}
-- Technology: {{CONSTRAINT}}
-- Compliance or policy: {{CONSTRAINT}}
+Time, budget, technology, compliance or policy. One line each; omit a line that does not apply.
 
-## Assumptions to Validate
+## Assumptions to validate
 
 | ID | Assumption | Validation method | Status |
 |---|---|---|---|
-| ASM-001 | {{ASSUMPTION}} | {{METHOD}} | Unvalidated |
+| ASM-001 | | | unvalidated |
 
 ## Risks
 
 | ID | Risk | Impact | Mitigation |
 |---|---|---|---|
-| RISK-001 | {{RISK}} | {{LOW_MEDIUM_HIGH}} | {{MITIGATION}} |
+| RISK-001 | | low, medium, or high | |
 
-## Open Questions
+## Open questions
 
-- OQ-001: {{QUESTION}}
-- OQ-002: {{QUESTION}}
+- OQ-001: question, owner, blocking or not.
 
-## Go / No-Go Decision
+## Go or no-go
 
-- Decision: {{PENDING | GO | NO-GO}}
-- Owner: {{OWNER}}
-- Date: {{DATE}}
-- Reason: {{RATIONALE}}
+Decision (pending, go, no-go), owner, date, reason.

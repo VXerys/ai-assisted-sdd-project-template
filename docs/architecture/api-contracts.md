@@ -1,14 +1,14 @@
 # API Contracts
 
-Use this index for contracts shared across applications or services. Prefer machine-readable OpenAPI, GraphQL schema, or generated client contracts when available.
+Index of contracts shared across applications or services. Prefer machine-readable OpenAPI, GraphQL schema, or generated client contracts when available. Leave the tables empty when the project has no contract boundary.
 
-## Contract Ownership
+## Contract ownership
 
 | Contract | Provider | Consumers | Canonical definition | Versioning |
 |---|---|---|---|---|
-| {{CONTRACT}} | {{PROVIDER}} | {{CONSUMERS}} | `{{PATH}}` | {{STRATEGY}} |
+| | | | path of the schema or generated client | semver, date, or URL version |
 
-## Global Rules
+## Global rules
 
 1. Inputs are validated at the trusted boundary.
 2. Errors use stable machine-readable codes.
@@ -17,7 +17,7 @@ Use this index for contracts shared across applications or services. Prefer mach
 5. Pagination, idempotency, retry, and timeout behavior must be explicit.
 6. Sensitive internal errors must not be returned to clients.
 
-## Error Envelope
+## Error envelope
 
 ```json
 {
@@ -29,11 +29,8 @@ Use this index for contracts shared across applications or services. Prefer mach
 }
 ```
 
-## Compatibility Policy
+## Compatibility policy
 
-- Backward-compatible additions: {{POLICY}}
-- Breaking changes: {{POLICY}}
-- Deprecation window: {{WINDOW}}
-- Client version support: {{POLICY}}
+Backward-compatible additions, breaking changes, deprecation window, and client version support. One line each.
 
 Feature-specific request and response details belong in each feature `design.md` or the machine-readable contract.

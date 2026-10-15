@@ -1,26 +1,23 @@
 # Security Baseline
 
-## Security Ownership
+## Security ownership
 
 - Security approver: {{OWNER}}
-- Incident contact: {{CONTACT}}
+- Incident contact: the security approver until a separate contact is named.
 - Data classification owner: {{OWNER}}
 
-## Trust Boundaries
+## Trust boundaries
 
 ```text
-Untrusted Client
-  -> Authenticated API Boundary
-  -> Application Service
-  -> Protected Data Store
+Untrusted client
+  -> authenticated entry boundary
+  -> application service
+  -> protected data store
 ```
 
 ## Authentication
 
-- Provider: {{PROVIDER}}
-- Session strategy: {{STRATEGY}}
-- Token storage: {{LOCATION}}
-- Session expiration: {{RULE}}
+Provider, session or token strategy, where the client stores the token, expiration and revocation rule. Copy the rows into `docs/steering/tech.md` once decided; `none` is a valid value for an application without accounts.
 
 ## Authorization
 
@@ -29,31 +26,25 @@ Untrusted Client
 3. Default access is deny unless explicitly granted.
 4. Ownership and role checks must be testable.
 
-## Data Classification
+## Data classification
 
 | Classification | Examples | Storage | Logging |
 |---|---|---|---|
-| Public | {{EXAMPLE}} | Standard | Allowed |
-| Internal | {{EXAMPLE}} | Access controlled | Limited |
-| Sensitive | {{EXAMPLE}} | Encrypted and restricted | Prohibited or redacted |
+| Public | | standard | allowed |
+| Internal | | access controlled | limited |
+| Sensitive | | encrypted and restricted | prohibited or redacted |
 
-## Secret Management
+## Secret management
 
 - Secrets must use environment or platform secret stores.
 - `.env` files with real credentials must not be committed.
 - Service-role or administrative credentials must never reach untrusted clients.
 - Secret rotation and ownership must be documented.
 
-## Input and Abuse Protection
+## Input and abuse protection
 
-- Validation: {{STRATEGY}}
-- Rate limiting: {{STRATEGY}}
-- File upload restrictions: {{STRATEGY}}
-- Injection prevention: {{STRATEGY}}
+Validation strategy, rate limiting, file upload restrictions, injection prevention. One line each; `none` with a reason when the application has no such surface.
 
-## Security Verification
+## Security verification
 
-- Authorization tests: `{{COMMAND}}`
-- Dependency audit: `{{COMMAND}}`
-- Secret scan: `{{COMMAND}}`
-- Manual threat review trigger: authentication, payment, personal data, file upload, external callbacks, or administrative actions.
+Authorization tests, dependency audit, and secret scan run through the commands in `docs/steering/tech.md`; record them as evidence in the feature's `verification.md`. Manual threat review is triggered by authentication, payment, personal data, file upload, external callbacks, or administrative actions.

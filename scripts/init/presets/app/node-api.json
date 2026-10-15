@@ -1,0 +1,26 @@
+{
+  "label": "Node.js API",
+  "language": "JavaScript or TypeScript on Node 22",
+  "commands": {
+    "install": "npm ci",
+    "dev": "npm run dev",
+    "format": "npx prettier --check .",
+    "lint": "npx eslint .",
+    "typecheck": "npx tsc --noEmit",
+    "test": "npm test",
+    "build": "npm run build"
+  },
+  "structure": [
+    { "path": "src/routes/", "responsibility": "HTTP routing and request validation", "rule": "no business logic; parse, validate, delegate, map errors" },
+    { "path": "src/services/", "responsibility": "use cases and domain rules", "rule": "framework-free; depends on `src/db/` through interfaces" },
+    { "path": "src/db/", "responsibility": "data access and migrations", "rule": "the only module that imports the database driver" },
+    { "path": "test/", "responsibility": "unit and HTTP tests", "rule": "mirrors `src/`" }
+  ],
+  "fileMatch": ["src/**", "test/**"],
+  "notes": [
+    "Every request body and query is validated at the route boundary; services receive typed input only.",
+    "Errors map to HTTP status codes in one place; handlers never leak stack traces or driver messages.",
+    "Configuration comes from the environment; the process fails fast on a missing required variable.",
+    "`npx eslint .` clean and `npm test` green before a task is done; `npx tsc --noEmit` applies when the project is TypeScript."
+  ]
+}

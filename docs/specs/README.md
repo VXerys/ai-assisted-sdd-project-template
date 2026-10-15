@@ -2,30 +2,27 @@
 id: SPECS-INDEX
 title: Feature Specifications
 status: template
-owner: "{{OWNER}}"
-last_updated: "{{YYYY-MM-DD}}"
+owner: ""
+last_updated: 2026-10-15
 ---
 
 # Feature Specifications
 
 ## Default package
 
-For a Level 2 or Level 3 module/capability:
+Templates live in `_templates/`. A lite-tier feature:
 
 ```text
 F-XXX-feature-name/
 ├── requirements.md
-├── system-architecture.md
 ├── design.md
 ├── tasks.md
 └── verification.md
 ```
 
-Each feature is an independently approvable vertical capability.
+A full-tier feature adds `system-architecture.md` and the sections marked `<!-- full-tier -->`. Each feature is an independently approvable vertical capability.
 
-`system-architecture.md` is required when the capability has meaningful system concerns such as persistent/shared state, realtime/asynchronous communication, external integrations, security boundaries, consistency/concurrency, caching, reliability, performance, scale, or material operational cost.
-
-A Level 1 change may omit `system-architecture.md` when it does not create or change a module-level architectural decision. Do not create empty architecture documents for trivial work.
+Choose `full` when the capability has meaningful system concerns: persistent or shared state, realtime or asynchronous communication, external integrations, security boundaries, consistency or concurrency, caching, reliability, scale, or material operational cost. Do not create empty architecture documents for trivial work.
 
 ## Artifact responsibilities
 
@@ -53,13 +50,17 @@ Load only the artifacts relevant to the current task. A UI-only task may not nee
 
 ## Lifecycle
 
+Feature status, in each document's frontmatter:
+
 ```text
 draft -> review -> approved -> implementing -> verification -> implemented -> superseded
 ```
 
+Task status, in `tasks.md` only: `planned | in_progress | blocked | review | done | deferred`. `tasks.md` is the master; `docs/context/state.yaml` and the views are rendered from it. A feature becomes `implemented` only when every task is `done` or `deferred` and `docs/context/ASSUMPTIONS.md` has no `open` entry for it.
+
 Approved requirements, system architecture, and design are contracts. Implementation does not silently rewrite them.
 
-For a normal Level 2/3 module, approval order is:
+For a full-tier feature with system concerns, approval order is:
 
 ```text
 requirements approved
@@ -72,10 +73,7 @@ If implementation exposes a new architectural constraint, stop the affected task
 
 ## System architecture guidance
 
-Use:
-
-- `docs/specs/_templates/system-architecture.template.md`
-- `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`
+Use `docs/specs/_templates/system-architecture.md` and `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`.
 
 The module architecture is not a checklist demanding Redis, sharding, microservices, queues, or load balancers. It evaluates only the concerns required by the module's actual architecture drivers.
 
@@ -156,7 +154,4 @@ Examples:
 
 Every task references requirement IDs and the relevant architecture/design constraints. Every acceptance criterion receives evidence. Architecture claims with meaningful risk receive planned evidence. Cross-feature architecture decisions link to ADRs.
 
-See:
-
-- `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`
-- `docs/documentation/MODULARIZATION_GUIDE.md`
+See `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md` and `docs/documentation/MODULARIZATION_GUIDE.md`.

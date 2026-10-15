@@ -2,8 +2,8 @@
 id: DOCS-AI-COLLABORATION
 title: AI Collaboration Model
 status: template
-owner: "{{OWNER}}"
-last_updated: "{{YYYY-MM-DD}}"
+owner: ""
+last_updated: 2026-10-15
 ---
 
 # AI Collaboration Model
@@ -46,7 +46,7 @@ Use a chat-based AI before implementation for:
 11. ADR proposal;
 12. documentation modularization review.
 
-For a Level 2/3 module, use this planning chain:
+For a full-tier feature with system concerns, use this planning chain:
 
 ```text
 requirements
@@ -78,37 +78,17 @@ Codex, Claude Code, or a comparable local/repository agent handles work that dep
 2. inspect project commands and global architecture;
 3. validate proposed module architecture against current code, schemas, configuration, provider capabilities, and operational constraints;
 4. validate implementation design against approved architecture;
-5. implement `docs/context/state.yaml` tooling and provider adapters;
-6. create hooks or slash commands for the installed agent;
-7. implement approved tasks;
-8. run checks and architecture-sensitive verification where required;
-9. update verification evidence;
-10. update execution state through the context CLI or canonical state file;
-11. update `docs/handoff/current.md`.
+5. implement approved tasks;
+6. run checks and architecture-sensitive verification where required;
+7. record evidence as EV blocks in `verification.md`;
+8. update task status in `tasks.md` and log unknowns in `docs/context/ASSUMPTIONS.md`;
+9. update `docs/handoff/current.md`.
 
 The coding agent must not copy conversational assumptions into approved artifacts without validation. It must not silently replace approved architecture because another pattern is more familiar.
 
-## 5. Context-system bootstrap ownership
+## 5. Context-system ownership
 
-The context system is repository infrastructure. It must be created or adapted **inside the real project repository** by a coding agent with terminal access.
-
-Give the coding agent this objective:
-
-```text
-Implement the repository context system described in
-docs/context/CONTEXT_SYSTEM.md.
-
-Preserve repository-native canonical data:
-- docs/context/state.yaml for execution state;
-- feature requirements, module system architecture, implementation design,
-  verification, and ADRs for durable contracts and decisions;
-- docs/handoff/current.md for session delta.
-
-Generate PROJECT_STATE.md and PROGRESS.md one way from state.yaml.
-Add deterministic validation.
-Add only the provider adapter that matches the active coding agent.
-Do not make provider memory the source of truth.
-```
+The context system ships with the template (`docs/context/CONTEXT_SYSTEM.md`): `tasks.md` is the task master; `state.yaml`, `BRIEF.md`, and the views are rendered by `npm run context:render`. A project does not rebuild it. The coding agent keeps the hand-edited sources current and never edits a rendered file.
 
 ## 6. Provider adapters
 

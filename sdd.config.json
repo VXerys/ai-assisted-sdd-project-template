@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "project": { "name": "{{PROJECT_NAME}}", "tier": "lite" },
+  "stack": { "app": "generic", "database": "none" },
+  "tools": ["claude"],
+  "hooks": { "enabled": true },
+  "paths": {
+    "steering": "docs/steering",
+    "specs": "docs/specs",
+    "context": "docs/context",
+    "handoff": "docs/handoff/current.md",
+    "assumptions": "docs/context/ASSUMPTIONS.md"
+  },
+  "generated": [
+    "docs/context/state.yaml",
+    "docs/context/PROJECT_STATE.md",
+    "docs/context/PROGRESS.md",
+    "docs/context/BRIEF.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    ".cursor/rules/",
+    ".github/copilot-instructions.md",
+    ".github/instructions/",
+    ".kiro/steering/"
+  ],
+  "frozen": [],
+  "limits": { "lite": 80, "full": 200, "systemArchitecture": 300, "steering": 120, "staleDays": 30, "briefTokens": 3000 },
+  "templateMode": true,
+  "validate": {
+    "requiredFiles": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "docs/steering/product.md",
+      "docs/steering/tech.md",
+      "docs/steering/structure.md",
+      "docs/steering/rules.md",
+      "docs/steering/workflow.md",
+      "docs/documentation/README.md",
+      "docs/documentation/MODULARIZATION_GUIDE.md",
+      "docs/documentation/AI_COLLABORATION_MODEL.md",
+      "docs/product/prd.md",
+      "docs/architecture/README.md",
+      "docs/architecture/overview.md",
+      "docs/adr/README.md",
+      "docs/specs/README.md",
+      "docs/specs/_index.md",
+      "docs/context/CONTEXT_INDEX.md",
+      "docs/context/CONTEXT_SYSTEM.md",
+      "docs/context/NEW_CHAT_PROTOCOL.md",
+      "docs/context/ASSUMPTIONS.md",
+      "docs/context/BRIEF.md",
+      "docs/context/state.yaml",
+      "docs/context/PROJECT_STATE.md",
+      "docs/context/PROGRESS.md",
+      "docs/handoff/current.md",
+      "docs/quality/definition-of-done.md"
+    ],
+    "generatedFiles": [
+      "docs/context/state.yaml",
+      "docs/context/PROJECT_STATE.md",
+      "docs/context/PROGRESS.md",
+      "docs/context/BRIEF.md",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      ".cursor/rules/",
+      ".github/copilot-instructions.md",
+      ".github/instructions/",
+      ".kiro/steering/"
+    ],
+    "placeholderSensitiveFiles": [
+      "AGENTS.md",
+      "docs/steering/product.md",
+      "docs/steering/tech.md",
+      "docs/steering/structure.md",
+      "docs/product/prd.md",
+      "docs/architecture/overview.md",
+      "docs/context/state.yaml"
+    ]
+  }
+}

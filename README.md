@@ -1,266 +1,135 @@
-# AI-Assisted Engineering / SDD Project Template
+# AI-Assisted SDD Project Template
 
-A reusable repository template for **spec-driven, context-efficient, evidence-based AI-assisted software engineering**.
+A repository template for spec-driven development with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents. Version 2.0.0; see [`CHANGELOG.md`](CHANGELOG.md) and [ADR-0001](docs/adr/ADR-0001-v2-revamp.md).
 
-This repository is being evolved from the original AI-Assisted SDD template into the broader **AI-Assisted Engineering** operating model. The goal is to make AI coding agents useful across real production projects without requiring every repository to adopt the same amount of process or context automation.
+## Spec-driven development, in short
 
-## Core operating model
+1. A feature starts as a specification: observable requirements with `FR` and `AC` ids, a design that maps them onto the repository, and tasks with ids.
+2. An agent implements one task at a time and records command output as evidence against the acceptance criteria.
+3. A task is `done` only with evidence; a feature is `implemented` only when every task is done or deferred and no assumption is open.
+4. Project rules live in five steering files. Every tool adapter and every context view is rendered from them, never written by hand.
+5. Unknowns are logged as assumptions instead of guessed.
+6. Each session starts from one rendered brief and loads only what the task references.
+7. Decisions that are expensive to reverse get an ADR.
+8. The validator fails on a stale render, a missing evidence id, an unresolved placeholder, or a path that does not exist.
+9. Chat history and provider memory are never a source of truth; the repository is.
+10. Depth scales with a tier: `lite` by default, `full` when the feature has system concerns.
 
-```text
-IDEA
-  → REQUIREMENTS
-  → SPECIFICATION
-  → ARCHITECTURE BASELINE
-  → FEATURE REQUIREMENTS
-  → MODULE SYSTEM ARCHITECTURE (when meaningful)
-  → IMPLEMENTATION DESIGN
-  → TASK
-  → IMPLEMENTATION
-  → VERIFICATION
-  → REVIEW
-  → RELEASE
-  → CONTEXT REFRESH
-```
-
-The sequence is a default, not bureaucracy. Documentation and verification depth scale with risk.
-
-## Core principles
-
-- **Specification before non-trivial implementation.** Resolve behavior, constraints, and acceptance before generating broad code.
-- **Repository artifacts are durable truth.** Chat history and provider memory are temporary context, not the only source of truth.
-- **Minimum sufficient context.** Load the relevant contract, feature, task, implementation, and evidence—not the whole repository by default.
-- **Small, verifiable changesets.** Prefer bounded tasks that can be reviewed and proven independently.
-- **Evidence over confidence.** Tests, builds, runtime checks, schema/data evidence, and diff inspection outrank an agent saying “done”.
-- **Architecture is a constraint.** Existing repository boundaries and contracts outrank generic framework preferences.
-- **Architecture is requirement-driven.** Distributed-system techniques are options, not defaults. Every meaningful module architecture should explain why selected mechanisms fit its workload and quality attributes.
-- **Human control of high-impact decisions.** Security policy, destructive data changes, public contract breaks, major architecture changes, production infrastructure, and major dependency replacement require deliberate approval.
-- **Context automation is optional.** Generated state, handoff tooling, hooks, and provider adapters are extensions adopted only when they solve a demonstrated coordination problem.
-
-## Complexity scaling
-
-### Level 1 — Small change
+## The model
 
 ```text
-Task → Implement → Verify
+hand-edited sources                                rendered (never hand-edited)
+docs/steering/{product,tech,structure,rules,        docs/context/state.yaml    machine-readable, source_hash
+               workflow}.md                         docs/context/BRIEF.md      single session entry point
+docs/specs/F-XXX/{requirements,design,tasks,        docs/context/PROJECT_STATE.md
+                  verification}.md                  docs/context/PROGRESS.md
+docs/context/ASSUMPTIONS.md                  context:render
+docs/handoff/current.md               ------------------------->
+
+docs/steering/*.md + sdd.config.json         adapters:sync        AGENTS.md            Codex, Antigravity
+                                      ------------------------->  CLAUDE.md + hooks    Claude Code
+                                                                  .cursor/rules/*.mdc  Cursor
+                                                                  .github/copilot-instructions.md  Copilot
+                                                                  GEMINI.md            Gemini CLI
+                                                                  .kiro/steering/*.md  Kiro
 ```
 
-Use for isolated, low-risk, reversible changes. A separate module architecture document is normally unnecessary when no module-level architecture decision is introduced or changed.
+`tasks.md` is the master for task status. `state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, and `PROGRESS.md` are rendered from it, the steering files, the assumptions log, and the handoff. `AGENTS.md` and the tool adapters are rendered from the steering files and `sdd.config.json`. The validator fails when any rendered file differs from a clean render.
 
-### Level 2 — Normal feature
+## Quick start
 
-```text
-Requirements
-  → Module System Architecture when meaningful
-  → Implementation Design
-  → Tasks
-  → Implement
-  → Verify
-  → Review
-```
+1. Click "Use this template" on GitHub and clone the new repository.
+2. `npm install`
+3. `npm run init`, answer the prompts (or pass flags), and read the plan it prints.
 
-Use for normal feature development with bounded behavioral and architectural impact. A capability such as group chat, notifications, search, media delivery, payment flow, synchronization, or another system-significant module should normally document its architecture before implementation design.
+`init` writes `sdd.config.json`, fills the steering and project documents from your answers and the presets, prunes the documents your tier does not use, removes template-only files, then renders the context views, syncs the tool adapters, and validates. `--dry-run` prints the plan and changes nothing; `--yes` takes every default; `--force` re-runs on an initialized project.
 
-### Level 3 — Complex / high-risk
+| Flag | Values | Default |
+|---|---|---|
+| `--name <text>` | project name | the directory name |
+| `--description <text>` | one sentence: what it is, for whom, the outcome | `<name> is a <app> project.` |
+| `--tier lite\|full` | documentation tier | `lite` |
+| `--app <preset>` | `nextjs`, `react-native`, `flutter`, `kotlin-android`, `node-api`, `python-api`, `generic` | `generic` |
+| `--db <preset>` | `supabase`, `firebase`, `postgres`, `mysql`, `sqlite-drift`, `mongodb`, `none` | `none` |
+| `--tools <list>` | comma-separated: `claude`, `codex`, `cursor`, `copilot`, `gemini`, `kiro`, `antigravity` | `claude` |
+| `--owner <name>` | owner written into frontmatter | `git config user.name` |
+| `--lang <language>` | language of the project content; the framework text stays English | `English` |
 
-```text
-Requirements
-  → Module System Architecture
-  → ADR when needed
-  → Implementation Design
-  → Tasks
-  → Implementation
-  → Multi-level Verification
-  → Review
-  → Release Controls
-  → Context Refresh
-```
+Example: `npm run init -- --yes --name "Habit Tracker" --tier lite --app flutter --db supabase --tools claude,kiro`.
 
-Use for authentication/authorization, payments, migrations, public contracts, destructive data work, security-sensitive changes, cross-module architecture, distributed/realtime systems, or difficult-to-reverse decisions.
+After init: review `docs/steering/tech.md` and `structure.md` against the real repository (every command listed must run), write `docs/product/prd.md`, record expensive-to-reverse choices as ADRs, create the first feature from `docs/specs/_templates/`, and implement one task at a time. Do not write every document before the first useful slice.
 
-## System architecture per meaningful module
+## Daily workflow
 
-Project-level architecture and module-level system architecture answer different questions.
+1. Start from `docs/context/BRIEF.md`: active feature and task, open assumptions, blockers, next step. The Claude Code SessionStart hook injects it; other tools read it through `AGENTS.md`. When the brief is absent, `docs/context/NEW_CHAT_PROTOCOL.md` gives the fallback read order.
+2. Take the task the brief names. In Claude Code, `/sdd:task T-XXX` builds the task prompt from the brief and the spec, sets the task `in_progress`, and implements it. Elsewhere, fill `docs/_templates/task-prompt.md` by hand.
+3. Run the commands in `docs/steering/tech.md` and record each result as an EV block in the feature's `verification.md`; add the id to the task's `evidence`.
+4. Update `tasks.md`, then `npm run context:render` and `npm run context:validate`. The Claude Code PostToolUse hook re-renders after spec edits; the PreToolUse hook denies edits to generated and frozen paths.
+5. Close the session with `docs/handoff/current.md`: changed files, commands, uncommitted work, one exact next step. In Claude Code, `/sdd:handoff` writes it; `/sdd:review` fills the code-review template, `/sdd:bug` opens a bug investigation, `/sdd:render` runs the three context commands.
 
-- `docs/architecture/` owns shared, cross-feature boundaries and invariants.
-- A feature/module `system-architecture.md` owns the architectural reasoning for one bounded capability.
-- `design.md` maps the approved architecture into concrete repository components, interfaces, schemas, and implementation choices.
-- ADRs explain significant decisions whose rationale should survive beyond one feature.
+## Commands
 
-Recommended Level 2/3 feature package:
-
-```text
-docs/features/F-XXX-feature-name/
-├── requirements.md
-├── system-architecture.md
-├── design.md
-├── tasks.md
-└── verification.md
-```
-
-The module system architecture should consider only concerns that are actually relevant, including:
-
-- architecture drivers and workload assumptions;
-- module boundaries and ownership;
-- source of truth and storage model;
-- consistency, concurrency, ordering, and idempotency;
-- synchronous, asynchronous, event-driven, or realtime communication;
-- caching and invalidation;
-- scalability, hotspots, partitioning/sharding, load balancing, and CDN/edge;
-- reliability, retry/replay/recovery, and degradation;
-- security, trust boundaries, authorization, and sensitive data;
-- observability and operational signals;
-- cost and operational complexity;
-- alternatives, pros/cons, accepted trade-offs, risks, and redesign triggers.
-
-Do **not** force Redis, queues, microservices, sharding, CDN, load balancing, circuit breakers, or similar mechanisms into every design. The architecture must justify them from requirements, quality attributes, workload, failure model, cost, and project constraints.
-
-Read:
-
-- [`docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`](docs/architecture/MODULE_ARCHITECTURE_GUIDE.md)
-- [`templates/FEATURE_SYSTEM_ARCHITECTURE_TEMPLATE.md`](templates/FEATURE_SYSTEM_ARCHITECTURE_TEMPLATE.md)
-
-The original modular spec system under `docs/specs/` also contains a compatibility/reference module-architecture template.
-
-## Reusable templates
-
-The canonical reusable starter templates are stored in [`templates/`](templates/). Keeping them in GitHub avoids consuming ChatGPT Project source slots for artifacts that are mainly instantiated on demand.
-
-| Template | Purpose |
+| Command | Does |
 |---|---|
-| [`AGENTS_TEMPLATE.md`](templates/AGENTS_TEMPLATE.md) | High-signal repository operating contract for developers and AI agents |
-| [`PROJECT_CONSTITUTION_TEMPLATE.md`](templates/PROJECT_CONSTITUTION_TEMPLATE.md) | Durable engineering governance and human/AI decision boundaries |
-| [`PRD_TEMPLATE.md`](templates/PRD_TEMPLATE.md) | Product context, goals, requirements, constraints, risks, and milestones |
-| [`ARCHITECTURE_BASELINE_TEMPLATE.md`](templates/ARCHITECTURE_BASELINE_TEMPLATE.md) | Shared system boundaries, ownership, data flow, security, testing, and deployment |
-| [`FEATURE_REQUIREMENTS_TEMPLATE.md`](templates/FEATURE_REQUIREMENTS_TEMPLATE.md) | Observable feature behavior, rules, constraints, edge cases, and acceptance criteria |
-| [`FEATURE_SYSTEM_ARCHITECTURE_TEMPLATE.md`](templates/FEATURE_SYSTEM_ARCHITECTURE_TEMPLATE.md) | Module-level architecture drivers, boundaries, data/consistency, communication, scale, resilience, security, cost, alternatives, and trade-offs |
-| [`FEATURE_DESIGN_TEMPLATE.md`](templates/FEATURE_DESIGN_TEMPLATE.md) | Repository implementation mapping for an approved feature/system architecture |
-| [`FEATURE_TASKS_TEMPLATE.md`](templates/FEATURE_TASKS_TEMPLATE.md) | Bounded executable task contracts and dependency ordering |
-| [`FEATURE_VERIFICATION_TEMPLATE.md`](templates/FEATURE_VERIFICATION_TEMPLATE.md) | Requirement- and architecture-claim-to-evidence mapping and verification results |
-| [`ADR_TEMPLATE.md`](templates/ADR_TEMPLATE.md) | Significant architecture/engineering decision record |
-| [`BUG_INVESTIGATION_TEMPLATE.md`](templates/BUG_INVESTIGATION_TEMPLATE.md) | Evidence-driven debugging and root-cause investigation |
-| [`AI_TASK_PROMPT_TEMPLATE.md`](templates/AI_TASK_PROMPT_TEMPLATE.md) | Minimum-sufficient-context package for repository coding agents |
-| [`CODE_REVIEW_TEMPLATE.md`](templates/CODE_REVIEW_TEMPLATE.md) | Correctness-, architecture-, security-, and risk-oriented review |
-| [`CONTEXT_REFRESH_TEMPLATE.md`](templates/CONTEXT_REFRESH_TEMPLATE.md) | Substantial truth-maintenance/context-refresh audit record |
+| `npm run init` | turns the template into a project; flags above, `--dry-run`, `--yes`, `--force` |
+| `npm run context:render` | writes `state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, `PROGRESS.md`; `--check` exits 1 when a view would change |
+| `npm run context:validate` | structure, ids, traceability, evidence, staleness, rendered-view freshness, adapter freshness; `--strict` turns warnings into errors |
+| `npm run context:archive-handoff` | archives an active handoff under `docs/handoff/archive/` and resets `current.md` |
+| `npm run adapters:sync` | writes `AGENTS.md` and the adapters for the tools in `sdd.config.json`; `--check`, `--all` |
+| `npm run example:validate` | validates `examples/todo-api` on its own |
+| `npm test` | `node --test scripts/**/*.test.mjs` |
 
-A template is **not project truth by itself**. Copy or instantiate only the artifact needed by the project, replace placeholders with verified repository facts, review it, then commit it in the appropriate canonical location.
+Details, hooks, and slash commands: `docs/automation/README.md`. The validator checks and the context model: `docs/context/CONTEXT_SYSTEM.md`.
 
-## Recommended derived-project documentation model
+## Tiers
 
-```text
-repository/
-├── README.md
-├── AGENTS.md
-├── CLAUDE.md                 # optional thin provider adapter
-└── docs/
-    ├── product/
-    ├── architecture/
-    ├── features/
-    ├── decisions/
-    ├── operations/
-    └── references/
-```
+| Tier | When | Documents |
+|---|---|---|
+| `lite` (default) | isolated, low-risk, reversible work | `requirements`, `design`, `tasks`, `verification`, each within 80 lines. `init` removes `system-architecture.md`, `architecture-baseline.md`, `docs/runbooks/`, `test-strategy.md`, and the two modularization guides |
+| `full` | shared state, realtime or async communication, external integration, security boundary, scale or cost | adds `system-architecture.md` (within 300 lines) and the sections marked `<!-- full-tier -->` (within 200 lines); keeps every document |
 
-Typical ownership:
+## Tool support
 
-- `README.md` — human repository entrypoint;
-- `AGENTS.md` — frequently relevant repository rules, commands, boundaries, prohibited actions, and Definition of Done;
-- `docs/product/` — product intent and scope;
-- `docs/architecture/` — cross-feature technical structure and invariants;
-- `docs/features/` — feature requirements/system-architecture/design/tasks/verification;
-- `docs/decisions/` — ADRs and durable technical rationale;
-- `docs/operations/` — deploy, migration, recovery, and operational procedures;
-- `docs/references/` — useful non-canonical supporting material.
+| Tool | What it gets | Rendered from |
+|---|---|---|
+| Claude Code | `CLAUDE.md` (imports `AGENTS.md`), four hooks in `.claude/settings.json` (SessionStart injects the brief, PreToolUse guards generated, frozen, and secret paths, PostToolUse re-renders, Stop warns when the handoff is stale), `/sdd:task`, `/sdd:bug`, `/sdd:review`, `/sdd:handoff`, `/sdd:render` | steering, `.claude/` |
+| Codex, Antigravity | `AGENTS.md` | steering, `sdd.config.json` |
+| Cursor | `.cursor/rules/<name>.mdc`, one per steering file, with `globs` for `fileMatch` files | steering |
+| GitHub Copilot | `.github/copilot-instructions.md` and `.github/instructions/<name>.instructions.md` with `applyTo` | steering |
+| Gemini CLI | `GEMINI.md` (imports `AGENTS.md`) | steering |
+| Kiro | `.kiro/steering/<name>.md`, the steering files verbatim | steering |
 
-## AI collaboration model
+Steering files carry `inclusion: always | fileMatch | manual` frontmatter; a database preset adds a `database.md` steering file with `fileMatch`, which Claude Code surfaces once per session when a matching file is edited.
 
-### Conversational AI
-
-Best used for:
-
-- idea/problem framing;
-- PRD and requirements;
-- UX/flow analysis;
-- project and module architecture alternatives;
-- workload/capacity reasoning;
-- feature system-architecture trade-off analysis;
-- implementation design;
-- task decomposition;
-- ADR proposals;
-- review and context-maintenance analysis.
-
-Its output is a proposal until reviewed and stored in the project’s canonical system.
-
-### Repository-integrated coding agent
-
-Best used for work that depends on repository reality:
-
-- inspecting actual code, tests, schemas, migrations, and commands;
-- validating planned architecture against current implementation and platform capabilities;
-- mapping approved module architecture into repository implementation design;
-- implementing approved tasks;
-- running verification;
-- inspecting diffs;
-- updating evidence and durable documentation when truth changed.
-
-A coding agent must not invent paths, APIs, schema fields, commands, or repository patterns it has not inspected, and must not silently change an approved architecture while implementing a task.
-
-## Context automation: optional extension
-
-The original template includes a repository context subsystem under `docs/context/`, `docs/handoff/`, automation scripts, and validation workflow. Those files are retained during the v2 transition for compatibility and as a reference implementation.
-
-They are **not a universal requirement** of the new operating model.
-
-Adopt machine-readable execution state, generated snapshots, handoff files, hooks, or provider commands only when a project demonstrates repeated needs such as:
-
-- multi-agent or multi-developer handoffs;
-- repeated context-recovery cost;
-- complex parallel execution state;
-- stale status views that deterministic generation can prevent.
-
-When such automation is used, repository-native state remains canonical, generated views are one-way, repeated generation is deterministic/idempotent, and provider memory remains an adapter.
-
-## Starting a new project
-
-1. Define the product problem and desired outcome.
-2. Instantiate `templates/PRD_TEMPLATE.md`.
-3. Instantiate `templates/PROJECT_CONSTITUTION_TEMPLATE.md` for durable governance when the project warrants it.
-4. Select technology deliberately and record expensive-to-reverse decisions with ADRs.
-5. Instantiate `templates/ARCHITECTURE_BASELINE_TEMPLATE.md`.
-6. Establish real repository structure and development commands.
-7. Instantiate `templates/AGENTS_TEMPLATE.md` as the project’s repository contract.
-8. Select the first vertical slice.
-9. Create proportional feature requirements.
-10. For a Level 2/3 capability with meaningful system concerns, instantiate `templates/FEATURE_SYSTEM_ARCHITECTURE_TEMPLATE.md` and review its trade-offs before implementation design.
-11. Create the repository-specific implementation design and bounded tasks.
-12. Implement one task at a time and verify against requirements plus architecture-sensitive claims.
-13. Refresh durable context after meaningful truth changes.
-
-Do not create every possible document or automation subsystem before the first useful vertical slice.
-
-## Migration from the original template
-
-This update intentionally does **not** delete the original `docs/context/`, `docs/specs/_templates/`, handoff, automation, or validation files. Existing projects may already depend on them.
-
-Treat those artifacts as legacy/reference until the project explicitly calibrates which v2 protocols replace, retain, or simplify them. Migration should be deliberate rather than a mass rewrite.
-
-The module-system-architecture workflow is available in both the v2 top-level templates and the retained legacy spec package so projects can adopt it without losing compatibility.
-
-## Repository template philosophy
-
-This repository should make good engineering behavior easy to adopt while avoiding a second failure mode: a framework so heavy that developers bypass it.
-
-The target is:
+## Repository layout
 
 ```text
-clear requirements
-+ minimum sufficient context
-+ explicit global architecture
-+ explicit module architecture when meaningful
-+ bounded tasks
-+ small changes
-+ evidence-based verification
-+ current durable documentation
-+ human control of high-impact decisions
+.
+├── AGENTS.md, CLAUDE.md        # rendered by adapters:sync
+├── .claude/                    # settings.json (hooks), commands/sdd/ (slash commands)
+├── sdd.config.json             # project, stack, tools, paths, generated and frozen lists, limits
+├── docs/
+│   ├── steering/               # canonical: product, tech, structure, rules, workflow (+ database)
+│   ├── _templates/             # prd, constitution, architecture-baseline, adr, task-prompt, bug-investigation, code-review
+│   ├── specs/_templates/       # requirements, system-architecture, design, tasks, verification
+│   ├── specs/F-XXX-name/       # one feature package
+│   ├── adr/, architecture/, product/, quality/, runbooks/, documentation/
+│   ├── context/                # BRIEF, ASSUMPTIONS, rendered state and views, protocols
+│   └── handoff/                # current.md and archive/
+├── examples/todo-api/          # filled lite project; reference and test fixture (removed by init)
+└── scripts/                    # context/, adapters/, hooks/, init/ (presets/), migrate/, lib/
 ```
 
-—not maximum document count, maximum distributed-system complexity, or maximum AI autonomy.
+Every template carries frontmatter (`id`, `title`, `type`, `status`, `tier`, `owner`, dates, `supersedes`). `init` fills the placeholders it can (project name, owner, dates, preset values); the remaining prose is guidance to replace with verified facts.
+
+## Example
+
+[`examples/todo-api/`](examples/todo-api/) is a complete `lite` project (`node-api` + `postgres`): one feature `implemented` with evidence, one `implementing` with an open assumption and an active handoff, rendered views and adapters. Open the same file there when a template leaves you unsure how filled a section should be. `npm test` validates it; `init` removes it from a new project.
+
+## Migrating from v1
+
+v2 is a fresh design. A project on v1 of this template stays on v1 until migrated deliberately; [`docs/MIGRATION-v1-to-v2.md`](docs/MIGRATION-v1-to-v2.md) is the step-by-step guide, with `scripts/migrate/v1-tasks.mjs` for the task files.
+
+## AI collaboration
+
+A conversational AI drafts requirements, architecture alternatives, design, tasks, and ADR proposals; its output is a proposal until committed. A repository-integrated coding agent inspects real code, implements approved tasks, runs verification, and updates evidence and handoff. Neither invents paths, APIs, schema fields, or commands. See `docs/documentation/AI_COLLABORATION_MODEL.md`.

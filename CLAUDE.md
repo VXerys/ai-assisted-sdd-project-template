@@ -1,14 +1,35 @@
+<!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
+Source: docs/steering/, sdd.config.json.
+source_hash: ad45316634dc9d6b1ed7b491db3568535ac3eb96ac00a8a2bbe4e4b523dc8d64 -->
+
 @AGENTS.md
 
-# Claude Code Adapter
+# Claude Code adapter
 
-Claude Code is a repository-integrated coding agent for this template and derived projects.
+Claude Code is a repository-integrated coding agent for this project.
 
-- Read and follow the applicable `AGENTS.md` contract first.
-- Treat repository artifacts as durable project context; provider memory is an adapter, never the only source of truth.
-- Inspect actual code, tests, schemas, migrations, and project commands before asserting repository facts.
-- Do not duplicate the full repository contract in this file.
-- Context hooks, generated project-state views, handoff files, or task-transition commands are optional extensions. Use them only when the derived repository has explicitly adopted that subsystem.
-- Do not automatically bootstrap `docs/context/CONTEXT_SYSTEM.md` merely because the legacy template contains it.
-- Hooks may validate or surface deterministic repository state, but must not make semantic product, architecture, security, or acceptance decisions.
-- Keep provider-specific local paths and session details out of canonical project documentation.
+- Follow `AGENTS.md` and the canonical rules in `docs/steering/`.
+- Start every session from `docs/context/BRIEF.md`; when it is absent, follow `docs/context/NEW_CHAT_PROTOCOL.md`.
+- Repository artifacts are the durable context; provider memory is an adapter, never a source of truth.
+- Inspect code, tests, schema, and commands before asserting repository facts.
+- Hooks and slash commands surface or validate deterministic repository state; they never make product, architecture, security, or acceptance decisions.
+- Keep provider-specific local paths and session details out of canonical documentation.
+
+## Hooks and commands
+
+Rendered from `.claude/settings.json` and `.claude/commands/sdd/`.
+
+| Event | Matcher | Script |
+|---|---|---|
+| SessionStart | `startup\|resume\|compact` | `scripts/hooks/session-start.mjs` |
+| PreToolUse | `Edit\|Write\|MultiEdit` | `scripts/hooks/pre-tool-guard.mjs` |
+| PostToolUse | `Edit\|Write\|MultiEdit` | `scripts/hooks/post-tool-render.mjs` |
+| Stop | all | `scripts/hooks/stop-handoff-check.mjs` |
+
+| Command | Description |
+|---|---|
+| `/sdd:bug <title>` | Open a bug investigation file from the template with the next free BUG id |
+| `/sdd:handoff` | Update docs/handoff/current.md from this session, then render and validate |
+| `/sdd:render` | Render context views, sync tool adapters, and validate the repository |
+| `/sdd:review [git-ref]` | Review a diff against the code-review template; read-only |
+| `/sdd:task <T-id>` | Build the task prompt for one T-id from the brief and the spec, then implement it |

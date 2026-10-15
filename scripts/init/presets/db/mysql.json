@@ -1,0 +1,14 @@
+{
+  "label": "MySQL",
+  "migrationTool": "versioned SQL files applied by the project's migration runner",
+  "migrationCommand": "mysql \"$DATABASE_NAME\" < db/migrations/<file>.sql",
+  "migrationPath": "db/migrations/",
+  "notes": [
+    "Every change is a new timestamped SQL file; an applied migration is never edited.",
+    "DDL is not transactional in MySQL: keep one DDL statement per file where possible and verify each file on a disposable copy before a shared environment.",
+    "Authorization is enforced with database grants; there is no row-level security, so tenant filtering lives in the application data layer and is tested.",
+    "Destructive changes need owner approval and a `mysqldump` first.",
+    "Credentials come from the environment and are never committed."
+  ],
+  "fileMatch": ["db/**", "src/db/**"]
+}

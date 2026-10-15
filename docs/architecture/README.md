@@ -2,8 +2,8 @@
 id: ARCH-INDEX
 title: Architecture Documentation
 status: template
-owner: "{{OWNER}}"
-last_updated: "{{YYYY-MM-DD}}"
+owner: ""
+last_updated: 2026-10-15
 ---
 
 # Architecture Documentation
@@ -19,7 +19,7 @@ Architecture files define cross-feature structure, boundaries, and invariants. M
 | Feature implementation design | `docs/specs/<feature>/design.md` | Concrete mapping of approved architecture into repository components, contracts, schema/state/UI, rollout, and tests |
 | Architecture decision record | `docs/adr/` | Rationale/history for significant cross-feature or expensive-to-reverse choices |
 
-Use `MODULE_ARCHITECTURE_GUIDE.md` for the per-module architecture process and `docs/specs/_templates/system-architecture.template.md` for the artifact.
+Use `MODULE_ARCHITECTURE_GUIDE.md` for the per-module architecture process and `docs/specs/_templates/system-architecture.md` for the artifact.
 
 ## Reading order
 
@@ -140,7 +140,4 @@ docs/architecture/
     └── environments.md
 ```
 
-Follow:
-
-- `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`
-- `docs/documentation/MODULARIZATION_GUIDE.md`
+Follow `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md` and `docs/documentation/MODULARIZATION_GUIDE.md`.

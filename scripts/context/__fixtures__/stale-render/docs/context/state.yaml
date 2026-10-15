@@ -1,0 +1,54 @@
+# GENERATED FILE. Rendered by `npm run context:render`. Do not edit by hand.
+# Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
+
+schema_version: 2
+project: Todo API
+tier: lite
+features:
+  - id: F-001
+    title: Create todo
+    status: implementing
+    phase: in_progress
+    spec_path: docs/specs/F-001-create-todo
+    tasks:
+      - id: T-001
+        title: POST /todos handler
+        status: done
+        requirements:
+          - FR-001
+        depends_on: []
+        evidence:
+          - EV-001
+      - id: T-002
+        title: GET /todos handler
+        status: in_progress
+        requirements:
+          - FR-002
+        depends_on:
+          - T-001
+        evidence: []
+      - id: T-003
+        title: Feature integration and verification
+        status: planned
+        requirements:
+          - FR-001
+          - FR-002
+        depends_on:
+          - T-002
+        evidence: []
+  - id: F-002
+    title: Close todo
+    status: draft
+    phase: not_started
+    spec_path: docs/specs/F-002-close-todo
+    tasks: []
+active:
+  feature_id: F-001
+  task_id: T-002
+assumptions_open:
+  - id: A-002
+    feature: F-001
+    title: Default page size for GET /todos
+blockers: []
+generated_at: 2026-10-15T03:08:59.190Z
+source_hash: 0541fcc8ba81d03cd4ae000001094f8605cb7304a2b3405ccaf8f18c07469e0d

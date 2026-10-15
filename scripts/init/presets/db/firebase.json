@@ -1,0 +1,14 @@
+{
+  "label": "Firebase (Firestore)",
+  "migrationTool": "Firebase CLI",
+  "migrationCommand": "firebase deploy --only firestore:rules,firestore:indexes",
+  "migrationPath": "firestore.rules, firestore.indexes.json",
+  "notes": [
+    "Firestore has no schema; a document-shape change is a versioned script in the repository, run once per environment, with the run recorded as evidence.",
+    "Security Rules are the authorization mechanism: every collection has rules, tested with `firebase emulators:exec` before deploy.",
+    "Indexes live in `firestore.indexes.json`; a composite index created from the console is exported into the file before release.",
+    "Deploying rules or indexes to a project is a production action that needs owner approval.",
+    "Mass updates or deletes over a collection need owner approval and an export (`gcloud firestore export`) first."
+  ],
+  "fileMatch": ["firestore.rules", "firestore.indexes.json", "storage.rules", "functions/**"]
+}
