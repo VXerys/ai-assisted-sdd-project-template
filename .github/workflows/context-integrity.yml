@@ -5,10 +5,12 @@ on:
     paths:
       - "AGENTS.md"
       - "CLAUDE.md"
-      - "context.config.json"
+      - "README.md"
+      - "sdd.config.json"
       - "package.json"
+      - "package-lock.json"
       - "docs/**"
-      - "scripts/context/**"
+      - "scripts/**"
       - ".github/workflows/context-integrity.yml"
   push:
     branches:
@@ -17,10 +19,12 @@ on:
     paths:
       - "AGENTS.md"
       - "CLAUDE.md"
-      - "context.config.json"
+      - "README.md"
+      - "sdd.config.json"
       - "package.json"
+      - "package-lock.json"
       - "docs/**"
-      - "scripts/context/**"
+      - "scripts/**"
       - ".github/workflows/context-integrity.yml"
 
 permissions:
@@ -38,7 +42,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
 
       - name: Validate context artifacts
         run: npm run context:validate

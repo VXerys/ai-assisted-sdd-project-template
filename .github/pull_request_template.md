@@ -1,8 +1,8 @@
 ## Specification
 
 - Feature: `F-XXX`
-- Tasks: `TASK-XXX`
-- Requirements: `FR-XXX`, `AC-XXX.Y`
+- Tasks: `T-XXX`
+- Requirements: `FR-XXX`, `AC-XXX`
 - Related ADRs: None / `ADR-NNNN`
 
 ## Change
@@ -25,7 +25,7 @@
 
 ## Verification
 
-- [ ] Context sync completed
+- [ ] `docs/context/ASSUMPTIONS.md` has no open entry for this feature
 - [ ] `npm run context:validate` or project equivalent
 - [ ] Format check
 - [ ] Lint/static analysis
@@ -51,9 +51,9 @@ Paste concise command results or link to feature verification evidence.
 
 ## Context impact
 
-- [ ] `docs/context/state.yaml` updated through the context tooling
-- [ ] `PROJECT_STATE.md` regenerated
-- [ ] `PROGRESS.md` regenerated
+- [ ] `tasks.md` status and evidence ids updated
+- [ ] `verification.md` EV blocks cover the acceptance criteria
+- [ ] Context views re-rendered (available from 2.0.0)
 - [ ] `docs/handoff/current.md` updated
 - [ ] Feature registry or roadmap updated only when durable intent changed
 - [ ] Provider adapter remains non-canonical and portable

@@ -22,7 +22,7 @@ Read `docs/documentation/AI_COLLABORATION_MODEL.md`.
 
 - Choose one feature and task ID.
 - Confirm requirements and design are approved.
-- Run context sync and validation when implemented.
+- Run `npm run context:validate`.
 - Read the order in `docs/context/CONTEXT_INDEX.md`.
 - Verify branch and worktree against `docs/handoff/current.md`.
 - Create a purpose-specific branch.
@@ -34,7 +34,7 @@ Read `docs/documentation/AI_COLLABORATION_MODEL.md`.
 - Stop when an unapproved product or architecture decision appears.
 - Record architecture decisions as ADRs.
 - Use migrations for database changes.
-- Update execution status through `docs/context/state.yaml` tooling, not generated Markdown.
+- Update task status in `tasks.md`, never in rendered views.
 
 ## 5. Before pull request
 
@@ -52,8 +52,8 @@ Run the project-equivalent commands:
 Update:
 
 - feature verification evidence;
-- `docs/context/state.yaml` through the context tooling;
-- generated `PROJECT_STATE.md` and `PROGRESS.md`;
+- `tasks.md` status and evidence ids;
+- rendered context views (available from 2.0.0);
 - `docs/handoff/current.md`;
 - architecture or ADR artifacts when contracts changed.
 

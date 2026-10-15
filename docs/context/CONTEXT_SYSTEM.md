@@ -2,158 +2,85 @@
 id: CONTEXT-SYSTEM
 title: Repository Context System
 status: template
-owner: "{{OWNER}}"
-last_updated: "{{YYYY-MM-DD}}"
+owner: ""
+last_updated: 2026-10-15
 ---
 
 # Repository Context System
 
-## 1. Purpose
+Gives every new session the current project state from repository files alone. No chat history, no provider memory.
 
-Provide every new coding-agent session with current project state without copying chat history or relying on provider memory.
-
-## 2. Canonical model
+## Model
 
 ```text
-Feature specs and ADRs       docs/context/state.yaml
-(durable contracts)          (mutable execution state)
-          \                       /
-           \                     /
-            -> context renderer
-                 ├── PROJECT_STATE.md
-                 └── PROGRESS.md
-
+hand-edited sources                       rendered views (never hand-edited)
+docs/steering/*.md                        docs/context/state.yaml   (machine-readable, source_hash)
+docs/specs/F-XXX/{requirements,design,    docs/context/BRIEF.md     (single entry point)
+  system-architecture,verification}.md    docs/context/PROJECT_STATE.md (compact view)
+docs/specs/F-XXX/tasks.md  <- task master docs/context/PROGRESS.md  (full board)
+docs/context/ASSUMPTIONS.md               AGENTS.md and tool adapters (from steering + sdd.config.json)
 docs/handoff/current.md
-(session-specific delta)
+                  ---- context:render, adapters:sync (available from 2.0.0) ---->
 ```
 
-## 3. Source rules
+`sdd.config.json` lists the rendered paths under `generated`. Editing one by hand is a validation error.
+
+## Source rules
 
 | Information | Canonical source |
 |---|---|
-| Product intent | `docs/product/` |
-| Architecture | `docs/architecture/` |
+| Product intent | `docs/steering/product.md`, `docs/product/` |
+| Stack, commands, dependency policy | `docs/steering/tech.md` |
+| Directory and dependency rules | `docs/steering/structure.md` |
+| Engineering, security, stop conditions | `docs/steering/rules.md` |
+| Lifecycle and status vocabulary | `docs/steering/workflow.md` |
+| Shared architecture | `docs/architecture/` |
 | Decisions | `docs/adr/` |
-| Feature behavior and design | `docs/specs/` |
-| Task and feature execution status | `docs/context/state.yaml` |
-| Compact generated status | `docs/context/PROJECT_STATE.md` |
-| Full generated progress board | `docs/context/PROGRESS.md` |
-| Current worktree/session delta | `docs/handoff/current.md` |
+| Feature behavior, design, evidence | `docs/specs/F-XXX-name/` |
+| Task status | `docs/specs/F-XXX-name/tasks.md` |
+| Unknowns | `docs/context/ASSUMPTIONS.md` |
+| Session delta | `docs/handoff/current.md` |
 
-Generated views are never edited manually.
+## tasks.md is the master
 
-## 4. Who implements this system
+Each task is a parseable block: `### T-001 — title` followed by `status`, `requirements`, `depends_on`, and `evidence` lines (format in `docs/specs/_templates/tasks.md`). Status vocabulary: `planned | in_progress | blocked | review | done | deferred`. `done` requires an `EV-XXX` id from `verification.md`. There is no second place to record task status.
 
-A repository-integrated coding agent—Codex, Claude Code, or equivalent—must implement or adapt the context tooling in the actual project repository.
+## BRIEF.md is the entry point
 
-A conversational AI may design the schema or review the workflow, but it must not invent local paths, commands, hooks, or repository state.
+`docs/context/BRIEF.md` is rendered from steering, the active feature's `tasks.md`, open assumptions, and the handoff. It names the active feature and task, open assumptions, blockers, the verification commands, and the exact next action, within a token budget. A session starts there and loads other documents only as the brief or the task points to them.
 
-## 5. Coding-agent bootstrap task
+## Fallback read order when BRIEF.md is absent or stale
 
-The coding agent must:
+1. `docs/steering/rules.md`, `tech.md`, `structure.md`, `workflow.md`, `product.md`
+2. `docs/handoff/current.md`
+3. The active feature's `tasks.md`; the active feature is the one with an `in_progress` task, otherwise the one the handoff names
+4. The `requirements.md`, `design.md`, and `system-architecture.md` sections the task references
+5. `docs/context/ASSUMPTIONS.md`, open entries only
+6. `git status`, branch, and recent log
 
-1. inspect the project runtime and available scripting language;
-2. preserve `docs/context/state.yaml` as the canonical execution state;
-3. implement a one-way renderer for `PROJECT_STATE.md` and `PROGRESS.md`;
-4. implement deterministic validation;
-5. make writes idempotent;
-6. prevent duplicate IDs and invalid statuses;
-7. detect generated views that are stale;
-8. add commands such as `context:sync`, `context:validate`, `context:next`, and task transitions where useful;
-9. add the provider adapter matching the active coding agent;
-10. keep provider memory outside the canonical data flow.
+## Commands
 
-## 6. Provider adapter contract
+| Command | Status |
+|---|---|
+| `npm run context:validate` | available: required files, ids, statuses, links, generated banners |
+| `npm run context:refresh` | available: refreshes the git-facts block in `PROJECT_STATE.md` |
+| `npm run context:archive-handoff` | available: archives an active handoff and resets `current.md` |
+| `npm run context:render` | available from 2.0.0 |
+| `npm run adapters:sync` | available from 2.0.0 |
 
-An adapter may:
-
-- run sync at session start;
-- expose slash commands or agent commands;
-- load the compact snapshot automatically;
-- warn when handoff or generated context is stale.
-
-An adapter must not:
-
-- become the only copy of project state;
-- write semantic decisions automatically;
-- summarize raw chat into approved requirements;
-- hide repository changes outside Git.
-
-## 7. Recommended views
-
-### `PROJECT_STATE.md`
-
-Contains:
-
-- active feature and task;
-- active track or phase;
-- next tasks;
-- current blockers and highest risks;
-- branch and verified commit;
-- links to active specs and ADRs.
-
-Target: 60–180 lines.
-
-### `PROGRESS.md`
-
-Contains:
-
-- all features and execution tasks;
-- statuses and commits;
-- blockers and deferred work;
-- concise verification summaries.
-
-Load only on demand.
-
-### `handoff/current.md`
-
-Contains worktree-specific facts:
-
-- objective;
-- changed files;
-- commands and results;
-- partial implementation;
-- uncommitted work;
-- exact next action.
-
-## 8. Lifecycle
+## Lifecycle
 
 ```text
-Task status changes
-  -> update state.yaml through CLI
-  -> render generated views
-  -> validate
-  -> commit
-
-Session implementation changes
-  -> update handoff/current.md
-
-Requirement or architecture changes
-  -> update spec or ADR
-  -> update affected execution state
-  -> render and validate
+task status changes      -> edit tasks.md -> render (available from 2.0.0) -> validate -> commit
+session ends             -> update docs/handoff/current.md
+requirement or architecture changes -> update spec or ADR -> update affected tasks -> render -> validate
+unknown appears          -> add A-XXX to ASSUMPTIONS.md -> mark affected task blocked
 ```
 
-## 9. Portability
+## Portability
 
-Prefer repository-relative paths and runtime discovery.
+Repository-relative paths and runtime discovery only. No usernames, absolute paths, provider memory directories, or one developer's toolchain in canonical files. Provider-specific configuration lives in the adapter and is overrideable.
 
-Do not hardcode:
+## Acceptance
 
-- operating-system usernames;
-- absolute project paths;
-- provider-specific memory directories;
-- one developer's Python or Node installation.
-
-Provider-specific paths belong in local adapter configuration and must be overrideable.
-
-## 10. Acceptance criteria
-
-The context system is ready when:
-
-- a new coding-agent session identifies the active task without chat history;
-- generated views exactly match `state.yaml`;
-- repeated sync produces no diff;
-- invalid task IDs and statuses fail validation;
-- moving the repository to another machine preserves canonical knowledge;
-- deleting provider memory does not remove project state.
+The context system is complete when a new session identifies the active task from `BRIEF.md` alone, rendered views match a clean render, repeated rendering produces no diff, invalid ids and statuses fail validation, and deleting provider memory loses nothing.

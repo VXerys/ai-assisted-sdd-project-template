@@ -46,6 +46,6 @@ Data compatibility considerations:
 ## Closeout
 
 - [ ] Record release version and commit.
-- [ ] Update `../context/PROJECT_STATE.md`.
+- [ ] Update `../handoff/current.md`; re-render context (available from 2.0.0).
 - [ ] Update roadmap and feature registry.
 - [ ] Record incident or limitation when applicable.

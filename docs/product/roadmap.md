@@ -12,7 +12,7 @@ last_updated: "{{YYYY-MM-DD}}"
 
 This file records strategic capability order, release intent, and dependency rationale.
 
-It is not the execution-status board. Mutable feature/task status belongs in `docs/context/state.yaml` and its generated views.
+It is not the execution-status board. Task status belongs in each feature's `tasks.md`; context views are rendered from it.
 
 ## Releases and milestones
 

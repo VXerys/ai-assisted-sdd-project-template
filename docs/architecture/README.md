@@ -19,7 +19,7 @@ Architecture files define cross-feature structure, boundaries, and invariants. M
 | Feature implementation design | `docs/specs/<feature>/design.md` | Concrete mapping of approved architecture into repository components, contracts, schema/state/UI, rollout, and tests |
 | Architecture decision record | `docs/adr/` | Rationale/history for significant cross-feature or expensive-to-reverse choices |
 
-Use `MODULE_ARCHITECTURE_GUIDE.md` for the per-module architecture process and `docs/specs/_templates/system-architecture.template.md` for the artifact.
+Use `MODULE_ARCHITECTURE_GUIDE.md` for the per-module architecture process and `docs/specs/_templates/system-architecture.md` for the artifact.
 
 ## Reading order
 

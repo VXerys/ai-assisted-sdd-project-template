@@ -1,22 +1,13 @@
 <!-- GENERATED FILE — DO NOT EDIT.
 Source: docs/context/state.yaml
-Run the repository context sync command after state changes. -->
+Rendered by `npm run context:render` (available from 2.0.0). -->
 
 # Project State
 
-_Context renderer has not been bootstrapped for this derived project._
-
-## Bootstrap required
-
-Ask the repository-integrated coding agent to implement or adapt the context system described in:
-
-- `docs/context/CONTEXT_SYSTEM.md`
-- `docs/context/state.yaml`
-
-Until then, verify project state directly from approved specs, Git, and `docs/handoff/current.md`.
+_Not rendered yet. Read `docs/context/BRIEF.md`, or follow the fallback read order in `docs/context/CONTEXT_SYSTEM.md`._
 
 <!-- GENERATED:GIT_FACTS:START -->
 ## Generated Git Facts
 
-_Not refreshed yet._
+_Not refreshed yet. Run `npm run context:refresh`._
 <!-- GENERATED:GIT_FACTS:END -->

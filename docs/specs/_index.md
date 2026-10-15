@@ -10,7 +10,7 @@ last_updated: "{{YYYY-MM-DD}}"
 
 This file is the durable navigation registry for feature specifications.
 
-Mutable execution status, active task, blockers, and commits belong in `docs/context/state.yaml`.
+Task status belongs in each feature's `tasks.md`; `docs/context/state.yaml` and the context views are rendered from it.
 
 | Feature ID | Feature | Spec path | Product priority | Lifecycle gate | Related milestone |
 |---|---|---|---|---|---|

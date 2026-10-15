@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const configPath = path.join(root, 'context.config.json');
+const configPath = path.join(root, 'sdd.config.json');
 const failures = [];
 const warnings = [];
 
@@ -48,35 +48,36 @@ function frontmatter(content) {
   for (const line of match[1].split(/\r?\n/)) {
     const pair = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/);
     if (!pair) continue;
-    result[pair[1]] = pair[2].replace(/^['"]|['"]$/g, '').trim();
+    // Templates carry the allowed vocabulary as a trailing comment on the value line.
+    const value = pair[2].replace(/\s+#.*$/, '');
+    result[pair[1]] = value.replace(/^['"]|['"]$/g, '').trim();
   }
   return result;
 }
 
 function isTemplateFile(file) {
-  return file.includes('/_templates/') || file.endsWith('.template.md');
+  return file.includes('/_templates/');
 }
 
 function hasPlaceholder(value) {
   return /\{\{[^}]+\}\}/.test(value);
 }
 
-if (!fs.existsSync(configPath)) failures.push('Missing context.config.json.');
+if (!fs.existsSync(configPath)) failures.push('Missing sdd.config.json.');
 
-const config = fs.existsSync(configPath)
-  ? JSON.parse(fs.readFileSync(configPath, 'utf8'))
-  : {
-      templateMode: false,
-      requiredFiles: [],
-      generatedFiles: [],
-      placeholderSensitiveFiles: []
-    };
+const sddConfig = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, 'utf8')) : {};
+const config = {
+  templateMode: sddConfig.templateMode ?? false,
+  requiredFiles: sddConfig.validate?.requiredFiles ?? [],
+  generatedFiles: sddConfig.validate?.generatedFiles ?? [],
+  placeholderSensitiveFiles: sddConfig.validate?.placeholderSensitiveFiles ?? []
+};
 
-for (const file of config.requiredFiles ?? []) {
+for (const file of config.requiredFiles) {
   if (!exists(file)) failures.push(`Missing required file: ${file}`);
 }
 
-for (const file of config.generatedFiles ?? []) {
+for (const file of config.generatedFiles) {
   if (!exists(file)) continue;
   const content = read(file);
   if (!/GENERATED FILE|GENERATED:/.test(content)) {
@@ -94,6 +95,13 @@ const validStatuses = new Set([
   'verification',
   'implemented',
   'superseded',
+  'planned',
+  'in_progress',
+  'blocked',
+  'done',
+  'deferred',
+  'open',
+  'confirmed',
   'active',
   'inactive',
   'pending',
@@ -152,15 +160,15 @@ if (exists(statePath)) {
 }
 
 if (!config.templateMode) {
-  for (const file of config.placeholderSensitiveFiles ?? []) {
+  for (const file of config.placeholderSensitiveFiles) {
     if (exists(file) && hasPlaceholder(read(file))) {
       failures.push(`Unresolved placeholder in active core file: ${file}`);
     }
   }
 
-  for (const file of config.generatedFiles ?? []) {
-    if (exists(file) && /renderer has not been bootstrapped/i.test(read(file))) {
-      failures.push(`Context renderer is not bootstrapped: ${file}`);
+  for (const file of config.generatedFiles) {
+    if (exists(file) && /not rendered yet/i.test(read(file))) {
+      failures.push(`Context view is not rendered: ${file}`);
     }
   }
 }

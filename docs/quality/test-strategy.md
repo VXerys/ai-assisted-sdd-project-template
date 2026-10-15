@@ -9,7 +9,7 @@ Define the minimum confidence model for this project. Customize this file after 
 | Layer | Primary purpose | Typical targets |
 |---|---|---|
 | Unit | Business rules and deterministic transformations | use cases, validators, parsers, state reducers |
-| Integration | Boundaries and real contracts | repositories, database policies, API clients, migrations |
+| Integration | Boundaries and real contracts | repositories, data access rules, API clients, migrations |
 | UI / Component | Rendering and interaction states | loading, empty, success, validation, error |
 | End-to-End | Critical user journeys | authentication, purchase, submission, destructive flows |
 | Manual | UX and environment-specific behavior | accessibility, device behavior, production smoke checks |

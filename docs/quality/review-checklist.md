@@ -40,8 +40,8 @@ last_updated: "{{YYYY-MM-DD}}"
 
 ## Context integrity
 
-- [ ] `docs/context/state.yaml` owns mutable execution status.
-- [ ] `PROJECT_STATE.md` and `PROGRESS.md` were generated, not edited manually.
+- [ ] Task status changed only in `tasks.md`, with evidence ids for `done`.
+- [ ] `state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, and `PROGRESS.md` were rendered, not edited manually.
 - [ ] Generated views are current.
 - [ ] Feature registry and strategic roadmap do not duplicate task progress.
 - [ ] Handoff matches branch, worktree, feature, and task.

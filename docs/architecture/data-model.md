@@ -71,4 +71,4 @@ Detailed policies belong in migrations or policy definitions and security docume
 1. Every schema change uses a versioned migration.
 2. Backfills must be explicit and observable.
 3. Destructive changes require compatibility and rollback analysis.
-4. Dashboard-only schema changes are prohibited.
+4. Changes made only in a hosted console are prohibited; every change is a versioned file in the repository.

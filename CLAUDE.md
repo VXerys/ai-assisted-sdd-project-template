@@ -1,14 +1,12 @@
 @AGENTS.md
 
-# Claude Code Adapter
+# Claude Code adapter
 
 Claude Code is a repository-integrated coding agent for this template and derived projects.
 
-- Read and follow the applicable `AGENTS.md` contract first.
-- Treat repository artifacts as durable project context; provider memory is an adapter, never the only source of truth.
-- Inspect actual code, tests, schemas, migrations, and project commands before asserting repository facts.
-- Do not duplicate the full repository contract in this file.
-- Context hooks, generated project-state views, handoff files, or task-transition commands are optional extensions. Use them only when the derived repository has explicitly adopted that subsystem.
-- Do not automatically bootstrap `docs/context/CONTEXT_SYSTEM.md` merely because the legacy template contains it.
-- Hooks may validate or surface deterministic repository state, but must not make semantic product, architecture, security, or acceptance decisions.
-- Keep provider-specific local paths and session details out of canonical project documentation.
+- Follow `AGENTS.md` and the canonical rules in `docs/steering/`.
+- Start every session from `docs/context/BRIEF.md`; when it is absent, follow `docs/context/NEW_CHAT_PROTOCOL.md`.
+- Repository artifacts are the durable context; provider memory is an adapter, never a source of truth.
+- Inspect code, tests, schema, and commands before asserting repository facts.
+- Hooks and slash commands (available from 2.0.0) may surface or validate deterministic repository state; they never make product, architecture, security, or acceptance decisions.
+- Keep provider-specific local paths and session details out of canonical documentation.

@@ -14,7 +14,7 @@ Every meaningful product module should have an explicit system-architecture view
 
 A module can be a bounded capability such as group chat, checkout, notifications, media upload, search, billing, or collaborative editing. A small UI-only change is not automatically a module.
 
-Use `docs/specs/_templates/system-architecture.template.md` for the artifact.
+Use `docs/specs/_templates/system-architecture.md` for the artifact.
 
 ## 2. Architecture levels
 

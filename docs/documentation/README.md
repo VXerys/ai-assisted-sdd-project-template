@@ -20,12 +20,14 @@ A long generated reference can be valid. A shorter manual document should still 
 
 | Layer | Purpose | Canonical location | Typical author |
 |---|---|---|---|
+| Steering | Canonical product, stack, structure, rules, workflow | `docs/steering/` | Human; `AGENTS.md` and adapters rendered from it (available from 2.0.0) |
 | Product intent | Problem, users, outcomes, scope | `docs/product/` | Human + conversational AI |
 | Architecture | Cross-feature structure and boundaries | `docs/architecture/` | Human + conversational AI, verified by coding agent |
 | Decisions | One expensive-to-reverse decision | `docs/adr/` | Human approves; AI drafts |
 | Feature contracts | Requirements, design, tasks, acceptance | `docs/specs/` | Human + conversational AI; coding agent validates against repo |
-| Execution state | Active features, tasks, blockers | `docs/context/state.yaml` | Coding agent or context CLI |
-| Generated context | Compact and full execution views | `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md` | Context renderer only |
+| Task status | Tasks, dependencies, evidence ids | `docs/specs/<feature>/tasks.md` | Coding agent |
+| Unknowns | Assumptions awaiting confirmation | `docs/context/ASSUMPTIONS.md` | Coding agent raises; human resolves |
+| Rendered context | State, brief, compact and full views | `docs/context/state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, `PROGRESS.md` | Renderer only (available from 2.0.0) |
 | Session delta | Worktree, commands, partial work, exact next step | `docs/handoff/current.md` | Coding agent |
 | Operations | Repeatable procedures | `docs/runbooks/` | Coding agent drafts and verifies |
 | Quality | Global gates and review rules | `docs/quality/` | Human approves; AI drafts |
@@ -53,22 +55,20 @@ Examples: Codex, Claude Code, or another agent with code and terminal access.
 Use it to:
 
 - inspect the real repository and existing patterns;
-- adapt `AGENTS.md` and project commands;
-- implement or verify the context tooling;
-- create provider-specific hooks or commands;
+- fill `docs/steering/tech.md` and `structure.md` from repository facts;
 - execute approved tasks and run checks;
-- update task status, verification evidence, execution state, and handoff;
+- update task status in `tasks.md`, evidence in `verification.md`, unknowns in `ASSUMPTIONS.md`, and the handoff;
 - detect drift between docs and implementation.
 
 The coding agent does not own product or architecture approval.
 
 ## Reading order
 
-1. `AGENTS.md`
-2. `docs/context/CONTEXT_INDEX.md`
+1. `docs/context/BRIEF.md` (fallback: `docs/context/CONTEXT_INDEX.md`)
+2. `docs/steering/`
 3. Relevant product, architecture, ADR, or feature artifact
 4. Relevant code and tests
-5. Generated execution state and current handoff when implementation is involved
+5. Current handoff when implementation is involved
 
 ## Supporting guides
 

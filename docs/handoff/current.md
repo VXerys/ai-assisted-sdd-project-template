@@ -12,7 +12,7 @@ expires_after: "{{YYYY-MM-DD}}"
 
 # Session Handoff
 
-This file stores the current coding session delta. It does not replace product docs, architecture, ADRs, feature specs, or `docs/context/state.yaml`.
+This file stores the current coding session delta. It does not replace product docs, architecture, ADRs, feature specs, or `tasks.md`.
 
 The repository-integrated coding agent updates this file before ending implementation work.
 
@@ -22,12 +22,11 @@ The repository-integrated coding agent updates this file before ending implement
 
 ## Context used
 
-- `AGENTS.md`
-- `docs/context/PROJECT_STATE.md`
-- `docs/context/state.yaml`
+- `docs/context/BRIEF.md`
+- `docs/steering/rules.md`, `docs/steering/tech.md`
+- `docs/specs/{{FEATURE_PATH}}/tasks.md`
 - `docs/specs/{{FEATURE_PATH}}/requirements.md`
 - `docs/specs/{{FEATURE_PATH}}/design.md`
-- `docs/specs/{{FEATURE_PATH}}/tasks.md`
 - `docs/adr/{{RELEVANT_ADR_OR_NONE}}`
 
 ## Completed
@@ -86,10 +85,11 @@ Permanent architecture decisions must be recorded as ADRs. Product decisions mus
 
 ## Context updates
 
-- `state.yaml` updated: {{YES_OR_NO}}
-- generated views refreshed: {{YES_OR_NO}}
-- verification updated: {{YES_OR_NO}}
+- `tasks.md` status and evidence ids updated: {{YES_OR_NO}}
+- `verification.md` EV blocks added: {{YES_OR_NO}}
+- `docs/context/ASSUMPTIONS.md` entries added or resolved: {{YES_OR_NO}}
 - specification or ADR changed: {{YES_OR_NO}}
+- context re-rendered (available from 2.0.0): {{YES_OR_NO}}
 
 ## Exact next step
 

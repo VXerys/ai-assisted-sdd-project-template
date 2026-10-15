@@ -18,8 +18,8 @@ A task is done only when:
 - error and security paths are handled;
 - no unrelated change is included;
 - verification evidence is recorded;
-- execution state is updated through the context system;
-- generated context views are current;
+- task status is updated in `tasks.md` with evidence ids;
+- rendered context views are current (available from 2.0.0);
 - `docs/handoff/current.md` reflects partial or continuing work.
 
 ## Feature
@@ -50,7 +50,7 @@ A documentation change is done only when:
 
 The context system is done only when:
 
-- `state.yaml` is canonical for execution state;
+- `tasks.md` is canonical for task status; `state.yaml` is rendered from it;
 - generated views match a clean render;
 - repeated sync is idempotent;
 - invalid IDs and statuses fail validation;

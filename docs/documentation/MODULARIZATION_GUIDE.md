@@ -24,15 +24,15 @@ Do not split only because a file crosses a precise line count.
 
 ## 2. Operational size signals
 
-| Size | Guidance |
+| Artifact | Cap (from `sdd.config.json` limits) |
 |---|---|
-| Under 200 lines | Usually safe |
-| 200–400 lines | Normal for a focused specification |
-| 400–600 lines | Review concern boundaries |
-| 600–800 lines | Modularization is usually justified |
-| Over 800 lines | Treat as a mandatory architecture review |
+| Lite-tier feature document | 80 lines |
+| Full-tier feature document | 200 lines |
+| `system-architecture.md` | 300 lines |
+| Steering file | 120 lines |
+| Other manual documents | Review concern boundaries above 400 lines |
 
-Exceptions include generated references, database dictionaries, API references, changelogs, and exhaustive test reports.
+A feature document over its cap is first checked for scope: it usually combines independent capabilities. Exceptions include generated references, data dictionaries, API references, changelogs, and exhaustive test reports.
 
 ## 3. Never use meaningless parts
 
@@ -150,16 +150,16 @@ One decision equals one ADR.
 Good:
 
 ```text
-0001-use-supabase-as-direct-backend.md
-0002-enforce-rls-for-tenant-isolation.md
-0003-use-supabase-auth.md
-0004-avoid-edge-functions-for-mvp.md
+ADR-0001-use-managed-backend-as-system-of-record.md
+ADR-0002-enforce-tenant-isolation-at-the-data-layer.md
+ADR-0003-adopt-offline-first-local-store.md
+ADR-0004-defer-background-jobs-until-measured-need.md
 ```
 
 Bad:
 
 ```text
-0001-all-backend-decisions.md
+ADR-0001-all-backend-decisions.md
 ```
 
 An ADR normally stays between 30 and 120 lines. Review any ADR beyond 200 lines for multiple decisions.
@@ -256,7 +256,8 @@ Do not create one file per system-design buzzword.
 | Artifact | Target |
 |---|---|
 | `CONTEXT_INDEX.md` | 40–120 lines |
-| `PROJECT_STATE.md` | 60–180 generated lines |
+| `BRIEF.md` | rendered, token-budgeted entry point |
+| `PROJECT_STATE.md` | 60–180 rendered lines |
 | `handoff/current.md` | 60–180 lines |
 | `PROGRESS.md` | May be longer; loaded only on demand |
 
