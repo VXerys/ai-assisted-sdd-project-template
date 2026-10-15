@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "project": { "name": "Todo API", "tier": "lite" },
+  "stack": { "app": "node-api", "database": "postgres" },
+  "tools": ["claude", "codex", "cursor", "copilot", "gemini", "kiro", "antigravity"],
+  "hooks": { "enabled": true },
+  "generated": [
+    "docs/context/state.yaml",
+    "docs/context/BRIEF.md",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    ".cursor/rules/",
+    ".github/copilot-instructions.md",
+    ".github/instructions/",
+    ".kiro/steering/"
+  ],
+  "frozen": ["src/legacy/"],
+  "templateMode": false
+}

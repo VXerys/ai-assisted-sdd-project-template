@@ -8,7 +8,9 @@ import { loadFeatures, FEATURE_STATUSES, TASK_STATUSES } from './specs.mjs';
 import { parseAssumptions, ASSUMPTION_STATUSES } from './assumptions.mjs';
 import { parseHandoff } from './handoff.mjs';
 import { taggedLines } from './markdown.mjs';
+import { patternList } from '../../lib/steering.mjs';
 import { renderOutputs, staleOutputs } from './render.mjs';
+import { renderAdapters, staleAdapters } from '../../adapters/render.mjs';
 
 const SPEC_KEYS = ['id', 'title', 'type', 'status', 'tier', 'owner', 'created', 'last_updated', 'last_verified'];
 const INCLUSION = ['always', 'fileMatch', 'manual'];
@@ -70,6 +72,7 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
   for (const feature of features) checkFeature(feature, assumptions, config, now, { error, warning });
   checkHandoff(root, config, features, now, { error, warning });
   checkGenerated(root, config, { error });
+  checkAdapters(root, config, { error });
 
   return { findings: sortFindings(findings), files: markdownFiles.length, features: features.length };
 }
@@ -109,6 +112,8 @@ function checkSteering(root, config, { error, warning }) {
     const { data } = parseFrontmatter(text);
     if (!data) error(file, 1, 'steering file has no frontmatter');
     else if (!INCLUSION.includes(data.inclusion)) error(file, 1, `inclusion must be one of ${INCLUSION.join(' | ')}`);
+    else if (data.inclusion === 'fileMatch' && !patternList(data.fileMatchPattern).length) error(file, 1, 'fileMatch steering needs fileMatchPattern (string or array of globs)');
+    else if (data.inclusion !== 'fileMatch' && data.fileMatchPattern !== undefined) error(file, 1, 'fileMatchPattern is only valid with inclusion: fileMatch');
     const lines = text.trimEnd().split(/\r?\n/).length;
     if (lines > config.limits.steering) warning(file, 1, `${lines} lines exceeds the steering cap of ${config.limits.steering}`);
   }
@@ -265,8 +270,9 @@ function checkHandoff(root, config, features, now, { error, warning }) {
 }
 
 function checkGenerated(root, config, { error }) {
-  for (const file of config.validate.generatedFiles) {
-    if (exists(root, file) && !BANNER.test(readText(root, file))) error(file, 1, 'generated file lacks the GENERATED banner');
+  for (const entry of config.validate.generatedFiles) {
+    const files = entry.endsWith('/') ? walk(root, entry) : exists(root, entry) ? [entry] : [];
+    for (const file of files) if (!BANNER.test(readText(root, file))) error(file, 1, 'generated file lacks the GENERATED banner');
   }
   const statePath = `${config.paths.context}/state.yaml`;
   if (exists(root, statePath)) {
@@ -279,6 +285,13 @@ function checkGenerated(root, config, { error }) {
   }
   const { outputs } = renderOutputs(root, config);
   for (const file of staleOutputs(root, outputs)) error(file, 1, 'rendered view is stale; run npm run context:render');
+}
+
+// Adapters are rendered from steering and config, so a listed tool implies they must match a clean sync.
+function checkAdapters(root, config, { error }) {
+  if (!config.tools.length) return;
+  const { outputs } = renderAdapters(root, config);
+  for (const file of staleAdapters(root, outputs)) error(file, 1, 'adapter is stale; run npm run adapters:sync');
 }
 
 function sortFindings(findings) {

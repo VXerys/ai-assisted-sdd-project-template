@@ -16,7 +16,7 @@ The spec-driven lifecycle from session start to handoff.
 
 - Take the task the brief names, or the first `planned` task whose `depends_on` are all `done`.
 - Read only the FR ids, design sections, and architecture sections the task references, plus the code it touches.
-- Set `status: in_progress` in `tasks.md`. One task in progress per session.
+- Set `status: in_progress` in `tasks.md`. One task in progress per session. In Claude Code, `/sdd:task T-XXX` builds the task prompt from the brief and the spec and follows it.
 
 ## Status transitions
 
@@ -42,8 +42,8 @@ Every check runs through the commands in `tech.md` and is recorded as an EV bloc
 
 1. Review `git diff` and `git status`.
 2. Run the commands in `tech.md`; record evidence.
-3. Update task status in `tasks.md`; run `npm run context:render`, then `npm run context:validate`.
-4. Update `docs/handoff/current.md`: objective, changed files, commands and results, uncommitted work, blockers, exact next step.
+3. Update task status in `tasks.md`; run `npm run context:render`, then `npm run context:validate`. After a steering or `sdd.config.json` change, also `npm run adapters:sync`.
+4. Update `docs/handoff/current.md`: objective, changed files, commands and results, uncommitted work, blockers, exact next step. In Claude Code, `/sdd:handoff` writes it and runs render and validate; `/sdd:review`, `/sdd:bug`, and `/sdd:render` fill the review template, open a bug file, and run the three context commands.
 5. Report the next task.
 
 ## When to write an ADR

@@ -4,7 +4,24 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ## [Unreleased] — 2.0.0
 
-Phases 1 and 2 of the v2 revamp (ADR-0001): foundation and tooling. Adapters, hooks, slash commands, and init follow.
+Phases 1 to 3 of the v2 revamp (ADR-0001): foundation, tooling, adapters and hooks. `init` with presets and the example project follow.
+
+### Phase 3 — adapters, hooks, slash commands, conditional steering
+
+#### Added
+
+- `npm run adapters:sync` (`scripts/adapters/sync.mjs`, `render.mjs`): renders `AGENTS.md` from `docs/steering/` and `sdd.config.json` (identity line, read-first list, source-of-truth table, generated and frozen paths, every `always` steering body, `fileMatch` files under "Conditional rules", manual files listed, commands pointer; warning over 400 lines), plus per tool in `tools`: `CLAUDE.md` (`@AGENTS.md`, adapter lines, hooks and commands table read from `.claude/`), `GEMINI.md` (`@AGENTS.md` plus three lines), `.cursor/rules/<name>.mdc` (`description`, `globs`, `alwaysApply`), `.github/copilot-instructions.md` and `.github/instructions/<name>.instructions.md` (`applyTo`), `.kiro/steering/<name>.md` (verbatim). Every target carries a GENERATED banner with `source_hash`. `--check`, `--all`, `--quiet`.
+- Claude Code hooks in `scripts/hooks/`, wired by the committed `.claude/settings.json`: `session-start` (injects `BRIEF.md` with its render time, warns when stale, prints the fallback read order when absent), `pre-tool-guard` (denies edits to `generated`, `frozen`, and secret paths with the command to use instead; surfaces a matching `fileMatch` steering file once per session via `.claude/.sdd-session/`), `post-tool-render` (re-renders after spec, steering, assumptions, handoff, or config edits; syncs adapters after steering or config), `stop-handoff-check` (warns, never blocks, when `tasks.md` changed without the handoff). `hooks.enabled` in `sdd.config.json` turns them off.
+- Slash commands in `.claude/commands/sdd/`: `/sdd:task <T-id>`, `/sdd:bug <title>`, `/sdd:review [git-ref]`, `/sdd:handoff`, `/sdd:render`.
+- `scripts/lib/`: `glob` (`**`, `*`, `?`, basename and directory-prefix semantics), `steering` (loader, `fileMatch` lookup), `guard` (deny rules), `hook-io` (fail-open stdin JSON, project root, path normalization).
+- Validator: `fileMatchPattern` required exactly when `inclusion: fileMatch`; stale adapters are errors while `tools` is non-empty; `generated` directories are checked for banners. `sdd.config.json` validates `tools` against `claude | codex | cursor | copilot | gemini | kiro | antigravity` and accepts `hooks.enabled`.
+- Fixture `scripts/adapters/__fixtures__/multi-tool` with snapshots; the context fixtures carry synced `AGENTS.md` and `CLAUDE.md`. 39 new `node:test` tests (glob, adapters, hooks, validator).
+- `.gitignore`: `.claude/settings.local.json`, `.claude/.sdd-session/`.
+
+#### Changed
+
+- `AGENTS.md` and `CLAUDE.md` are generated; `sdd.config.json` `generated` lists every adapter target and `hooks.enabled` is set.
+- Docs no longer mark adapters, hooks, or slash commands as "available from 2.0.0" (`init` and presets keep the marker): `README.md`, `docs/automation/README.md`, `CONTEXT_SYSTEM.md`, `CONTEXT_INDEX.md`, `docs/documentation/README.md`, `steering/workflow.md`, `steering/structure.md`.
 
 ### Phase 2 — tooling
 

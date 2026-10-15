@@ -11,7 +11,8 @@
     "test": "node --test scripts/**/*.test.mjs",
     "context:render": "node scripts/context/render.mjs",
     "context:validate": "node scripts/context/validate-context.mjs",
-    "context:archive-handoff": "node scripts/context/archive-handoff.mjs"
+    "context:archive-handoff": "node scripts/context/archive-handoff.mjs",
+    "adapters:sync": "node scripts/adapters/sync.mjs"
   },
   "dependencies": {
     "yaml": "^2.9.1"

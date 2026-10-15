@@ -25,3 +25,7 @@ npm-debug.log*
 
 # Temporary context tooling
 .context-cache/
+
+# Claude Code: personal settings and per-session hook state
+.claude/settings.local.json
+.claude/.sdd-session/

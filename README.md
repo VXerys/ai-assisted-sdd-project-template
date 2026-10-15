@@ -2,7 +2,7 @@
 
 A repository template for spec-driven, context-efficient, evidence-based software engineering with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents.
 
-Version 2 is in progress; see `CHANGELOG.md` and `docs/adr/ADR-0001-v2-revamp.md`. Phases 1 and 2 (this state) ship the single template family, steering, config, the context renderer, and the v2 validator. Adapters, hooks, slash commands, and `init` with presets are available from 2.0.0.
+Version 2 is in progress; see `CHANGELOG.md` and `docs/adr/ADR-0001-v2-revamp.md`. Phases 1 to 3 (this state) ship the single template family, steering, config, the context renderer, the v2 validator, tool adapters, Claude Code hooks, and slash commands. `init` with presets is available from 2.0.0.
 
 ## Operating model
 
@@ -36,8 +36,9 @@ The sequence is a default, not bureaucracy. Depth scales with the tier.
 
 ```text
 .
-├── AGENTS.md                  # short contract; generated from steering in 2.0.0
-├── CLAUDE.md                  # Claude Code adapter
+├── AGENTS.md                  # repository contract; rendered from docs/steering by adapters:sync
+├── CLAUDE.md                  # Claude Code adapter; rendered, imports AGENTS.md
+├── .claude/                   # settings.json (hooks) and commands/sdd/ (slash commands)
 ├── sdd.config.json            # project, stack, tools, paths, generated and frozen lists, limits
 ├── docs/
 │   ├── steering/              # canonical: product, tech, structure, rules, workflow
@@ -54,7 +55,7 @@ The sequence is a default, not bureaucracy. Depth scales with the tier.
 │   ├── runbooks/              # local development, data store changes, deployment, recovery
 │   ├── documentation/         # how docs are split and owned
 │   └── automation/            # the context commands
-└── scripts/context/           # render, validate, archive handoff; lib/ parsers; __fixtures__/ test repos
+└── scripts/                   # context/ (render, validate, archive), adapters/ (sync), hooks/, lib/; __fixtures__/ test repos
 ```
 
 ## Templates
@@ -85,7 +86,7 @@ Project level, in `docs/_templates/`:
 
 ## Steering
 
-`docs/steering/` is the canonical source of project rules, Kiro-style with `inclusion: always | fileMatch | manual` frontmatter: `product.md`, `tech.md`, `structure.md`, `rules.md`, `workflow.md`. `AGENTS.md` and tool adapters are rendered from it (available from 2.0.0); until then `AGENTS.md` is kept in sync by hand.
+`docs/steering/` is the canonical source of project rules, Kiro-style with `inclusion: always | fileMatch | manual` frontmatter: `product.md`, `tech.md`, `structure.md`, `rules.md`, `workflow.md`. `AGENTS.md` and the tool adapters listed in `sdd.config.json` `tools` are rendered from it by `npm run adapters:sync`; the validator fails when they are stale. Claude Code hooks and `/sdd:*` commands are described in `docs/automation/README.md`.
 
 ## Context system
 
@@ -98,6 +99,7 @@ npm install
 npm test                      # node --test scripts/**/*.test.mjs
 npm run context:render        # state.yaml, BRIEF.md, PROJECT_STATE.md, PROGRESS.md; --check, --quiet
 npm run context:validate      # structure, ids, traceability, evidence, staleness, freshness; --strict
+npm run adapters:sync         # AGENTS.md, CLAUDE.md, and adapters for the tools in sdd.config.json; --check, --all, --quiet
 npm run context:archive-handoff
 ```
 
@@ -106,7 +108,7 @@ npm run context:archive-handoff
 1. Fill `docs/steering/product.md`, `tech.md`, and `structure.md` from the real repository. Set `sdd.config.json` (`project`, `stack`, `tools`, `frozen`). `init` with app and database presets is available from 2.0.0.
 2. Write `docs/product/prd.md` from `docs/_templates/prd.md`; add a constitution when governance warrants it.
 3. Record expensive-to-reverse choices as ADRs; write the architecture baseline from `docs/_templates/architecture-baseline.md`.
-4. Keep `AGENTS.md` in sync with steering by hand.
+4. Run `npm run adapters:sync` after every steering change; in Claude Code the PostToolUse hook does it.
 5. Select the first vertical slice and create `docs/specs/F-XXX-name/` from the per-feature templates at the right tier.
 6. Implement one task at a time; record evidence; update `tasks.md` and `docs/handoff/current.md`; run `npm run context:render`, then `npm run context:validate`.
 7. Set `templateMode` to `false` in `sdd.config.json` once core placeholders are filled.

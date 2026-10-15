@@ -18,12 +18,18 @@ docs/steering/*.md                        docs/context/state.yaml   (machine-rea
 docs/specs/F-XXX/{requirements,design,    docs/context/BRIEF.md     (single entry point)
   system-architecture,verification}.md    docs/context/PROJECT_STATE.md (compact view)
 docs/specs/F-XXX/tasks.md  <- task master docs/context/PROGRESS.md  (full board)
-docs/context/ASSUMPTIONS.md               AGENTS.md and tool adapters (from steering + sdd.config.json)
+docs/context/ASSUMPTIONS.md
 docs/handoff/current.md
-                  ---- context:render; adapters:sync (available from 2.0.0) ---->
+                  ---- context:render ---->
+
+docs/steering/*.md                        AGENTS.md (contract for every tool)
+sdd.config.json (tools, generated,        CLAUDE.md, GEMINI.md (@AGENTS.md + adapter lines)
+  frozen)                                 .cursor/rules/*.mdc, .kiro/steering/*.md (one per steering file)
+                                          .github/copilot-instructions.md, .github/instructions/*.instructions.md
+                  ---- adapters:sync ---->
 ```
 
-`sdd.config.json` lists the rendered paths under `generated`. Editing one by hand is a validation error: `state.yaml` carries a `source_hash` (sha256 over `sdd.config.json`, `docs/steering/`, `docs/specs/F-*/`, `ASSUMPTIONS.md`, and the handoff), and the validator re-renders in memory and fails when any view differs from disk. Git facts are not part of the hash; they live only in the `## Git` block of `PROJECT_STATE.md`, which the freshness check ignores.
+`sdd.config.json` lists the rendered paths and the adapters under `generated`. Editing one by hand is a validation error (and, in Claude Code, a denied edit): `state.yaml` carries a `source_hash` (sha256 over `sdd.config.json`, `docs/steering/`, `docs/specs/F-*/`, `ASSUMPTIONS.md`, and the handoff), and the validator re-renders in memory and fails when any view differs from disk. Git facts are not part of the hash; they live only in the `## Git` block of `PROJECT_STATE.md`, which the freshness check ignores.
 
 ## Source rules
 
@@ -67,14 +73,14 @@ The active pair is derived, never typed into a rendered file: the first `in_prog
 | `npm run context:render` | available: writes `state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, `PROGRESS.md` with LF endings; `--check` exits 1 when a view would change, `--quiet` prints nothing on success |
 | `npm run context:validate` | available: the checks below; `--strict` turns warnings into errors |
 | `npm run context:archive-handoff` | available: archives an active handoff by `session_date`, `feature_id`, `task_id`, resets `current.md`, then renders |
-| `npm run adapters:sync` | available from 2.0.0 |
+| `npm run adapters:sync` | available: writes `AGENTS.md` and the adapters for the tools in `sdd.config.json`; `--check` exits 1 when a target differs from a clean sync, `--all` renders every tool, `--quiet` |
 
 Validator output is one line per finding, `path:line  level  message`, sorted by file, then a count summary. `error` fails the run; `warning` only prints.
 
 | Check | Level |
 |---|---|
 | Required files from `validate.requiredFiles` exist | error |
-| Steering files have frontmatter with `inclusion` set to `always`, `fileMatch`, or `manual`; over `limits.steering` lines (120) | error; warning |
+| Steering files have frontmatter with `inclusion` set to `always`, `fileMatch`, or `manual`; `fileMatchPattern` present exactly when `inclusion` is `fileMatch`; over `limits.steering` lines (120) | error; error; warning |
 | Every `docs/specs/F-*/` file and `docs/adr/ADR-*.md` has frontmatter with `id`, `title`, `type`, `status`, `tier`, `owner`, `created`, `last_updated`, `last_verified`; `id` matches the folder or file name; `type` matches the file name; `status` and `tier` in vocabulary | error |
 | Feature file `status` differs from `tasks.md`; `design.md` missing; full tier without `system-architecture.md` | warning |
 | `requirements.md`, `tasks.md`, or `verification.md` missing in a feature folder | error |
@@ -87,6 +93,7 @@ Validator output is one line per finding, `path:line  level  message`, sorted by
 | Assumption `status` not `open`, `confirmed`, or `rejected`; `feature` names an unknown feature | error; warning |
 | `last_verified` older than `limits.staleDays` while `implementing` or `verification`; active handoff past `expires_after`; handoff naming an unknown feature or task | warning |
 | Rendered view differs from an in-memory render (`run npm run context:render`); `state.yaml` not valid YAML or not `schema_version: 2`; generated file without its banner | error |
+| Adapter differs from a clean `adapters:sync` while `tools` is non-empty (`run npm run adapters:sync`) | error |
 | Spec file over its tier cap (`limits.lite`, `limits.full`, `limits.systemArchitecture`) | warning |
 | Relative Markdown link does not resolve; backtick path starting with `docs/` or `scripts/` does not exist (skipping `XXX`, globs, placeholders, `CHANGELOG.md`, the handoff archive) | error; warning |
 | `{{...}}` placeholder outside `_templates/` when `templateMode` is `false` (limited to `validate.placeholderSensitiveFiles` when that list is non-empty) | error |
@@ -95,6 +102,7 @@ Validator output is one line per finding, `path:line  level  message`, sorted by
 
 ```text
 task status changes      -> edit tasks.md -> npm run context:render -> npm run context:validate -> commit
+steering or config change -> edit docs/steering/ or sdd.config.json -> npm run adapters:sync -> render -> validate
 session ends             -> update docs/handoff/current.md
 requirement or architecture changes -> update spec or ADR -> update affected tasks -> render -> validate
 unknown appears          -> add A-XXX to ASSUMPTIONS.md -> mark affected task blocked

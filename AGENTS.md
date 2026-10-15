@@ -1,17 +1,17 @@
-<!-- Will be generated from docs/steering by adapters:sync in 2.0.0 -->
+<!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
+Source: docs/steering/, sdd.config.json.
+source_hash: 093266fcef33b013304abdebf02c06c16c8d34d9072cf6430c3430b7b4be9a5f -->
 
 # Repository contract: {{PROJECT_NAME}}
 
-Short contract for humans and coding agents. The canonical rules live in `docs/steering/`; this file points to them and adds nothing they do not say.
+{{PROJECT_NAME}} is a {{APPLICATION_TYPE}} for {{TARGET_USERS}} that {{PRIMARY_OUTCOME}}.
 
-## Identity
-
-{{PROJECT_NAME}} is a {{APPLICATION_TYPE}} for {{TARGET_USERS}} that {{PRIMARY_OUTCOME}}. Lifecycle stage: {{STAGE}}. Production sensitivity: {{LOW_MEDIUM_HIGH}}.
+Rendered from `docs/steering/` and `sdd.config.json` for humans and coding agents. Edit the steering files, then run `npm run adapters:sync`.
 
 ## Read first
 
 1. `docs/context/BRIEF.md` (single entry point; rendered, never hand-edited)
-2. `docs/steering/rules.md`, `tech.md`, `structure.md`, `workflow.md`, `product.md`
+2. `docs/steering/rules.md`, `docs/steering/tech.md`, `docs/steering/structure.md`, `docs/steering/workflow.md`, `docs/steering/product.md`
 3. The active feature under `docs/specs/`: `tasks.md`, then the sections it references
 
 Fallback when `BRIEF.md` is absent: `docs/context/NEW_CHAT_PROTOCOL.md`.
@@ -33,29 +33,251 @@ Fallback when `BRIEF.md` is absent: `docs/context/NEW_CHAT_PROTOCOL.md`.
 | Session delta | `docs/handoff/current.md` |
 | Current behavior | code, tests, schema, configuration |
 
-Chat history and provider memory are never a source of truth. When sources conflict, stop and follow the conflict rule in `docs/steering/rules.md`.
+Chat history and provider memory are never a source of truth.
 
-## Non-negotiables
+## Read-only paths
 
-- Inspect before asserting; never invent a path, API, schema field, or command.
-- Evidence before claims: run the commands in `docs/steering/tech.md` and record EV blocks in `verification.md`.
-- Log unknowns in `docs/context/ASSUMPTIONS.md` instead of guessing.
-- No secrets read, printed, or committed. No destructive data, git, or production action without explicit approval.
-- Generated and frozen paths in `sdd.config.json` are read-only.
-- One task at a time, inside its scope. Stop and report on any stop condition in `docs/steering/rules.md`.
+Generated (edit the sources, then run `npm run context:render` or `npm run adapters:sync`): `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/`
+
+Frozen (explicit owner approval required): none
+
+## Rules
+
+Engineering rules every agent and contributor applies. The principles behind them are in the project constitution; the lifecycle is in `workflow.md`.
+
+### Engineering
+
+- Follow existing project patterns before introducing a new abstraction.
+- Keep the change inside the selected task. Discovered work becomes a new task in `tasks.md`, not a silent extension.
+- Inspect the repository before asserting a path, API, schema field, command, or framework behavior. Never invent one.
+- Preserve existing behavior and contracts unless the referenced spec changes them.
+- Add or update tests for changed behavior. Never weaken or disable a test to make a check pass.
+- Comments explain why, not what. No decorative banners or separator comments.
+- Treat generated and frozen paths from `sdd.config.json` as read-only.
+
+### Evidence before claims
+
+- "Done" means: analyze, typecheck, test, and build commands from `tech.md` ran, and their output is recorded as EV blocks in the feature's `verification.md`.
+- A check that could not run is reported with the reason and residual risk. It is never reported as passed.
+- A task reaches `done` only with at least one evidence id. A feature reaches `implemented` only with every task `done` or `deferred` and no `open` assumption.
+
+### Unknowns
+
+Log an unknown in `docs/context/ASSUMPTIONS.md` as `A-XXX` with `status: open` instead of guessing. Continue only on work the assumption does not affect; mark the affected task `blocked`.
+
+### Prohibited without explicit owner approval
+
+- Changing a public API, event, or data contract.
+- Destructive data operations: drop, mass delete, reset, backfill with unknown impact, editing an applied migration.
+- Replacing a major framework, provider, or dependency; adding a dependency outside the policy in `tech.md`.
+- Breaking an architecture boundary or dependency direction.
+- Changing production infrastructure, credentials, or configuration.
+- Bypassing authentication or authorization.
+- Force push, history rewrite, or any git operation that can destroy work.
+- Editing a generated or frozen path.
+- Publishing, deploying, or sending messages on the owner's behalf.
+
+### Stop conditions
+
+Stop and report, instead of implementing, when the task would require any prohibited action above, when two sources of truth conflict, when a blocking assumption is open, or when a required command is unavailable.
+
+### Data and security
+
+- No secrets in the repository. Never read, print, or commit `.env*`, key files, keystores, or store credentials.
+- Authorization is enforced at a trusted boundary; hiding UI is not authorization.
+- Validate untrusted input at the boundary. Do not log secrets, tokens, auth headers, or unnecessary personal data.
+- Data store changes are versioned, append-only, reviewed, and reversible or explicitly accepted as forward-only.
+- Project-specific rule: {{DATA_RULE_OR_NONE}}
+
+### Source of truth and conflicts
+
+Requirements own behavior, system architecture owns module decisions, design owns the repository mapping, `tasks.md` owns task status, code and tests own current behavior, `tech.md` owns commands. Chat history and provider memory are never a source of truth.
+
+When sources conflict: stop the affected work, name both sources, inspect code and git, propose the smallest correction, get approval for product, architecture, security, or data changes, update the canonical source, then continue.
+
+## Tech
+
+Stack and commands. Stack-agnostic by default; an app or database preset (available from 2.0.0) fills the placeholders. Until then, fill them from the real repository: a command listed here must exist and run.
+
+### Stack
+
+| Concern | Technology | Version | Reason or constraint |
+|---|---|---|---|
+| Language and runtime | {{LANGUAGE_RUNTIME}} | | |
+| Application framework | {{APP_FRAMEWORK}} | | |
+| Backend or API | {{BACKEND_OR_NONE}} | | |
+| Data store | {{DATA_STORE_OR_NONE}} | | relational, document, key-value, embedded local, or file |
+| Auth | {{AUTH_OR_NONE}} | | |
+| State management | {{STATE_MANAGEMENT_OR_NA}} | | |
+| Package and build tooling | {{BUILD_TOOLING}} | | |
+| Test framework | {{TEST_FRAMEWORK}} | | |
+| Deployment target | {{DEPLOYMENT_TARGET}} | | web, mobile store, server, desktop |
+
+Mobile (Flutter, Kotlin, React Native) and non-relational stores are first-class here. A row that does not apply says `none`, not an invented value.
+
+### Commands
+
+Run these before claiming any task done. Report a command that cannot run; never claim its success.
+
+| Purpose | Command |
+|---|---|
+| Install | `{{INSTALL_COMMAND}}` |
+| Analyze or lint | `{{ANALYZE_COMMAND}}` |
+| Typecheck | `{{TYPECHECK_COMMAND_OR_NONE}}` |
+| Format check | `{{FORMAT_COMMAND_OR_NONE}}` |
+| Test | `{{TEST_COMMAND}}` |
+| Build | `{{BUILD_COMMAND}}` |
+| Run locally | `{{DEV_COMMAND}}` |
+| Data store change check | `{{DATA_CHANGE_CHECK_COMMAND_OR_NONE}}` |
+| Context validation | `npm run context:validate` |
+
+### Environment and secrets
+
+- Secrets come from the environment or a secret manager; `.env*`, key files, and store credentials are never read, printed, or committed by an agent.
+- Example-config files (`.env.example` or equivalent) document required variables without values.
+
+### Dependency policy
+
+Before adding or replacing a dependency, state the problem it solves, the native alternative considered, maintenance health, runtime or bundle impact, and license. Approval rule: {{DEPENDENCY_APPROVAL_RULE}}.
+
+### Data store changes
+
+Schema, rules, index, or migration changes are versioned files in the repository, reviewed like code. Append-only; destructive changes need explicit approval. Per-store procedure: `docs/runbooks/database-migrations.md`.
+
+## Structure
+
+Where things live and which direction dependencies point. Document only what an agent cannot infer by listing the tree.
+
+### Directory responsibilities
+
+| Path | Responsibility | Rule |
+|---|---|---|
+| `docs/steering/` | canonical project rules, product, stack, structure, workflow | edit by hand; `AGENTS.md` and tool adapters are rendered from it by `npm run adapters:sync` |
+| `docs/specs/F-XXX-name/` | one feature: requirements, system-architecture, design, tasks, verification | `tasks.md` is the master for task status |
+| `docs/adr/` | one decision per record | approved ADRs are never rewritten |
+| `docs/architecture/` | cross-feature boundaries and invariants | module reasoning stays in the feature |
+| `docs/context/` | rendered state, brief, assumptions log | only `ASSUMPTIONS.md` is hand-edited |
+| `docs/handoff/current.md` | session delta | updated at the end of every implementation session |
+| `{{SOURCE_ROOT}}` | application code | {{SOURCE_RULE}} |
+| `{{TEST_ROOT}}` | tests | mirrors the source layout |
+
+### Generated paths
+
+Never hand-edit. Listed in `sdd.config.json` under `generated`:
+
+- `docs/context/state.yaml`
+- `docs/context/PROJECT_STATE.md`
+- `docs/context/PROGRESS.md`
+- `docs/context/BRIEF.md`
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/` (only the tools in `sdd.config.json` are written)
+- Project-specific generated code (example: `*.g.dart`, `*.freezed.dart`, generated API clients): {{GENERATED_CODE_PATHS_OR_NONE}}
+
+### Frozen paths
+
+Listed in `sdd.config.json` under `frozen`. Edits need explicit owner approval and an ADR when the freeze is architectural.
+
+- {{FROZEN_PATHS_OR_NONE}}
+
+### Dependency direction
+
+```text
+ui -> application -> domain <- data
+```
+
+- Inner layers never import outer layers.
+- Framework and provider SDKs stay behind a project-owned boundary.
+- Project-specific rule: {{DEPENDENCY_RULE}}
+
+### Naming
+
+- Features: `F-001-short-name`. Tasks: `T-001`. Evidence: `EV-001`. Assumptions: `A-001`. ADRs: `ADR-0001-short-name.md`.
+- Code naming follows the language's standard style guide unless `docs/steering/rules.md` says otherwise.
+
+## Workflow
+
+The spec-driven lifecycle from session start to handoff.
+
+### Start a session
+
+1. Read `docs/context/BRIEF.md`. It is the single entry point: active feature and task, open assumptions, blockers, next action.
+2. If `BRIEF.md` is absent or stale, read in this order: `docs/steering/*.md`, `docs/handoff/current.md`, the active feature's `tasks.md`, then its `requirements.md` and `design.md`.
+3. Confirm branch and worktree match the handoff before editing anything.
+
+### Pick a task
+
+- Take the task the brief names, or the first `planned` task whose `depends_on` are all `done`.
+- Read only the FR ids, design sections, and architecture sections the task references, plus the code it touches.
+- Set `status: in_progress` in `tasks.md`. One task in progress per session. In Claude Code, `/sdd:task T-XXX` builds the task prompt from the brief and the spec and follows it.
+
+### Status transitions
+
+```text
+planned -> in_progress -> review -> done
+                |            |
+                v            v
+             blocked      deferred
+```
+
+- `blocked`: an unresolved decision or assumption; log it in `ASSUMPTIONS.md` and stop the task.
+- `review`: implementation complete, evidence recorded, awaiting review.
+- `done`: reviewed, with at least one `EV-XXX` id in `evidence`.
+- `deferred`: removed from current scope with a reason; never deleted.
+
+Feature status in frontmatter: `draft -> review -> approved -> implementing -> verification -> implemented`, or `superseded`. A feature becomes `implemented` only when every task is `done` or `deferred` and no assumption is `open`.
+
+### Evidence
+
+Every check runs through the commands in `tech.md` and is recorded as an EV block in `verification.md` with command, output excerpt, date, commit, and the AC ids it covers. Claims without evidence are not accepted at review.
+
+### Close a session
+
+1. Review `git diff` and `git status`.
+2. Run the commands in `tech.md`; record evidence.
+3. Update task status in `tasks.md`; run `npm run context:render`, then `npm run context:validate`. After a steering or `sdd.config.json` change, also `npm run adapters:sync`.
+4. Update `docs/handoff/current.md`: objective, changed files, commands and results, uncommitted work, blockers, exact next step. In Claude Code, `/sdd:handoff` writes it and runs render and validate; `/sdd:review`, `/sdd:bug`, and `/sdd:render` fill the review template, open a bug file, and run the three context commands.
+5. Report the next task.
+
+### When to write an ADR
+
+Write one in `docs/adr/` from `docs/_templates/adr.md` when a decision is expensive to reverse, changes a boundary or trust model, introduces or replaces a framework, provider, store, or major dependency, changes a public contract, or will be questioned later. One decision per ADR; supersede, never rewrite.
+
+### Tiers
+
+`lite` is the default: requirements, design, tasks, verification, each within 80 lines. `full` adds `system-architecture.md` and the sections marked `<!-- full-tier -->`, within 200 lines (300 for system architecture). Choose `full` when the feature has shared state, realtime or async communication, external integration, a security boundary, or material scale or cost.
+
+## Product
+
+Short, always-loaded product context. The full product requirements live in `docs/product/prd.md`; this file must agree with it and stays under 120 lines.
+
+### Vision
+
+{{PROJECT_NAME}} is a {{APPLICATION_TYPE}} for {{TARGET_USERS}} that {{PRIMARY_OUTCOME}}.
+
+One paragraph on why it exists now and what "working" looks like for the user.
+
+### Personas
+
+- Example: Reader, a commuter who logs a daily reading session from a phone in under ten seconds.
+
+### Core use cases
+
+- UC-001: actor, trigger, outcome.
+
+### Non-goals
+
+- Nearby capabilities this product deliberately does not provide in the current milestone.
+
+### Success signals
+
+| Signal | What it tells us | Source |
+|---|---|---|
+| Example: daily check-ins per active user | the habit loop works | analytics event `check_in` |
+
+### Constraints that shape product decisions
+
+- Example: offline use on the primary device is required.
+- Example: data of minors is never collected.
 
 ## Commands
 
-See the Commands table in `docs/steering/tech.md`. Context: `npm run context:render`, then `npm run context:validate`.
-
-## Definition of done
-
-A task is done when its acceptance criteria have EV evidence, the commands in `tech.md` pass, the diff contains only the task's scope, `tasks.md` is updated, and `docs/handoff/current.md` reflects the session. A feature is implemented when every task is `done` or `deferred` and no assumption is `open`.
-
-## Project-specific rules
-
-- {{PROJECT_RULE_OR_NONE}}
-
-## Maintenance
-
-Edit `docs/steering/`, not this file. Until 2.0.0 regenerates it, keep this file in sync by hand and under 120 lines.
+Project commands: the Commands table in `docs/steering/tech.md` (the Tech section above). Context: `npm run context:render`, then `npm run context:validate`. Adapters: `npm run adapters:sync`.

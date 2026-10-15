@@ -20,7 +20,7 @@ A long generated reference can be valid. A shorter manual document should still 
 
 | Layer | Purpose | Canonical location | Typical author |
 |---|---|---|---|
-| Steering | Canonical product, stack, structure, rules, workflow | `docs/steering/` | Human; `AGENTS.md` and adapters rendered from it (available from 2.0.0) |
+| Steering | Canonical product, stack, structure, rules, workflow | `docs/steering/` | Human; `AGENTS.md` and tool adapters rendered from it by `npm run adapters:sync` |
 | Product intent | Problem, users, outcomes, scope | `docs/product/` | Human + conversational AI |
 | Architecture | Cross-feature structure and boundaries | `docs/architecture/` | Human + conversational AI, verified by coding agent |
 | Decisions | One expensive-to-reverse decision | `docs/adr/` | Human approves; AI drafts |

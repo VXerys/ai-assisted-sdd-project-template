@@ -3,6 +3,7 @@
   "project": { "name": "{{PROJECT_NAME}}", "tier": "lite" },
   "stack": { "app": "generic", "database": "none" },
   "tools": ["claude"],
+  "hooks": { "enabled": true },
   "paths": {
     "steering": "docs/steering",
     "specs": "docs/specs",
@@ -15,7 +16,13 @@
     "docs/context/PROJECT_STATE.md",
     "docs/context/PROGRESS.md",
     "docs/context/BRIEF.md",
-    "AGENTS.md"
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    ".cursor/rules/",
+    ".github/copilot-instructions.md",
+    ".github/instructions/",
+    ".kiro/steering/"
   ],
   "frozen": [],
   "limits": { "lite": 80, "full": 200, "systemArchitecture": 300, "steering": 120, "staleDays": 30, "briefTokens": 3000 },
@@ -53,7 +60,14 @@
       "docs/context/state.yaml",
       "docs/context/PROJECT_STATE.md",
       "docs/context/PROGRESS.md",
-      "docs/context/BRIEF.md"
+      "docs/context/BRIEF.md",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      ".cursor/rules/",
+      ".github/copilot-instructions.md",
+      ".github/instructions/",
+      ".kiro/steering/"
     ],
     "placeholderSensitiveFiles": [
       "AGENTS.md",

@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "startup|resume|compact", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/hooks/session-start.mjs\"" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/hooks/stop-handoff-check.mjs\"" }] }
+    ]
+  }
+}

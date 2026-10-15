@@ -9,6 +9,8 @@ export const DEFAULT_PATHS = {
   assumptions: 'docs/context/ASSUMPTIONS.md'
 };
 
+export const TOOLS = ['claude', 'codex', 'cursor', 'copilot', 'gemini', 'kiro', 'antigravity'];
+
 export const DEFAULT_LIMITS = { lite: 80, full: 200, systemArchitecture: 300, steering: 120, staleDays: 30, briefTokens: 3000 };
 
 // Returns {config, errors}; `config` is null when the file is missing or unreadable.
@@ -35,6 +37,10 @@ export function validateConfig(raw) {
     if (raw[key] !== undefined && !Array.isArray(raw[key])) errors.push(`sdd.config.json ${key} must be an array.`);
   }
   if (raw.paths !== undefined && typeof raw.paths !== 'object') errors.push('sdd.config.json paths must be an object.');
+  if (raw.tools !== undefined && (!Array.isArray(raw.tools) || raw.tools.some((tool) => !TOOLS.includes(tool)))) {
+    errors.push(`sdd.config.json tools must be an array of ${TOOLS.join(' | ')}.`);
+  }
+  if (raw.hooks !== undefined && (typeof raw.hooks !== 'object' || raw.hooks === null)) errors.push('sdd.config.json hooks must be an object.');
   if (raw.limits !== undefined && typeof raw.limits !== 'object') errors.push('sdd.config.json limits must be an object.');
   return errors;
 }
@@ -45,6 +51,7 @@ export function normalizeConfig(raw) {
     project: { name: raw.project.name, tier: raw.project.tier },
     stack: raw.stack ?? {},
     tools: raw.tools ?? [],
+    hooks: { enabled: raw.hooks?.enabled !== false },
     paths: { ...DEFAULT_PATHS, ...(raw.paths ?? {}) },
     generated: raw.generated ?? [],
     frozen: raw.frozen ?? [],

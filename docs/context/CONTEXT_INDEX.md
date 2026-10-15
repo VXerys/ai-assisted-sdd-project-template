@@ -59,7 +59,7 @@ Never edited by hand; listed under `generated` in `sdd.config.json`:
 - `docs/context/BRIEF.md`
 - `docs/context/PROJECT_STATE.md`
 - `docs/context/PROGRESS.md`
-- `AGENTS.md` (available from 2.0.0; hand-maintained until then)
+- `AGENTS.md`, `CLAUDE.md`, and the other tool adapters listed under `generated` (rendered by `npm run adapters:sync`)
 
 ## Conflict protocol
 

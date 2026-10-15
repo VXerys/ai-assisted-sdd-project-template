@@ -164,3 +164,24 @@ test('the template repository itself renders cleanly and validates', () => {
   assert.equal(status, 0, out);
   assert.match(out, /Context validation passed/);
 });
+
+test('a fileMatch steering file without fileMatchPattern is an error, and a pattern on an always file too', () => {
+  const cwd = copyFixture('valid-lite');
+  fs.writeFileSync(path.join(cwd, 'docs/steering/database.md'), '---\ninclusion: fileMatch\n---\n\n# Database\n');
+  fs.writeFileSync(path.join(cwd, 'docs/steering/product.md'), read(cwd, 'docs/steering/product.md').replace('inclusion: always\n', 'inclusion: always\nfileMatchPattern: "src/**"\n'));
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 1);
+  assert.match(out, /docs\/steering\/database\.md:1\s+error\s+fileMatch steering needs fileMatchPattern/);
+  assert.match(out, /docs\/steering\/product\.md:1\s+error\s+fileMatchPattern is only valid with inclusion: fileMatch/);
+});
+
+test('a stale adapter is an error that names adapters:sync, cleared by a sync', () => {
+  const cwd = copyFixture('valid-lite');
+  fs.appendFileSync(path.join(cwd, 'AGENTS.md'), '\nHand edit.\n');
+  const broken = run(validator, cwd);
+  assert.equal(broken.status, 1);
+  assert.match(broken.out, /AGENTS\.md:1\s+error\s+adapter is stale; run npm run adapters:sync/);
+  assert.equal(run(path.resolve(here, '..', 'adapters', 'sync.mjs'), cwd).status, 0);
+  const fixed = run(validator, cwd);
+  assert.equal(fixed.status, 0, fixed.out);
+});

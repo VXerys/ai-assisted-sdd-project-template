@@ -10,7 +10,7 @@ Where things live and which direction dependencies point. Document only what an 
 
 | Path | Responsibility | Rule |
 |---|---|---|
-| `docs/steering/` | canonical project rules, product, stack, structure, workflow | edit by hand; adapters are generated from it |
+| `docs/steering/` | canonical project rules, product, stack, structure, workflow | edit by hand; `AGENTS.md` and tool adapters are rendered from it by `npm run adapters:sync` |
 | `docs/specs/F-XXX-name/` | one feature: requirements, system-architecture, design, tasks, verification | `tasks.md` is the master for task status |
 | `docs/adr/` | one decision per record | approved ADRs are never rewritten |
 | `docs/architecture/` | cross-feature boundaries and invariants | module reasoning stays in the feature |
@@ -27,7 +27,7 @@ Never hand-edit. Listed in `sdd.config.json` under `generated`:
 - `docs/context/PROJECT_STATE.md`
 - `docs/context/PROGRESS.md`
 - `docs/context/BRIEF.md`
-- `AGENTS.md`
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/` (only the tools in `sdd.config.json` are written)
 - Project-specific generated code (example: `*.g.dart`, `*.freezed.dart`, generated API clients): {{GENERATED_CODE_PATHS_OR_NONE}}
 
 ## Frozen paths
