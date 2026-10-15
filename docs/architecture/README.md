@@ -2,8 +2,8 @@
 id: ARCH-INDEX
 title: Architecture Documentation
 status: template
-owner: "{{OWNER}}"
-last_updated: "{{YYYY-MM-DD}}"
+owner: ""
+last_updated: 2026-10-15
 ---
 
 # Architecture Documentation

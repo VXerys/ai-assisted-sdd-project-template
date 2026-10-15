@@ -1,98 +1,80 @@
 ---
+id: ARCH
+title: "{{PROJECT_NAME}}"
+type: architecture-baseline
 status: draft
+tier: lite
 owner: "{{ARCHITECTURE_OWNER}}"
+created: "{{YYYY-MM-DD}}"
 last_updated: "{{YYYY-MM-DD}}"
-last_verified_commit: unverified
-source_of_truth_for:
-  - system-boundaries
-  - dependency-direction
+last_verified: "{{YYYY-MM-DD}}"
+supersedes: null
 ---
 
-# Architecture Overview
+# Architecture Baseline: {{PROJECT_NAME}}
 
-## 1. System Purpose
+Cross-feature boundaries and invariants every module obeys, in the lite form of `docs/_templates/architecture-baseline.md`. Module-level reasoning lives in `docs/specs/F-XXX/system-architecture.md`; the stack and commands live in `docs/steering/tech.md`; directory responsibilities live in `docs/steering/structure.md`. Do not repeat them here. Full tier: add the remaining sections of `docs/_templates/architecture-baseline.md` (contracts, persistence, external services, errors, performance, observability, testing, constraints and risks).
 
-{{Describe the system responsibility and what remains outside its boundary.}}
+## System context
 
-## 2. Architecture Drivers
+One paragraph: what the system does and for whom, and what stays outside its boundary.
 
-- {{BUSINESS_DRIVER}}
-- {{QUALITY_ATTRIBUTE}}
-- {{DELIVERY_CONSTRAINT}}
-
-## 3. System Context
-
-```text
-{{ACTOR_OR_EXTERNAL_SYSTEM}}
-  -> {{CLIENT}}
-  -> {{APPLICATION_BACKEND}}
-  -> {{DATABASE_OR_EXTERNAL_SERVICE}}
-```
-
-External systems:
-
-| System | Purpose | Data exchanged | Failure impact |
-|---|---|---|---|
-| {{SYSTEM}} | {{PURPOSE}} | {{DATA}} | {{IMPACT}} |
-
-## 4. Major Components
-
-| Component | Responsibility | Owns | Must not own |
-|---|---|---|---|
-| {{COMPONENT}} | {{RESPONSIBILITY}} | {{DATA_OR_RULES}} | {{EXCLUSION}} |
-
-## 5. Dependency Direction
-
-```text
-Presentation
-  -> Application / Controller
-  -> Domain / Use Case
-  -> Repository Contract
-  -> Infrastructure Adapter
-```
-
-Rules:
-
-1. Inner layers must not import framework-specific outer layers.
-2. Infrastructure errors must be normalized before reaching presentation.
-3. Authorization must be enforced at a trusted boundary.
-4. Cross-feature shared code requires a stable, domain-neutral contract.
-
-## 6. Data Flow
-
-### Flow AF-001 — {{FLOW_NAME}}
-
-1. {{ENTRY_POINT}}
-2. {{VALIDATION}}
-3. {{BUSINESS_OPERATION}}
-4. {{PERSISTENCE_OR_EXTERNAL_CALL}}
-5. {{RESULT_AND_ERROR_MAPPING}}
-
-## 7. Deployment Topology
-
-- Client runtime: {{RUNTIME}}
-- Application hosting: {{HOSTING}}
-- Database region: {{REGION}}
-- Storage: {{STORAGE}}
-- Background jobs: {{JOBS_OR_NONE}}
-- Observability: {{LOGGING_MONITORING}}
-
-## 8. Quality Attributes
-
-| Attribute | Required behavior | Verification |
+| Actor or external system | Relationship | Trust boundary |
 |---|---|---|
-| Security | {{REQUIREMENT}} | {{CHECK}} |
-| Reliability | {{REQUIREMENT}} | {{CHECK}} |
-| Performance | {{REQUIREMENT}} | {{CHECK}} |
-| Maintainability | {{REQUIREMENT}} | {{CHECK}} |
+| Example: payment provider | receives order totals, returns payment status | untrusted input, signed callbacks |
 
-## 9. Known Constraints
+```text
+client -> entry boundary -> application -> persistence or external services
+```
 
-- {{CONSTRAINT}}
-- {{CONSTRAINT}}
+## Components
 
-## 10. Related Decisions
+| Component | Responsibility | Owns | Does not own |
+|---|---|---|---|
+| | | | |
 
-- `../adr/{{ADR_FILE_OR_NONE}}`
+## Boundaries
 
-Do not place feature-specific implementation details here. Put them in the feature `design.md`.
+For each boundary future features must respect:
+
+- B-001: inside, outside, allowed communication, prohibited shortcut, rationale.
+
+## Dependency direction
+
+```text
+ui -> application -> domain <- data
+```
+
+Rules and documented exceptions. Cycles are not allowed. Infrastructure errors are normalized before reaching the presentation layer; authorization is enforced at a trusted boundary.
+
+## Data flow and classification
+
+One line per flow: input, validation, domain operation, persistence or service call, output.
+
+| Data | Owner | Where stored | Sensitivity |
+|---|---|---|---|
+| | | | public \| internal \| personal \| secret |
+
+## State ownership
+
+| State | Owner | Source of truth | Mutation path | Invalidation or sync |
+|---|---|---|---|---|
+| | | | | |
+
+One writable source of truth per state; reconciliation rules are explicit when a second copy exists.
+
+## Security
+
+Identity mechanism, session or token lifecycle, revocation. Authorization decision point, role or permission model, default policy (deny). Secrets, input validation, sensitive-data handling, audit logging, production access.
+
+## Deployment
+
+Environments, build artifact, deployment mechanism, configuration management, migration order, rollback or roll-forward.
+
+## Decisions and open questions
+
+ADR ids with their decision and status. Unknowns go to `docs/context/ASSUMPTIONS.md`; reference A-XXX ids here.
+
+## Approval and change rule
+
+Architecture owner, approved date. A cross-feature or expensive-to-reverse change requires an ADR and owner approval before implementation.

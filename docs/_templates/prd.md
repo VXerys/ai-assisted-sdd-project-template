@@ -37,9 +37,9 @@ Domain, current environment, and why this initiative exists now. Technology only
 
 ## Functional requirements
 
-Product-level only.
+Product-level only. One observable behavior per id, written as "the system shall".
 
-- FR-001: the system shall {{OBSERVABLE_BEHAVIOR}}.
+- FR-001: the system shall store, show, or reject one thing a user can observe.
 - BR-001: business rule and its consequence.
 
 ## Non-functional requirements <!-- full-tier -->

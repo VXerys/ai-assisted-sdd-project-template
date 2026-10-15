@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Define the minimum confidence model for this project. Customize this file after selecting the stack and risk profile.
+Define the minimum confidence model for this project. Adjust after selecting the stack and risk profile.
 
-## Test Layers
+## Test layers
 
 | Layer | Primary purpose | Typical targets |
 |---|---|---|
@@ -14,7 +14,7 @@ Define the minimum confidence model for this project. Customize this file after 
 | End-to-End | Critical user journeys | authentication, purchase, submission, destructive flows |
 | Manual | UX and environment-specific behavior | accessibility, device behavior, production smoke checks |
 
-## Risk-Based Rules
+## Risk-based rules
 
 - High-impact business rules require direct automated tests.
 - Every bug fix requires a regression test when technically practical.
@@ -23,26 +23,14 @@ Define the minimum confidence model for this project. Customize this file after 
 - Snapshot tests must not replace behavioral assertions.
 - End-to-end tests should cover critical journeys, not every UI permutation.
 
-## Test Evidence
+## Test evidence
 
-Every active feature records evidence in its `verification.md`:
+Every active feature records evidence in its `verification.md` as EV blocks: command, output excerpt, date, commit, and the AC ids covered.
 
-- command or test path;
-- tested commit;
-- environment;
-- result;
-- unresolved limitation.
+## Commands
 
-## Required Project Commands
+The test command is the Commands table in `docs/steering/tech.md`. Add rows there for integration, UI, end-to-end, and coverage commands when the project gains them; this file does not keep a second copy.
 
-- Unit: `{{UNIT_TEST_COMMAND}}`
-- Integration: `{{INTEGRATION_TEST_COMMAND}}`
-- UI: `{{UI_TEST_COMMAND}}`
-- End-to-end: `{{E2E_COMMAND}}`
-- Coverage: `{{COVERAGE_COMMAND}}`
+## Coverage policy
 
-## Coverage Policy
-
-Use coverage to find untested risk, not as the only quality target.
-
-Project threshold: `{{THRESHOLD_OR_RISK_BASED}}`.
+Use coverage to find untested risk, not as the only quality target. Record the project threshold, or "risk-based" with the rule, here once decided.

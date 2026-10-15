@@ -1,147 +1,76 @@
 ---
+id: PRD
+title: "{{PROJECT_NAME}}"
+type: prd
 status: draft
+tier: lite
 owner: "{{PRODUCT_OWNER}}"
 created: "{{YYYY-MM-DD}}"
 last_updated: "{{YYYY-MM-DD}}"
-last_verified_commit: unverified
-source_of_truth_for:
-  - product-intent
-  - product-scope
+last_verified: "{{YYYY-MM-DD}}"
+supersedes: null
 ---
 
-# Product Requirements Document: {{PROJECT_NAME}}
+# Product Requirements: {{PROJECT_NAME}}
 
-## 1. Executive Summary
+Product intent and scope. Feature-level behavior lives in `docs/specs/F-XXX/requirements.md`; the short version of vision and personas lives in `docs/steering/product.md` and must agree with this file.
 
-{{Explain the product, target user, problem, and intended outcome in one concise paragraph.}}
+## Context
 
-## 2. Problem
+Domain, current environment, and why this initiative exists now. Technology only when it is a fixed constraint.
 
-### Current situation
+## Problem
 
-{{Describe what happens today.}}
+- Current state: what happens today and who is affected.
+- Pain or opportunity: the cost, friction, or risk.
+- Desired outcome: what becomes possible.
 
-### User impact
+## Goals and non-goals
 
-- {{IMPACT}}
-- {{IMPACT}}
+- G-001: observable outcome.
+- NG-001: nearby work explicitly excluded from this product or milestone.
 
-### Business or operational impact
+## Actors and use cases
 
-- {{IMPACT}}
-- {{IMPACT}}
+- ACTOR-001: who they are, primary need, permissions or constraints.
+- UC-001: actor, trigger, outcome, important failure.
 
-## 3. Target Users
+## Functional requirements
 
-### Primary Persona — {{NAME}}
+Product-level only. One observable behavior per id, written as "the system shall".
 
-- Role: {{ROLE}}
-- Goal: {{GOAL}}
-- Main pain: {{PAIN}}
-- Usage context: {{CONTEXT}}
+- FR-001: the system shall store, show, or reject one thing a user can observe.
+- BR-001: business rule and its consequence.
 
-### Secondary Persona — {{NAME_OR_NONE}}
+## Non-functional requirements <!-- full-tier -->
 
-{{DESCRIPTION}}
+- NFR-001: category (performance, reliability, security, privacy, accessibility, compatibility, operations) and a measurable expectation.
 
-## 4. Product Goals
+## Constraints
 
-| ID | Goal | Success signal |
+Product, platform, schedule, compliance. One line each.
+
+## Success criteria
+
+| Signal | Target or interpretation | Measurement source |
 |---|---|---|
-| G-001 | {{GOAL}} | {{MEASURABLE_SIGNAL}} |
-| G-002 | {{GOAL}} | {{MEASURABLE_SIGNAL}} |
+| Example: weekly active check-ins | rises after release | app analytics event `check_in` |
 
-## 5. Non-Goals
+## Risks and assumptions
 
-- NG-001: {{EXPLICIT_EXCLUSION}}
-- NG-002: {{EXPLICIT_EXCLUSION}}
+- R-001: risk, likelihood, impact, mitigation or discovery plan.
+- Assumptions are logged in `docs/context/ASSUMPTIONS.md`; list the A-XXX ids here. An assumption is never presented as a fact.
 
-Non-goals must not be implemented opportunistically.
+## Milestones
 
-## 6. Critical User Journeys
+- M1: outcome, included capabilities, exit criteria.
 
-### Journey J-001 — {{NAME}}
+## Feature map
 
-1. {{STEP}}
-2. {{STEP}}
-3. {{SUCCESS_OUTCOME}}
-
-Failure and recovery behavior:
-
-- {{FAILURE}}
-- {{RECOVERY}}
-
-## 7. Product Capabilities
-
-| ID | Capability | Priority | MVP? |
-|---|---|---|---|
-| CAP-001 | {{CAPABILITY}} | P0 | Yes |
-| CAP-002 | {{CAPABILITY}} | P1 | No |
-
-Detailed behavior belongs in feature specifications, not in this table.
-
-## 8. Scope
-
-### MVP scope
-
-- {{IN_SCOPE}}
-- {{IN_SCOPE}}
-
-### Later scope
-
-- {{DEFERRED_SCOPE}}
-
-### Explicitly excluded
-
-- {{OUT_OF_SCOPE}}
-
-## 9. Product Rules
-
-- PR-001: {{CROSS_FEATURE_RULE}}
-- PR-002: {{CROSS_FEATURE_RULE}}
-
-## 10. Data and Privacy
-
-- Data collected: {{DATA}}
-- Sensitive data: {{DATA_OR_NONE}}
-- Retention requirement: {{REQUIREMENT}}
-- Consent requirement: {{REQUIREMENT}}
-
-## 11. Constraints
-
-- {{TECHNICAL_CONSTRAINT}}
-- {{BUSINESS_CONSTRAINT}}
-- {{DELIVERY_CONSTRAINT}}
-
-## 12. Dependencies
-
-- {{DEPENDENCY}}
-- {{DEPENDENCY}}
-
-## 13. Success Metrics
-
-| Metric | Baseline | Target | Measurement method |
-|---|---|---|---|
-| {{METRIC}} | {{BASELINE}} | {{TARGET}} | {{METHOD}} |
-
-Avoid vanity metrics that do not change product decisions.
-
-## 14. Risks and Assumptions
-
-| ID | Type | Description | Owner | Status |
+| Feature | Capability | Outcome | Depends on | Status |
 |---|---|---|---|---|
-| RA-001 | Risk | {{DESCRIPTION}} | {{OWNER}} | Open |
-| RA-002 | Assumption | {{DESCRIPTION}} | {{OWNER}} | Unvalidated |
+| F-001 | | | | draft |
 
-## 15. Open Questions
+## Approval
 
-| ID | Question | Owner | Blocking? | Resolution |
-|---|---|---|---|---|
-| OQ-001 | {{QUESTION}} | {{OWNER}} | Yes | Pending |
-
-## 16. Approval
-
-- Product owner: {{NAME}}
-- Status: {{DRAFT | APPROVED}}
-- Approved date: {{DATE_OR_PENDING}}
-- Notes: {{NOTES}}
+Decision owner, date, notes.

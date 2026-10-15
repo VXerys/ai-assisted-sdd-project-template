@@ -4,7 +4,7 @@ Use this file when domain language can be misunderstood or used inconsistently.
 
 | Term | Canonical meaning | Do not confuse with | Notes |
 |---|---|---|---|
-| {{TERM}} | {{DEFINITION}} | {{OTHER_TERM}} | {{NOTES}} |
+| Example: todo | one open or closed item in the shared list | task (a unit of engineering work in `tasks.md`) | |
 
 Rules:
 

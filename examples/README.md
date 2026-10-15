@@ -13,6 +13,6 @@ Validate it on its own:
 npm run example:validate       # cd examples/todo-api && node ../../scripts/context/validate-context.mjs
 ```
 
-The example ships documentation only. No application code, no `scripts/`, no `docs/_templates/`, so the validator prints warnings for the hook scripts and template paths that `.claude/` and `AGENTS.md` mention; those files exist in a real project. `npm run init` removes this directory from a new project.
+The example ships documentation only. No application code, no `scripts/`, no `docs/_templates/`, so the validator prints warnings for the hook scripts, template paths, and framework protocol docs that `.claude/`, `AGENTS.md`, and `CLAUDE.md` mention; those files exist in a real project. `npm run init` removes this directory from a new project.
 
 Everything in it is fictional: the commits, outputs, and dates are illustrative values that satisfy the evidence format, not records of a real run.

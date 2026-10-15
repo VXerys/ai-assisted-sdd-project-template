@@ -1,10 +1,10 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run context:render`.
 Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
-source_hash: ebc6c92aecf824f24f5d89dcb008a88368c0f7a338f7710e93a29ccaa5291cb4 -->
+source_hash: e2c2181e6b10bb2c9884e737a3923150cb08f7927be0f404c48005bbd01bd378 -->
 
 # Project State
 
-- Generated at: 2026-10-15T07:06:52.941Z
+- Generated at: 2026-10-15T07:59:14.826Z
 - Project: {{PROJECT_NAME}} (tier `lite`)
 - Active: none / none
 - Open assumptions: 0
@@ -19,15 +19,15 @@ source_hash: ebc6c92aecf824f24f5d89dcb008a88368c0f7a338f7710e93a29ccaa5291cb4 --
 <!-- GENERATED:GIT_FACTS:START -->
 ## Git
 
-- Branch: `feat/v2-phase-4-init-examples`
-- HEAD: `20fb5c6`
+- Branch: `feat/v2-phase-5-release`
+- HEAD: `01d11de`
 - Worktree: dirty
 
 Recent commits:
 
+- `01d11de feat(v2): phase 4 init with presets and examples/todo-api`
 - `20fb5c6 feat(v2): phase 3 adapters, hooks, slash commands, conditional steering`
 - `cffb75d feat(v2): phase 2 tooling — context:render, validator v2, fixtures`
 - `c145562 feat(v2): phase 1 foundation — single template family, steering, sdd.config`
 - `de692ee Merge pull request #4 from VXerys/feat/module-system-architecture`
-- `fef1b29 merge(architecture): resolve v2 template conflicts`
 <!-- GENERATED:GIT_FACTS:END -->

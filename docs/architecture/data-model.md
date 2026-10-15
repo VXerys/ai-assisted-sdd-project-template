@@ -1,72 +1,57 @@
 ---
+id: DATA-MODEL
+title: Data Model
 status: draft
 owner: "{{DATA_OWNER}}"
 last_updated: "{{YYYY-MM-DD}}"
-last_verified_commit: unverified
-source_of_truth_for:
-  - semantic-data-model
 ---
 
 # Data Model
 
-This document explains domain meaning, relationships, ownership, and invariants. Versioned migrations remain authoritative for physical schema.
+Domain meaning, relationships, ownership, and invariants shared across features. Versioned migrations, rules files, or schema versions remain authoritative for the physical shape; the store's own rules are in the `database.md` steering file when a database preset was chosen.
 
-## Entity Map
+## Entity map
 
 ```text
-{{ENTITY_A}} 1 --- * {{ENTITY_B}}
-{{ENTITY_B}} * --- 1 {{ENTITY_C}}
+Entity A 1 --- * Entity B
+Entity B * --- 1 Entity C
 ```
 
 ## Entities
 
-### {{ENTITY_NAME}}
+One subsection per entity: purpose; a field table (field, meaning, required, sensitive, rules); invariants as `INV-001` lines that must always hold; who creates, updates, and deletes or archives it.
 
-Purpose:
+### Example entity
 
-{{DOMAIN_PURPOSE}}
-
-| Field | Meaning | Required | Sensitive? | Rules |
+| Field | Meaning | Required | Sensitive | Rules |
 |---|---|---|---|---|
-| `{{FIELD}}` | {{MEANING}} | Yes | No | {{RULE}} |
+| `id` | stable identifier | yes | no | never reused |
 
-Invariants:
-
-- INV-001: {{RULE_THAT_MUST_ALWAYS_HOLD}}
-- INV-002: {{RULE_THAT_MUST_ALWAYS_HOLD}}
-
-Ownership:
-
-- Created by: {{ACTOR_OR_SERVICE}}
-- Updated by: {{ACTOR_OR_SERVICE}}
-- Deleted or archived by: {{ACTOR_OR_SERVICE}}
+- INV-001: a rule that must always hold.
 
 ## Relationships
 
 | Relationship | Cardinality | Delete behavior | Integrity rule |
 |---|---|---|---|
-| {{A_TO_B}} | {{ONE_TO_MANY}} | {{RESTRICT_CASCADE_SOFT_DELETE}} | {{RULE}} |
+| | one-to-many, many-to-many | restrict, cascade, soft delete | |
 
-## Access Control Summary
+## Access control summary
 
 | Entity | Read | Create | Update | Delete |
 |---|---|---|---|---|
-| {{ENTITY}} | {{POLICY}} | {{POLICY}} | {{POLICY}} | {{POLICY}} |
+| | | | | |
 
-Detailed policies belong in migrations or policy definitions and security documentation.
+Detailed policies belong in migrations, rules files, and `docs/architecture/security.md`.
 
-## Lifecycle and Retention
+## Lifecycle and retention
 
-- Soft delete: {{YES_OR_NO}}
-- Retention: {{DURATION_OR_RULE}}
-- Archival: {{RULE}}
-- Personal-data deletion: {{RULE}}
+Soft delete or hard delete, retention duration or rule, archival rule, personal-data deletion rule.
 
-## Query and Index Expectations
+## Query and index expectations
 
-- {{QUERY_PATTERN_AND_INDEX}}
+One line per hot query pattern and the index or structure that serves it.
 
-## Migration Rules
+## Migration rules
 
 1. Every schema change uses a versioned migration.
 2. Backfills must be explicit and observable.

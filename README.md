@@ -1,8 +1,40 @@
 # AI-Assisted SDD Project Template
 
-A repository template for spec-driven, context-efficient, evidence-based software engineering with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents.
+A repository template for spec-driven development with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents. Version 2.0.0; see [`CHANGELOG.md`](CHANGELOG.md) and [ADR-0001](docs/adr/ADR-0001-v2-revamp.md).
 
-Version 2 is in progress; see `CHANGELOG.md` and `docs/adr/ADR-0001-v2-revamp.md`. Phases 1 to 4 (this state) ship the single template family, steering, config, the context renderer, the v2 validator, tool adapters, Claude Code hooks, slash commands, `init` with app and database presets, and the `examples/todo-api` reference project.
+## Spec-driven development, in short
+
+1. A feature starts as a specification: observable requirements with `FR` and `AC` ids, a design that maps them onto the repository, and tasks with ids.
+2. An agent implements one task at a time and records command output as evidence against the acceptance criteria.
+3. A task is `done` only with evidence; a feature is `implemented` only when every task is done or deferred and no assumption is open.
+4. Project rules live in five steering files. Every tool adapter and every context view is rendered from them, never written by hand.
+5. Unknowns are logged as assumptions instead of guessed.
+6. Each session starts from one rendered brief and loads only what the task references.
+7. Decisions that are expensive to reverse get an ADR.
+8. The validator fails on a stale render, a missing evidence id, an unresolved placeholder, or a path that does not exist.
+9. Chat history and provider memory are never a source of truth; the repository is.
+10. Depth scales with a tier: `lite` by default, `full` when the feature has system concerns.
+
+## The model
+
+```text
+hand-edited sources                                rendered (never hand-edited)
+docs/steering/{product,tech,structure,rules,        docs/context/state.yaml    machine-readable, source_hash
+               workflow}.md                         docs/context/BRIEF.md      single session entry point
+docs/specs/F-XXX/{requirements,design,tasks,        docs/context/PROJECT_STATE.md
+                  verification}.md                  docs/context/PROGRESS.md
+docs/context/ASSUMPTIONS.md                  context:render
+docs/handoff/current.md               ------------------------->
+
+docs/steering/*.md + sdd.config.json         adapters:sync        AGENTS.md            Codex, Antigravity
+                                      ------------------------->  CLAUDE.md + hooks    Claude Code
+                                                                  .cursor/rules/*.mdc  Cursor
+                                                                  .github/copilot-instructions.md  Copilot
+                                                                  GEMINI.md            Gemini CLI
+                                                                  .kiro/steering/*.md  Kiro
+```
+
+`tasks.md` is the master for task status. `state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, and `PROGRESS.md` are rendered from it, the steering files, the assumptions log, and the handoff. `AGENTS.md` and the tool adapters are rendered from the steering files and `sdd.config.json`. The validator fails when any rendered file differs from a clean render.
 
 ## Quick start
 
@@ -10,161 +42,94 @@ Version 2 is in progress; see `CHANGELOG.md` and `docs/adr/ADR-0001-v2-revamp.md
 2. `npm install`
 3. `npm run init`, answer the prompts (or pass flags), and read the plan it prints.
 
-`init` writes `sdd.config.json`, fills the steering and product documents from your answers and the presets, prunes the documents your tier does not use, removes template-only files, then renders the context views, syncs the tool adapters, and validates. It refuses to run on a project whose `templateMode` is already `false` unless `--force` is given; `--dry-run` prints the plan and changes nothing.
+`init` writes `sdd.config.json`, fills the steering and project documents from your answers and the presets, prunes the documents your tier does not use, removes template-only files, then renders the context views, syncs the tool adapters, and validates. `--dry-run` prints the plan and changes nothing; `--yes` takes every default; `--force` re-runs on an initialized project.
 
 | Flag | Values | Default |
 |---|---|---|
 | `--name <text>` | project name | the directory name |
-| `--description <text>` | one sentence: what it is, for whom, the outcome; becomes the identity line of `AGENTS.md` and `BRIEF.md` | `<name> is a <app> project.` |
-| `--tier lite\|full` | documentation tier (table below) | `lite` |
+| `--description <text>` | one sentence: what it is, for whom, the outcome | `<name> is a <app> project.` |
+| `--tier lite\|full` | documentation tier | `lite` |
 | `--app <preset>` | `nextjs`, `react-native`, `flutter`, `kotlin-android`, `node-api`, `python-api`, `generic` | `generic` |
 | `--db <preset>` | `supabase`, `firebase`, `postgres`, `mysql`, `sqlite-drift`, `mongodb`, `none` | `none` |
 | `--tools <list>` | comma-separated: `claude`, `codex`, `cursor`, `copilot`, `gemini`, `kiro`, `antigravity` | `claude` |
 | `--owner <name>` | owner written into frontmatter | `git config user.name` |
 | `--lang <language>` | language of the project content; the framework text stays English | `English` |
-| `--yes` | accept every default, never prompt | |
-| `--dry-run` | print the plan, change nothing | |
-| `--force` | run again on an initialized project | |
 
 Example: `npm run init -- --yes --name "Habit Tracker" --tier lite --app flutter --db supabase --tools claude,kiro`.
 
-Placeholders init cannot fill (the PRD body, the architecture overview, the handoff) are listed at the end as `fill manually: path:line`; they are warnings while the document's `status` is `draft` and errors afterwards. Presets live in `scripts/init/presets/` (schema in its README); a database preset also creates `database.md` in `docs/steering/` with `inclusion: fileMatch`.
+After init: review `docs/steering/tech.md` and `structure.md` against the real repository (every command listed must run), write `docs/product/prd.md`, record expensive-to-reverse choices as ADRs, create the first feature from `docs/specs/_templates/`, and implement one task at a time. Do not write every document before the first useful slice.
 
-## Operating model
+## Daily workflow
 
-```text
-idea -> product requirements -> architecture baseline
-  -> feature requirements -> system architecture (full tier) -> design
-  -> tasks -> implementation -> verification (evidence) -> review -> release
-```
+1. Start from `docs/context/BRIEF.md`: active feature and task, open assumptions, blockers, next step. The Claude Code SessionStart hook injects it; other tools read it through `AGENTS.md`. When the brief is absent, `docs/context/NEW_CHAT_PROTOCOL.md` gives the fallback read order.
+2. Take the task the brief names. In Claude Code, `/sdd:task T-XXX` builds the task prompt from the brief and the spec, sets the task `in_progress`, and implements it. Elsewhere, fill `docs/_templates/task-prompt.md` by hand.
+3. Run the commands in `docs/steering/tech.md` and record each result as an EV block in the feature's `verification.md`; add the id to the task's `evidence`.
+4. Update `tasks.md`, then `npm run context:render` and `npm run context:validate`. The Claude Code PostToolUse hook re-renders after spec edits; the PreToolUse hook denies edits to generated and frozen paths.
+5. Close the session with `docs/handoff/current.md`: changed files, commands, uncommitted work, one exact next step. In Claude Code, `/sdd:handoff` writes it; `/sdd:review` fills the code-review template, `/sdd:bug` opens a bug investigation, `/sdd:render` runs the three context commands.
 
-The sequence is a default, not bureaucracy. Depth scales with the tier.
+## Commands
 
-## Principles
+| Command | Does |
+|---|---|
+| `npm run init` | turns the template into a project; flags above, `--dry-run`, `--yes`, `--force` |
+| `npm run context:render` | writes `state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, `PROGRESS.md`; `--check` exits 1 when a view would change |
+| `npm run context:validate` | structure, ids, traceability, evidence, staleness, rendered-view freshness, adapter freshness; `--strict` turns warnings into errors |
+| `npm run context:archive-handoff` | archives an active handoff under `docs/handoff/archive/` and resets `current.md` |
+| `npm run adapters:sync` | writes `AGENTS.md` and the adapters for the tools in `sdd.config.json`; `--check`, `--all` |
+| `npm run example:validate` | validates `examples/todo-api` on its own |
+| `npm test` | `node --test scripts/**/*.test.mjs` |
 
-- Specification before non-trivial implementation.
-- Repository artifacts are the durable truth; chat history and provider memory are not.
-- Minimum sufficient context: a session starts from `docs/context/BRIEF.md` and loads only what the task references.
-- Small, verifiable changes. One task at a time.
-- Evidence over confidence: a task is `done` only with recorded command output.
-- Unknowns are logged in `docs/context/ASSUMPTIONS.md`, never guessed.
-- Architecture is a constraint; distributed mechanisms need a workload justification.
-- High-impact decisions (contracts, destructive data changes, security, production, major dependencies) need human approval.
+Details, hooks, and slash commands: `docs/automation/README.md`. The validator checks and the context model: `docs/context/CONTEXT_SYSTEM.md`.
 
 ## Tiers
 
 | Tier | When | Documents |
 |---|---|---|
-| `lite` (default) | isolated, low-risk, reversible work | `requirements`, `design`, `tasks`, `verification`, each within 80 lines. `init` removes `system-architecture.md`, `architecture-baseline.md`, the `runbooks/` directory, `test-strategy.md`, and the two modularization guides |
+| `lite` (default) | isolated, low-risk, reversible work | `requirements`, `design`, `tasks`, `verification`, each within 80 lines. `init` removes `system-architecture.md`, `architecture-baseline.md`, `docs/runbooks/`, `test-strategy.md`, and the two modularization guides |
 | `full` | shared state, realtime or async communication, external integration, security boundary, scale or cost | adds `system-architecture.md` (within 300 lines) and the sections marked `<!-- full-tier -->` (within 200 lines); keeps every document |
+
+## Tool support
+
+| Tool | What it gets | Rendered from |
+|---|---|---|
+| Claude Code | `CLAUDE.md` (imports `AGENTS.md`), four hooks in `.claude/settings.json` (SessionStart injects the brief, PreToolUse guards generated, frozen, and secret paths, PostToolUse re-renders, Stop warns when the handoff is stale), `/sdd:task`, `/sdd:bug`, `/sdd:review`, `/sdd:handoff`, `/sdd:render` | steering, `.claude/` |
+| Codex, Antigravity | `AGENTS.md` | steering, `sdd.config.json` |
+| Cursor | `.cursor/rules/<name>.mdc`, one per steering file, with `globs` for `fileMatch` files | steering |
+| GitHub Copilot | `.github/copilot-instructions.md` and `.github/instructions/<name>.instructions.md` with `applyTo` | steering |
+| Gemini CLI | `GEMINI.md` (imports `AGENTS.md`) | steering |
+| Kiro | `.kiro/steering/<name>.md`, the steering files verbatim | steering |
+
+Steering files carry `inclusion: always | fileMatch | manual` frontmatter; a database preset adds a `database.md` steering file with `fileMatch`, which Claude Code surfaces once per session when a matching file is edited.
 
 ## Repository layout
 
 ```text
 .
-├── AGENTS.md                  # repository contract; rendered from docs/steering by adapters:sync
-├── CLAUDE.md                  # Claude Code adapter; rendered, imports AGENTS.md
-├── .claude/                   # settings.json (hooks) and commands/sdd/ (slash commands)
-├── sdd.config.json            # project, stack, tools, paths, generated and frozen lists, limits
+├── AGENTS.md, CLAUDE.md        # rendered by adapters:sync
+├── .claude/                    # settings.json (hooks), commands/sdd/ (slash commands)
+├── sdd.config.json             # project, stack, tools, paths, generated and frozen lists, limits
 ├── docs/
-│   ├── steering/              # canonical: product, tech, structure, rules, workflow (+ database after init)
-│   ├── _templates/            # project-level templates
-│   ├── specs/
-│   │   ├── _templates/        # per-feature templates
-│   │   └── F-XXX-name/        # one feature package
-│   ├── adr/                   # one decision per record
-│   ├── architecture/          # cross-feature boundaries and invariants
-│   ├── product/               # PRD, roadmap, glossary
-│   ├── context/               # BRIEF, ASSUMPTIONS, rendered state and views, protocols
-│   ├── handoff/               # session delta and archive
-│   ├── quality/               # definition of done, review checklist, test strategy
-│   ├── runbooks/              # local development, data store changes, deployment, recovery
-│   ├── documentation/         # how docs are split and owned
-│   └── automation/            # the context commands
-├── examples/todo-api/         # fully filled lite project; reference and test fixture (removed by init)
-└── scripts/                   # context/ (render, validate, archive), adapters/ (sync), hooks/, init/ (presets), lib/; __fixtures__/ test repos
+│   ├── steering/               # canonical: product, tech, structure, rules, workflow (+ database)
+│   ├── _templates/             # prd, constitution, architecture-baseline, adr, task-prompt, bug-investigation, code-review
+│   ├── specs/_templates/       # requirements, system-architecture, design, tasks, verification
+│   ├── specs/F-XXX-name/       # one feature package
+│   ├── adr/, architecture/, product/, quality/, runbooks/, documentation/
+│   ├── context/                # BRIEF, ASSUMPTIONS, rendered state and views, protocols
+│   └── handoff/                # current.md and archive/
+├── examples/todo-api/          # filled lite project; reference and test fixture (removed by init)
+└── scripts/                    # context/, adapters/, hooks/, init/ (presets/), migrate/, lib/
 ```
 
-## Templates
-
-Every template carries mandatory frontmatter (`id`, `title`, `type`, `status`, `tier`, `owner`, dates, `supersedes`). Placeholders are `{{SNAKE_CASE}}`; `{{PRESET_*}}` ones are filled by `init`. Copy a template, replace placeholders with verified facts, remove sections that do not apply, then commit it in its canonical location.
-
-Per feature, in `docs/specs/_templates/`:
-
-| Template | Owns |
-|---|---|
-| [`requirements.md`](docs/specs/_templates/requirements.md) | observable behavior, FR and AC ids, out of scope |
-| [`system-architecture.md`](docs/specs/_templates/system-architecture.md) | module boundaries, data, consistency, communication, scale, resilience, security, trade-offs (full tier) |
-| [`design.md`](docs/specs/_templates/design.md) | repository mapping of approved requirements and architecture |
-| [`tasks.md`](docs/specs/_templates/tasks.md) | parseable `T-XXX` blocks; the master for task status |
-| [`verification.md`](docs/specs/_templates/verification.md) | parseable `EV-XXX` evidence blocks covering AC ids |
-
-Project level, in `docs/_templates/`:
-
-| Template | Owns |
-|---|---|
-| [`prd.md`](docs/_templates/prd.md) | product intent, goals, actors, success signals, feature map |
-| [`constitution.md`](docs/_templates/constitution.md) | durable principles and governance behind the steering rules |
-| [`architecture-baseline.md`](docs/_templates/architecture-baseline.md) | cross-feature boundaries, data flow, state ownership, security, deployment (full tier) |
-| [`adr.md`](docs/_templates/adr.md) | one expensive-to-reverse decision |
-| [`task-prompt.md`](docs/_templates/task-prompt.md) | minimum-sufficient context package for a coding agent |
-| [`bug-investigation.md`](docs/_templates/bug-investigation.md) | evidence-first root-cause investigation |
-| [`code-review.md`](docs/_templates/code-review.md) | correctness, architecture, security, and scope review with `CR-XXX` findings |
-
-## Steering
-
-`docs/steering/` is the canonical source of project rules, Kiro-style with `inclusion: always | fileMatch | manual` frontmatter: `product.md`, `tech.md`, `structure.md`, `rules.md`, `workflow.md`, plus `database.md` (`fileMatch`) when a database preset was chosen. `AGENTS.md` and the tool adapters listed in `sdd.config.json` `tools` are rendered from it by `npm run adapters:sync`; the validator fails when they are stale. Claude Code hooks and `/sdd:*` commands are described in `docs/automation/README.md`.
-
-## Context system
-
-`tasks.md` is the master for task status. `docs/context/state.yaml`, `BRIEF.md`, `PROJECT_STATE.md`, and `PROGRESS.md` are rendered by `npm run context:render` and never hand-edited; the validator fails when they are stale. Read `docs/context/CONTEXT_SYSTEM.md` for the model and `docs/context/NEW_CHAT_PROTOCOL.md` for the opening prompt and fallback read order.
-
-Commands:
-
-```bash
-npm install
-npm run init                  # interactive; flags above; --dry-run, --yes, --force
-npm test                      # node --test scripts/**/*.test.mjs
-npm run context:render        # state.yaml, BRIEF.md, PROJECT_STATE.md, PROGRESS.md; --check, --quiet
-npm run context:validate      # structure, ids, traceability, evidence, staleness, freshness; --strict
-npm run adapters:sync         # AGENTS.md, CLAUDE.md, and adapters for the tools in sdd.config.json; --check, --all, --quiet
-npm run context:archive-handoff
-npm run example:validate      # validates examples/todo-api on its own
-```
-
-## After init
-
-1. Review `docs/steering/tech.md` and `structure.md` against the real repository: every command listed must run.
-2. Write `docs/product/prd.md` (init filled its frontmatter) and set its `status` past `draft` once approved; the validator then treats its remaining placeholders as errors.
-3. Record expensive-to-reverse choices as ADRs. In the `full` tier, write the architecture baseline from `docs/_templates/architecture-baseline.md`.
-4. Select the first vertical slice and create `docs/specs/F-XXX-name/` from the per-feature templates.
-5. Implement one task at a time; record evidence; update `tasks.md` and `docs/handoff/current.md`; run `npm run context:render`, then `npm run context:validate`. After a steering change, `npm run adapters:sync` (the Claude Code PostToolUse hook does both).
-
-Do not create every document before the first useful slice.
+Every template carries frontmatter (`id`, `title`, `type`, `status`, `tier`, `owner`, dates, `supersedes`). `init` fills the placeholders it can (project name, owner, dates, preset values); the remaining prose is guidance to replace with verified facts.
 
 ## Example
 
-`examples/todo-api/` is a complete `lite` project (`node-api` + `postgres`): one feature `implemented` with evidence, one `implementing` with an open assumption and an active handoff, rendered views and adapters; `examples/README.md` says what it is for. Use `examples/todo-api/` as the answer to "how filled should this file be"; `npm test` validates it, and `init` removes `examples/` from a new project.
+[`examples/todo-api/`](examples/todo-api/) is a complete `lite` project (`node-api` + `postgres`): one feature `implemented` with evidence, one `implementing` with an open assumption and an active handoff, rendered views and adapters. Open the same file there when a template leaves you unsure how filled a section should be. `npm test` validates it; `init` removes it from a new project.
+
+## Migrating from v1
+
+v2 is a fresh design. A project on v1 of this template stays on v1 until migrated deliberately; [`docs/MIGRATION-v1-to-v2.md`](docs/MIGRATION-v1-to-v2.md) is the step-by-step guide, with `scripts/migrate/v1-tasks.mjs` for the task files.
 
 ## AI collaboration
 
 A conversational AI drafts requirements, architecture alternatives, design, tasks, and ADR proposals; its output is a proposal until committed. A repository-integrated coding agent inspects real code, implements approved tasks, runs verification, and updates evidence and handoff. Neither invents paths, APIs, schema fields, or commands. See `docs/documentation/AI_COLLABORATION_MODEL.md`.
-
-## Migration from v1
-
-v2 is a fresh design for new projects. Projects on v1 of this template stay on v1 until migrated deliberately; a migration guide ships with 2.0.0.
-
-## Philosophy
-
-```text
-clear requirements
-+ minimum sufficient context
-+ explicit global architecture
-+ explicit module architecture when meaningful
-+ bounded tasks and small changes
-+ evidence-based verification
-+ current durable documentation
-+ human control of high-impact decisions
-```
-
-Not maximum document count, maximum distributed-system complexity, or maximum AI autonomy.

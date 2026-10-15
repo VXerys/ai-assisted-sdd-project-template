@@ -95,7 +95,7 @@ Validator output is one line per finding, `path:line  level  message`, sorted by
 | Rendered view differs from an in-memory render (`run npm run context:render`); `state.yaml` not valid YAML or not `schema_version: 2`; generated file without its banner | error |
 | Adapter differs from a clean `adapters:sync` while `tools` is non-empty (`run npm run adapters:sync`) | error |
 | Spec file over its tier cap (`limits.lite`, `limits.full`, `limits.systemArchitecture`) | warning |
-| Relative Markdown link does not resolve; backtick path starting with `docs/` or `scripts/` does not exist (skipping `XXX`, globs, placeholders, `CHANGELOG.md`, the handoff archive) | error; warning |
+| Relative Markdown link does not resolve; backtick path starting with `docs/` or `scripts/` does not exist (skipping `XXX`, globs, placeholders, `CHANGELOG.md`, `docs/MIGRATION-v1-to-v2.md`, the handoff archive) | error; warning |
 | `{{...}}` placeholder outside `_templates/` when `templateMode` is `false` (limited to `validate.placeholderSensitiveFiles` when that list is non-empty) | error; warning while the file's `status` is `draft` or `template` |
 | A nested directory with its own `sdd.config.json` (an example, a fixture) is skipped by every walk; it validates on its own | skipped |
 

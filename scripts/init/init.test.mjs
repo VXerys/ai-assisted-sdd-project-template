@@ -7,8 +7,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 import { fillPlaceholders, remainingPlaceholders } from './lib/fill.mjs';
-import { relink, LITE_PRUNE, TEMPLATE_ONLY } from './lib/prune.mjs';
+import { relink, stripTemplateOnly, LITE_PRUNE, TEMPLATE_ONLY } from './lib/prune.mjs';
 import { walk } from '../context/lib/files.mjs';
+import { INACTIVE_HANDOFF } from '../context/lib/handoff.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '..', '..');
@@ -131,6 +132,16 @@ test('relink resolves a relative link against the file that holds it', () => {
   assert.equal(result.text, '- [`AI_COLLABORATION_MODEL.md`](AI_COLLABORATION_MODEL.md)\n');
 });
 
+test('stripTemplateOnly removes every marked block with its markers and leaves the rest untouched', () => {
+  const text = ['# Guide', '', '<!-- template-only:start -->', '## Maintainers', '', 'Only in the template.', '<!-- template-only:end -->', '', '## Everyone', '', 'Stays.', ''].join('\n');
+  assert.deepEqual(stripTemplateOnly(text), { text: '# Guide\n\n## Everyone\n\nStays.\n', removed: 1 });
+  assert.deepEqual(stripTemplateOnly('no markers\n'), { text: 'no markers\n', removed: 0 });
+});
+
+test('the template handoff is the archive reset text, so init has nothing session-specific to fill', () => {
+  assert.equal(fs.readFileSync(path.join(repo, 'docs', 'handoff', 'current.md'), 'utf8').replace(/\r\n/g, '\n'), INACTIVE_HANDOFF);
+});
+
 // Set UPDATE_SNAPSHOTS=1 to rewrite the plan snapshot after an intended change to the plan format.
 test('--dry-run prints the plan, changes nothing, and matches its snapshot', () => {
   const cwd = copyRepo('dry');
@@ -240,13 +251,32 @@ test('init removes the template-only files and resets the changelog', () => {
   }
 });
 
-test('lite init ends with a passing validation and lists the placeholders left to fill', () => {
+test('lite init ends with a passing validation and nothing left to fill by hand', () => {
   const { cwd, out } = liteProject();
   assert.match(out, /Context validation passed: 0 error\(s\)/);
-  assert.match(out, /fill manually: docs\/product\/prd\.md:\d+/);
-  assert.doesNotMatch(out, /fill manually: docs\/steering\//);
+  assert.doesNotMatch(out, /fill manually:/);
   const result = validate(cwd);
   assert.equal(result.status, 0, result.out);
+});
+
+test('lite init leaves no placeholder in any file outside the templates', () => {
+  const { cwd } = liteProject();
+  const left = walk(cwd)
+    .filter((file) => /\.(md|json|yaml)$/.test(file) && !file.startsWith('node_modules/') && !file.includes('/_templates/'))
+    .filter((file) => /\{\{[^{}]+\}\}/.test(read(cwd, file)))
+    // Prose that names the placeholder convention itself, not an unfilled value.
+    .filter((file) => !['docs/automation/README.md', 'docs/context/CONTEXT_SYSTEM.md', 'scripts/init/presets/README.md'].includes(file));
+  assert.deepEqual(left, []);
+});
+
+test('init fills the CONTRIBUTING commands from the preset and strips the template-maintainer section', () => {
+  const { cwd } = liteProject();
+  const contributing = read(cwd, 'CONTRIBUTING.md');
+  assert.match(contributing, /^flutter analyze$/m);
+  assert.match(contributing, /^flutter test$/m);
+  assert.match(contributing, /^npm run context:validate$/m);
+  assert.doesNotMatch(contributing, /\{\{|template-only|UPDATE_SNAPSHOTS|scripts\/init\/presets/);
+  assert.ok(!exists(cwd, 'scripts/migrate'), 'scripts/migrate still exists');
 });
 
 test('full init keeps the runbook with the database preset notes and the full-tier templates', () => {

@@ -9,7 +9,7 @@ import { TOOLS } from '../context/lib/config.mjs';
 import { walk, readText, exists, writeLf } from '../context/lib/files.mjs';
 import { APP_PRESETS, DB_PRESETS, loadPreset, COMMAND_KEYS } from './lib/presets.mjs';
 import { fillPlaceholders, remainingPlaceholders } from './lib/fill.mjs';
-import { LITE_PRUNE, TEMPLATE_ONLY, isPruned, relink } from './lib/prune.mjs';
+import { LITE_PRUNE, TEMPLATE_ONLY, isPruned, relink, stripTemplateOnly } from './lib/prune.mjs';
 
 const USAGE = `Usage: npm run init -- [flags]
 
@@ -32,6 +32,8 @@ Flags (a missing flag is asked for; --yes takes the default instead):
   --help
 `;
 
+// Project documents whose owner, date, name, and preset placeholders init fills. Framework
+// documents (status: template, owner "") carry no placeholders; the handoff is the inactive reset.
 const FILL_TARGETS = [
   'docs/steering/product.md',
   'docs/steering/tech.md',
@@ -40,12 +42,22 @@ const FILL_TARGETS = [
   'docs/steering/workflow.md',
   'docs/product/prd.md',
   'docs/product/idea-brief.md',
+  'docs/product/roadmap.md',
   'docs/architecture/overview.md',
-  'docs/handoff/current.md',
+  'docs/architecture/data-model.md',
+  'docs/architecture/security.md',
+  'docs/architecture/boundaries.md',
+  'docs/specs/_index.md',
   'docs/context/ASSUMPTIONS.md',
+  'docs/quality/definition-of-done.md',
+  'docs/quality/review-checklist.md',
   'docs/runbooks/database-migrations.md',
+  'docs/runbooks/deployment.md',
   'CONTRIBUTING.md'
 ];
+
+// Documents with a `<!-- template-only -->` block that describes maintaining the template itself.
+const STRIP_TARGETS = ['CONTRIBUTING.md'];
 
 const PROMPTS = [
   ['name', 'Project name'],
@@ -222,7 +234,7 @@ function fillValues(answers) {
     DATA_RULE_OR_NONE: 'none'
   };
   for (const key of COMMAND_KEYS) values[`PRESET_${key.toUpperCase()}`] = code(app.commands[key]);
-  if (answers.owner) for (const key of ['OWNER', 'PRODUCT_OWNER', 'ARCHITECTURE_OWNER', 'SESSION_OWNER']) values[key] = answers.owner;
+  if (answers.owner) for (const key of ['OWNER', 'PRODUCT_OWNER', 'ARCHITECTURE_OWNER', 'DATA_OWNER']) values[key] = answers.owner;
   return values;
 }
 
@@ -267,6 +279,13 @@ function buildPlan(root, config, answers) {
     for (const entry of remainingPlaceholders(text)) remaining.push({ file, ...entry });
     actions.push({ verb: 'fill', target: file, note: filled ? `${filled} placeholders` : 'already filled', apply: () => filled && writeLf(root, file, texts.get(file)) });
   }
+  for (const file of STRIP_TARGETS) {
+    if (!exists(root, file)) continue;
+    const { text, removed: blocks } = stripTemplateOnly(current(file));
+    if (!blocks) continue;
+    texts.set(file, text);
+    actions.push({ verb: 'strip', target: file, note: `${blocks} template-only block`, apply: () => writeLf(root, file, texts.get(file)) });
+  }
   if (dbSteering) {
     const content = databaseSteering(answers);
     actions.push({ verb: 'create', target: dbSteering, note: `${answers.db} preset, fileMatch`, apply: () => writeLf(root, dbSteering, content) });
@@ -289,7 +308,7 @@ function buildPlan(root, config, answers) {
     const note = target === 'CLAUDE.md' ? 'tool claude not selected' : 'template-only';
     actions.push({ verb: 'remove', target, note: exists(root, target) ? note : 'already removed', apply: () => fs.rmSync(path.join(root, target), { recursive: true, force: true }) });
   }
-  for (const file of walk(root, 'scripts').filter((entry) => entry.endsWith('.test.mjs') && readText(root, entry).includes('__fixtures__'))) {
+  for (const file of walk(root, 'scripts').filter((entry) => entry.endsWith('.test.mjs') && !isPruned(entry, removed) && readText(root, entry).includes('__fixtures__'))) {
     actions.push({ verb: 'remove', target: file, note: 'test needs removed fixtures', apply: () => fs.rmSync(path.join(root, file), { force: true }) });
   }
   const version = JSON.parse(readText(root, 'package.json')).version;

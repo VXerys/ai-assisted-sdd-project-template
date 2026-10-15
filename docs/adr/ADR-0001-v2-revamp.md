@@ -37,7 +37,7 @@ v2 is a fresh design for new projects. v1 projects stay on v1 until migrated man
 - `tasks.md` is the master for task status (`### T-001 — title` + key-value block: `status`, `requirements`, `depends_on`, `evidence`).
 - Everything else is rendered, never hand-edited: `state.yaml`, `PROJECT_STATE.md`, `PROGRESS.md`, `BRIEF.md`, `AGENTS.md`, and all tool adapters.
 
-**Tooling** (Node 20, dependency `yaml` only, tests with `node:test`):
+**Tooling** (Node 22, dependency `yaml` only, tests with `node:test`):
 - `context:render` → `state.yaml` (with `source_hash`), `BRIEF.md` (token-budgeted single entry point), views.
 - `context:validate` → parses YAML; tiered traceability (FR↔task warning while drafting, error from `implementing`; `done` without evidence and `implemented` with open tasks are always errors); evidence format (command, output excerpt, date, commit); open-assumption gate; `last_verified` staleness; `source_hash` freshness; size caps (lite ≤80, full ≤200, system-architecture ≤300).
 - `adapters:sync` → AGENTS.md, CLAUDE.md, `.cursor/rules`, `.github/copilot-instructions.md`, `GEMINI.md`, `.kiro/steering/` from steering + `sdd.config.json`.
@@ -66,6 +66,10 @@ Five phases, one PR each, each green on `npm test` and `npm run context:validate
 3. Adapters, hooks, slash commands, conditional steering.
 4. Init with presets, `examples/todo-api`.
 5. Release: README, CHANGELOG, MIGRATION, CI, branch cleanup and rename.
+
+## Status
+
+Implemented in 2.0.0 (2026-10-15): the five phases above shipped; the branch rename and the tag are release actions recorded in `CHANGELOG.md`.
 
 ## Revisit when
 

@@ -1,6 +1,6 @@
 {
   "name": "ai-assisted-sdd-project-template",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "description": "Stack-agnostic spec-driven development and context-engineering repository template.",
   "type": "module",

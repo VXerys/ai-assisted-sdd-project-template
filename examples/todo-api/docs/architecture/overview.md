@@ -1,95 +1,84 @@
 ---
+id: ARCH
+title: Todo API
+type: architecture-baseline
 status: approved
+tier: lite
 owner: ari
+created: 2026-09-28
 last_updated: 2026-10-12
-last_verified_commit: 7d41c0e
-source_of_truth_for:
-  - system-boundaries
-  - dependency-direction
+last_verified: 2026-10-12
+supersedes: null
 ---
 
-# Architecture Overview
+# Architecture Baseline: Todo API
 
-## 1. System Purpose
+Cross-feature boundaries and invariants every module obeys. Module-level reasoning lives in each feature's `design.md` (lite tier); the stack and commands live in `docs/steering/tech.md`; directory responsibilities live in `docs/steering/structure.md`.
+
+## System context
 
 One HTTP API that owns the team's todo list. Clients never touch the database; the API is the only writer and the only reader of the `todos` table. Out of scope: user accounts, notifications, and any client-side persistence beyond the CLI's read cache.
 
-## 2. Architecture Drivers
-
-- A single consistent list across machines (the reason the project exists, see ADR-0001).
-- Low operational surface: one container, one database the team already runs.
-- Change safety: every schema change is a reviewed SQL file.
-
-## 3. System Context
+| Actor or external system | Relationship | Trust boundary |
+|---|---|---|
+| Maintainer (CLI) | creates and closes todos with the team key | untrusted input, bearer key checked on every request |
+| Reviewer (web client) | reads the list through the same key | untrusted input, read-only in M1 |
+| PostgreSQL 16 (existing team instance) | system of record for the `todos` table | trusted; every write fails when it is down and the CLI serves its cached list marked `stale` |
 
 ```text
-Maintainer (CLI) / Reviewer (web client)
-  -> Todo API (Fastify, one container)
-  -> PostgreSQL 16 (existing team instance)
+CLI or web client -> Fastify routes (auth hook) -> services -> db -> PostgreSQL 16
 ```
 
-External systems:
+## Components
 
-| System | Purpose | Data exchanged | Failure impact |
-|---|---|---|---|
-| PostgreSQL 16 | system of record for todos | rows of the `todos` table | every write fails; the CLI serves its cached list marked `stale` |
-
-## 4. Major Components
-
-| Component | Responsibility | Owns | Must not own |
+| Component | Responsibility | Owns | Does not own |
 |---|---|---|---|
 | `src/routes/` | HTTP parsing, JSON schema validation, auth hook, error mapping | status codes, error codes | business rules, SQL |
 | `src/services/` | todo rules: title normalization, close semantics, list filtering | the meaning of `open` and `closed` | HTTP or SQL details |
 | `src/db/` | queries, migrations, the `pg` pool | SQL, transactions | request handling |
 
-## 5. Dependency Direction
+## Boundaries
+
+- B-001: inside `src/services/`, outside HTTP and SQL; services receive repository functions from `src/app.js` and throw typed errors from `src/services/errors.js`; a route never calls `pg` directly; rationale: rules stay testable without a database.
+- B-002: the team key is checked by one Fastify `onRequest` hook before any route runs; no route re-implements auth; rationale: one place to rotate or replace the mechanism (M2).
+
+## Dependency direction
 
 ```text
 routes -> services -> db
 ```
 
-Rules:
+Driver errors are normalized in `src/db/` before reaching services. Cross-feature shared code lives in `src/services/` only when two routes need the same rule. No cycles.
 
-1. `services/` imports nothing from `routes/` or `db/` drivers; it calls repository functions passed in by `src/app.js`.
-2. Driver errors are normalized in `src/db/` before reaching services; services throw typed errors from `src/services/errors.js`.
-3. Authorization (the team key) is enforced by one Fastify `onRequest` hook, before any route runs.
-4. Cross-feature shared code lives in `src/services/` only when two routes need the same rule.
+## Data flow and classification
 
-## 6. Data Flow
+`POST /todos`: route schema (400 `title_required`), `createTodo` (BR-001), `insertTodo`, 201 or a typed error mapped by the route.
 
-### Flow AF-001 — Create a todo
+| Data | Owner | Where stored | Sensitivity |
+|---|---|---|---|
+| todo rows (`id`, `title`, `created_at`, `closed_at`) | `src/db/` | PostgreSQL database `todo` | internal; titles never appear in logs |
+| team API key | deployment config | environment of the `api` container | secret |
+| CLI read cache | the CLI | per-machine file, marked `stale` when the API is unreachable | internal |
 
-1. `POST /todos` enters `src/routes/todos.js`; the auth hook has already checked the bearer key.
-2. The route schema rejects a missing or non-string `title` with 400 `title_required`.
-3. `createTodo(input)` in `src/services/todos.js` trims the title and applies BR-001.
-4. `insertTodo(row)` in `src/db/todos.js` writes one row and returns it.
-5. The route maps the row to the response body and replies 201; a typed `ValidationError` becomes 400 with its code.
+## State ownership
 
-## 7. Deployment Topology
+| State | Owner | Source of truth | Mutation path | Invalidation or sync |
+|---|---|---|---|---|
+| todo list | the API | `todos` table | `POST /todos`, `POST /todos/:id/close` | clients re-read; the CLI cache is best-effort |
 
-- Client runtime: the CLI (Node 22) on each machine; the web client served as static files by the API container.
-- Application hosting: one container on the team server, `docker compose` service `api`.
-- Database: the existing PostgreSQL 16 container on the same host, database `todo`.
-- Storage: none beyond the database.
-- Background jobs: none.
-- Observability: structured JSON logs to stdout with `request_id` and `request_duration_ms`; no titles in logs.
+## Security
 
-## 8. Quality Attributes
+One shared bearer key in M1 (NG-001 in the PRD), enforced by the `onRequest` hook; the API is single-tenant, so there is no per-user authorization and no RLS. Rotation is a manual runbook until M2. Key from the environment, never in the web bundle (served by the API host). Input validated by route JSON schemas. Titles never logged; structured JSON logs carry `request_id` and `request_duration_ms` only.
 
-| Attribute | Required behavior | Verification |
-|---|---|---|
-| Security | every route requires the team key; titles never logged | `test/auth.test.js`; log assertion in `test/logging.test.js` |
-| Reliability | a failed write never leaves a half-created todo | single-statement inserts; migration runner uses one transaction per file |
-| Performance | `GET /todos` p95 under 200 ms with 500 rows | `test/list-perf.test.js` against a seeded database |
-| Maintainability | a route handler is at most 20 lines | review checklist |
+## Deployment
 
-## 9. Known Constraints
+One container (`docker compose` service `api`) on the team server next to the existing PostgreSQL 16 container, database `todo`; the web client is static files served by the API. Migrations are reviewed SQL files under `db/migrations/` applied by the migration runner, one transaction per file; rollback is a forward fix. No background jobs.
 
-- One shared API key in M1 (NG-001 in the PRD); rotation is a manual runbook until M2.
-- No RLS: the API is single-tenant, so authorization is the bearer key, not the database.
+## Decisions and open questions
 
-## 10. Related Decisions
+- ADR-0001 (`../adr/ADR-0001-postgres-over-sqlite.md`): PostgreSQL over SQLite as the system of record, approved.
+- A-002 (cursor scope when filtering by status) is open in `docs/context/ASSUMPTIONS.md`.
 
-- `../adr/ADR-0001-postgres-over-sqlite.md`
+## Approval and change rule
 
-Feature-specific implementation details live in each feature's `design.md`.
+Architecture owner ari, approved 2026-10-01. A cross-feature or expensive-to-reverse change requires an ADR and owner approval before implementation.

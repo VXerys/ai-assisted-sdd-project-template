@@ -26,7 +26,7 @@ Strategy, batch size, observability signal, retry behavior, and the point at whi
 
 ## Rollback
 
-`{{ROLLBACK_COMMAND_OR_MANUAL_STEPS}}`
+The rollback command of the migration tool, or the manual steps, recorded per change in the feature's `design.md`.
 
 When rollback is unsafe, document the forward-fix strategy and get explicit risk acceptance before applying the change.
 

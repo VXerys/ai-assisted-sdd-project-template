@@ -18,6 +18,8 @@ const OTHER_STATUSES = new Set(['template', 'active', 'inactive', ...FEATURE_STA
 const BANNER = /GENERATED FILE|GENERATED:/;
 const PLACEHOLDER = /\{\{[^}]+\}\}/;
 const BACKTICK_PATH = /`((?:docs|scripts)\/[A-Za-z0-9_./-]+)`/g;
+// Files that name paths of earlier versions on purpose; their backtick paths are not checked.
+const HISTORICAL_FILES = new Set(['CHANGELOG.md', 'docs/MIGRATION-v1-to-v2.md']);
 const DAY = 24 * 60 * 60 * 1000;
 
 export function validateRepo(root, config, { now = new Date() } = {}) {
@@ -43,7 +45,7 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
     if (parseError && !isTemplate(file)) error(file, 1, parseError);
 
     checkLinks(root, file, text, error);
-    if (file !== 'CHANGELOG.md' && !file.startsWith('docs/handoff/archive/')) checkBacktickPaths(root, file, text, warning);
+    if (!HISTORICAL_FILES.has(file) && !file.startsWith('docs/handoff/archive/')) checkBacktickPaths(root, file, text, warning);
 
     if (!config.templateMode && !isTemplate(file) && placeholderApplies(config, file)) {
       // A draft may still carry placeholders; a document past draft may not.

@@ -2,44 +2,32 @@
 
 ## Prerequisites
 
-- Runtime: {{RUNTIME_AND_VERSION}}
-- Package manager: {{PACKAGE_MANAGER_AND_VERSION}}
-- Required services: {{SERVICES}}
+Runtime and version, package manager and version, required local services. The install and run commands are the Commands table in `docs/steering/tech.md`.
 
-## First-Time Setup
+## First-time setup
 
-```bash
-{{CLONE_COMMAND}}
-{{INSTALL_COMMAND}}
-{{ENV_SETUP_COMMAND}}
-```
+1. Clone the repository.
+2. Run the install command from `docs/steering/tech.md`.
+3. Copy `.env.example` to the local environment file and fill it from the team's secret store.
 
-## Environment Variables
+## Environment variables
 
 Use `.env.example` as the key inventory. Never place real secrets in documentation.
 
 | Variable | Required | Purpose | Safe local source |
 |---|---|---|---|
-| `{{VARIABLE}}` | Yes | {{PURPOSE}} | {{SOURCE}} |
+| | | | |
 
 ## Run
 
-```bash
-{{DEV_COMMAND}}
-```
+The "Run locally" command in `docs/steering/tech.md`.
 
-## Verify Setup
+## Verify setup
 
-```bash
-{{HEALTH_OR_TEST_COMMAND}}
-```
+The test command in `docs/steering/tech.md`, and the expected result (all tests pass, or the health endpoint answers).
 
-Expected result:
-
-{{EXPECTED_RESULT}}
-
-## Common Problems
+## Common problems
 
 | Symptom | Likely cause | Resolution |
 |---|---|---|
-| {{SYMPTOM}} | {{CAUSE}} | {{RESOLUTION}} |
+| | | |

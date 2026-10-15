@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { loadConfig } from './lib/config.mjs';
-import { parseHandoff } from './lib/handoff.mjs';
+import { parseHandoff, INACTIVE_HANDOFF } from './lib/handoff.mjs';
 import { renderOutputs, writeOutputs } from './lib/render.mjs';
 import { writeLf } from './lib/files.mjs';
 
@@ -48,23 +48,6 @@ if (fs.existsSync(path.join(root, archiveFile))) {
 
 writeLf(root, archiveFile, current);
 
-const reset = `---
-status: inactive
-owner: ""
-session_date: ""
-branch: ""
-base_commit: ""
-current_commit: ""
-feature_id: ""
-task_id: ""
-expires_after: ""
----
-
-# Session Handoff
-
-No active handoff. Start the next session by recording one objective, verified branch and worktree state, \`feature_id\`, \`task_id\`, completed work, evidence, blockers, and one exact next step.
-`;
-
-writeLf(root, currentFile, reset);
+writeLf(root, currentFile, INACTIVE_HANDOFF);
 writeOutputs(root, renderOutputs(root, config).outputs);
 console.log(`Archived handoff to ${archiveFile}, reset ${currentFile}, and re-rendered the context views.`);

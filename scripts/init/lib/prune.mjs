@@ -13,7 +13,27 @@ export const LITE_PRUNE = [
 ];
 
 // Files that only make sense inside the template repository itself.
-export const TEMPLATE_ONLY = ['scripts/context/__fixtures__/', 'scripts/adapters/__fixtures__/', 'scripts/init/__fixtures__/', 'examples/', 'docs/adr/ADR-0001-v2-revamp.md'];
+export const TEMPLATE_ONLY = [
+  'scripts/context/__fixtures__/',
+  'scripts/adapters/__fixtures__/',
+  'scripts/init/__fixtures__/',
+  'scripts/migrate/',
+  'examples/',
+  'docs/adr/ADR-0001-v2-revamp.md',
+  'docs/MIGRATION-v1-to-v2.md'
+];
+
+const TEMPLATE_ONLY_BLOCK = /^[ \t]*<!-- template-only:start -->\n[\s\S]*?^[ \t]*<!-- template-only:end -->\n?/gm;
+
+// Removes the sections a document marks as meaningful only inside the template repository.
+export function stripTemplateOnly(text) {
+  let removed = 0;
+  const stripped = text.replace(TEMPLATE_ONLY_BLOCK, () => {
+    removed += 1;
+    return '';
+  });
+  return { text: stripped.replace(/\n{3,}/g, '\n\n'), removed };
+}
 
 const LINK = /\[[^\]]*\]\(([^)\s]+)[^)]*\)/g;
 const BACKTICK_PATH = /`((?:docs|scripts|examples)\/[A-Za-z0-9_./-]+)`/g;

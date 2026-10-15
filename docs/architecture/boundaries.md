@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Define ownership and allowed dependencies between modules. Customize this file to match the selected stack and repository structure.
+Ownership and allowed dependencies between modules. Adjust the matrix to the selected stack and repository structure; the dependency direction itself is set in `docs/steering/structure.md`.
 
-## Boundary Matrix
+## Boundary matrix
 
 | From | May depend on | Must not depend on |
 |---|---|---|
@@ -13,13 +13,13 @@ Define ownership and allowed dependencies between modules. Customize this file t
 | Domain | Domain types and pure policies | Network, database, framework APIs |
 | Infrastructure | Repository contracts, external SDKs | Presentation state |
 
-## Data Ownership
+## Data ownership
 
 | Data or rule | Canonical owner | Consumers |
 |---|---|---|
-| {{ENTITY_OR_RULE}} | {{MODULE}} | {{CONSUMERS}} |
+| | module or feature | |
 
-## Cross-Feature Rules
+## Cross-feature rules
 
 1. A feature may expose explicit public interfaces; consumers must not import its internal implementation.
 2. Shared modules must represent stable cross-feature concepts, not convenience dumping grounds.
@@ -28,6 +28,5 @@ Define ownership and allowed dependencies between modules. Customize this file t
 
 ## Enforcement
 
-- Static analysis rule: `{{COMMAND_OR_TOOL}}`
-- Import boundary test: `{{COMMAND_OR_TOOL}}`
-- Manual review owner: `{{OWNER}}`
+- Static analysis rule or import boundary test: the lint command in `docs/steering/tech.md`, or `none` until one exists.
+- Manual review owner: {{OWNER}}
