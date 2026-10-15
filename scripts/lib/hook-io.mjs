@@ -37,7 +37,9 @@ export function hookConfig(root) {
 // Repo-relative POSIX path, or null when the file lives outside the project.
 export function relativeTo(root, filePath) {
   if (!filePath) return null;
-  const relative = path.relative(root, path.resolve(root, String(filePath)));
+  // Claude Code on Windows sends backslash paths; POSIX path.resolve would treat them as one filename.
+  const forwardSlashes = String(filePath).replace(/\\/g, '/');
+  const relative = path.relative(root, path.resolve(root, forwardSlashes));
   if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) return null;
   return normalizePath(relative);
 }
