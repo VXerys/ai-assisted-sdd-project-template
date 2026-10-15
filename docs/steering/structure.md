@@ -16,8 +16,7 @@ Where things live and which direction dependencies point. Document only what an 
 | `docs/architecture/` | cross-feature boundaries and invariants | module reasoning stays in the feature |
 | `docs/context/` | rendered state, brief, assumptions log | only `ASSUMPTIONS.md` is hand-edited |
 | `docs/handoff/current.md` | session delta | updated at the end of every implementation session |
-| `{{SOURCE_ROOT}}` | application code | {{SOURCE_RULE}} |
-| `{{TEST_ROOT}}` | tests | mirrors the source layout |
+| {{PRESET_STRUCTURE_ROWS}} | | |
 
 ## Generated paths
 

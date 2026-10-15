@@ -140,7 +140,4 @@ docs/architecture/
     └── environments.md
 ```
 
-Follow:
-
-- `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`
-- `docs/documentation/MODULARIZATION_GUIDE.md`
+Follow `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md` and `docs/documentation/MODULARIZATION_GUIDE.md`.

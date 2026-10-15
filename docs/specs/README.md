@@ -73,10 +73,7 @@ If implementation exposes a new architectural constraint, stop the affected task
 
 ## System architecture guidance
 
-Use:
-
-- `docs/specs/_templates/system-architecture.md`
-- `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`
+Use `docs/specs/_templates/system-architecture.md` and `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`.
 
 The module architecture is not a checklist demanding Redis, sharding, microservices, queues, or load balancers. It evaluates only the concerns required by the module's actual architecture drivers.
 
@@ -157,7 +154,4 @@ Examples:
 
 Every task references requirement IDs and the relevant architecture/design constraints. Every acceptance criterion receives evidence. Architecture claims with meaningful risk receive planned evidence. Cross-feature architecture decisions link to ADRs.
 
-See:
-
-- `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`
-- `docs/documentation/MODULARIZATION_GUIDE.md`
+See `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md` and `docs/documentation/MODULARIZATION_GUIDE.md`.

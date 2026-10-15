@@ -1,0 +1,27 @@
+{
+  "label": "React Native",
+  "language": "TypeScript on Node 22 (Expo managed or bare workflow; state which in tech.md)",
+  "commands": {
+    "install": "npm ci",
+    "dev": "npx expo start",
+    "format": "npx prettier --check .",
+    "lint": "npx eslint .",
+    "typecheck": "npx tsc --noEmit",
+    "test": "npm test",
+    "build": "npx expo run:android"
+  },
+  "structure": [
+    { "path": "app/", "responsibility": "screens and navigation (expo-router), or `src/screens/` in a bare app", "rule": "screens compose features; no data access in a screen" },
+    { "path": "src/features/", "responsibility": "one folder per feature: components, hooks, api", "rule": "features import shared code, never each other" },
+    { "path": "src/shared/", "responsibility": "design system, utilities, API client", "rule": "no feature knowledge" },
+    { "path": "android/, ios/", "responsibility": "native projects (bare workflow only)", "rule": "changed only for permissions, config, and native modules" },
+    { "path": "__tests__/", "responsibility": "Jest tests", "rule": "mirrors `src/`" }
+  ],
+  "fileMatch": ["app/**", "src/**", "__tests__/**"],
+  "notes": [
+    "State in tech.md whether the project is Expo managed or bare; the dev and build commands differ (`npx expo` versus `./gradlew` and Xcode).",
+    "Native modules enter only through an approved dependency; check Expo compatibility first.",
+    "Secrets never ship in the JS bundle; use `expo-constants` extra or a native secret store.",
+    "`npx tsc --noEmit` at 0 errors and `npx eslint .` clean before a task is done."
+  ]
+}

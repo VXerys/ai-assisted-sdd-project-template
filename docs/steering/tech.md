@@ -4,39 +4,38 @@ inclusion: always          # always | fileMatch | manual
 
 # Tech
 
-Stack and commands. Stack-agnostic by default; an app or database preset (available from 2.0.0) fills the placeholders. Until then, fill them from the real repository: a command listed here must exist and run.
+Stack and commands. `npm run init` fills every `PRESET_` placeholder from the chosen app and database presets (`scripts/init/presets/`); everything else is filled from the real repository. A command listed here must exist and run.
 
 ## Stack
 
-| Concern | Technology | Version | Reason or constraint |
-|---|---|---|---|
-| Language and runtime | {{LANGUAGE_RUNTIME}} | | |
-| Application framework | {{APP_FRAMEWORK}} | | |
-| Backend or API | {{BACKEND_OR_NONE}} | | |
-| Data store | {{DATA_STORE_OR_NONE}} | | relational, document, key-value, embedded local, or file |
-| Auth | {{AUTH_OR_NONE}} | | |
-| State management | {{STATE_MANAGEMENT_OR_NA}} | | |
-| Package and build tooling | {{BUILD_TOOLING}} | | |
-| Test framework | {{TEST_FRAMEWORK}} | | |
-| Deployment target | {{DEPLOYMENT_TARGET}} | | web, mobile store, server, desktop |
+| Concern | Technology | Reason or constraint |
+|---|---|---|
+| Language and runtime | {{PRESET_LANGUAGE}} | |
+| Application framework | {{PRESET_APP}} | |
+| Data store | {{PRESET_DB}} | relational, document, key-value, embedded local, file, or none |
+| Source and test paths | {{PRESET_FILE_MATCH}} | globs used by `fileMatch` steering rules |
 
-Mobile (Flutter, Kotlin, React Native) and non-relational stores are first-class here. A row that does not apply says `none`, not an invented value.
+Add rows for the backend or API, auth, state management, build tooling, test framework, and deployment target once they are decided. A row that does not apply says `none`, not an invented value. Mobile (Flutter, Kotlin, React Native) and non-relational stores are first-class here.
 
 ## Commands
 
-Run these before claiming any task done. Report a command that cannot run; never claim its success.
+Run these before claiming any task done. Report a command that cannot run; never claim its success. `none` means the preset has no command for that purpose; replace it when the project gains one.
 
 | Purpose | Command |
 |---|---|
-| Install | `{{INSTALL_COMMAND}}` |
-| Analyze or lint | `{{ANALYZE_COMMAND}}` |
-| Typecheck | `{{TYPECHECK_COMMAND_OR_NONE}}` |
-| Format check | `{{FORMAT_COMMAND_OR_NONE}}` |
-| Test | `{{TEST_COMMAND}}` |
-| Build | `{{BUILD_COMMAND}}` |
-| Run locally | `{{DEV_COMMAND}}` |
-| Data store change check | `{{DATA_CHANGE_CHECK_COMMAND_OR_NONE}}` |
+| Install | `{{PRESET_INSTALL}}` |
+| Analyze or lint | `{{PRESET_LINT}}` |
+| Typecheck | `{{PRESET_TYPECHECK}}` |
+| Format check | `{{PRESET_FORMAT}}` |
+| Test | `{{PRESET_TEST}}` |
+| Build | `{{PRESET_BUILD}}` |
+| Run locally | `{{PRESET_DEV}}` |
+| Data store change check | `{{PRESET_DB_MIGRATION_COMMAND}}` |
 | Context validation | `npm run context:validate` |
+
+## Stack rules
+
+- {{PRESET_APP_NOTES}}
 
 ## Environment and secrets
 
@@ -45,8 +44,8 @@ Run these before claiming any task done. Report a command that cannot run; never
 
 ## Dependency policy
 
-Before adding or replacing a dependency, state the problem it solves, the native alternative considered, maintenance health, runtime or bundle impact, and license. Approval rule: {{DEPENDENCY_APPROVAL_RULE}}.
+Before adding or replacing a dependency, state the problem it solves, the native alternative considered, maintenance health, runtime or bundle impact, and license. Approval rule: the owner approves every new or replaced dependency; record the approval in the task that adds it.
 
 ## Data store changes
 
-Schema, rules, index, or migration changes are versioned files in the repository, reviewed like code. Append-only; destructive changes need explicit approval. Per-store procedure: `docs/runbooks/database-migrations.md`.
+Schema, rules, index, or migration changes are versioned files in the repository, reviewed like code. Append-only; destructive changes need explicit approval. The store's own rules are in the `database.md` steering file when a database preset was chosen. The full procedure is `docs/runbooks/database-migrations.md` (full tier).

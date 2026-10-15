@@ -1,10 +1,10 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run context:render`.
 Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
-source_hash: 173e309128816b5175f82c03242ee2346b71ce88ffc55dfd6e100d81832146b6 -->
+source_hash: ebc6c92aecf824f24f5d89dcb008a88368c0f7a338f7710e93a29ccaa5291cb4 -->
 
 # Brief
 
-{{PROJECT_NAME}} is a {{APPLICATION_TYPE}} for {{TARGET_USERS}} that {{PRIMARY_OUTCOME}}.
+{{PROJECT_DESCRIPTION}}
 
 Project `{{PROJECT_NAME}}`, tier `lite`. Rendered from sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
 

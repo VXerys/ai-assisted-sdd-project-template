@@ -13,6 +13,7 @@ const fixtures = path.join(here, '__fixtures__');
 const validator = path.join(here, 'validate-context.mjs');
 const renderer = path.join(here, 'render.mjs');
 const archiver = path.join(here, 'archive-handoff.mjs');
+const syncer = path.join(root, 'scripts', 'adapters', 'sync.mjs');
 
 function run(script, cwd, args = []) {
   const result = spawnSync(process.execPath, [script, ...args], { cwd, encoding: 'utf8' });
@@ -184,4 +185,41 @@ test('a stale adapter is an error that names adapters:sync, cleared by a sync', 
   assert.equal(run(path.resolve(here, '..', 'adapters', 'sync.mjs'), cwd).status, 0);
   const fixed = run(validator, cwd);
   assert.equal(fixed.status, 0, fixed.out);
+});
+
+test('a placeholder in a status: draft file is a warning, in any other file an error, once templateMode is false', () => {
+  const cwd = copyFixture('valid-lite');
+  const config = JSON.parse(read(cwd, 'sdd.config.json'));
+  config.validate.placeholderSensitiveFiles.push('docs/product/prd.md');
+  fs.writeFileSync(path.join(cwd, 'sdd.config.json'), JSON.stringify(config, null, 2));
+  assert.equal(run(renderer, cwd).status, 0);
+  assert.equal(run(syncer, cwd).status, 0);
+  const prd = path.join(cwd, 'docs', 'product', 'prd.md');
+  fs.mkdirSync(path.dirname(prd), { recursive: true });
+  fs.writeFileSync(prd, '---\nstatus: draft\n---\n\n# PRD\n\nGoal: {{GOAL}}\n');
+  const draft = run(validator, cwd);
+  assert.equal(draft.status, 0, draft.out);
+  assert.match(draft.out, /docs\/product\/prd\.md:7\s+warning\s+unresolved placeholder \{\{GOAL\}\} \(draft\)/);
+  fs.writeFileSync(prd, '---\nstatus: approved\n---\n\n# PRD\n\nGoal: {{GOAL}}\n');
+  const approved = run(validator, cwd);
+  assert.equal(approved.status, 1);
+  assert.match(approved.out, /docs\/product\/prd\.md:7\s+error\s+unresolved placeholder \{\{GOAL\}\}/);
+});
+
+test('a nested directory with its own sdd.config.json is left to its own validation', () => {
+  const cwd = copyFixture('valid-lite');
+  const nested = path.join(cwd, 'examples', 'inner');
+  fs.cpSync(path.join(fixtures, 'valid-lite'), nested, { recursive: true });
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 0, out);
+  assert.doesNotMatch(out, /duplicate id/);
+  assert.match(out, /; 20 Markdown files, 2 feature/);
+});
+
+test('the shipped examples/todo-api project validates with 0 errors on its own', () => {
+  const example = path.join(root, 'examples', 'todo-api');
+  const { status, out } = run(validator, example);
+  assert.equal(status, 0, out);
+  assert.match(out, /0 error\(s\)/);
+  assert.match(out, /2 feature\(s\)/);
 });

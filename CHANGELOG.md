@@ -4,7 +4,22 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ## [Unreleased] — 2.0.0
 
-Phases 1 to 3 of the v2 revamp (ADR-0001): foundation, tooling, adapters and hooks. `init` with presets and the example project follow.
+Phases 1 to 4 of the v2 revamp (ADR-0001): foundation, tooling, adapters and hooks, init with presets and the example project. Phase 5 (release, migration guide, CI, branch rename) follows.
+
+### Phase 4 — init with presets, example project
+
+#### Added
+
+- `npm run init` (`scripts/init/init.mjs`): interactive (`node:readline`, answers can be piped) and non-interactive (`--name`, `--description`, `--tier`, `--app`, `--db`, `--tools`, `--owner`, `--lang`, `--yes`, `--dry-run`, `--force`). Prints the plan, then: writes `sdd.config.json` (`templateMode: false`), fills steering, product, architecture, handoff, assumptions, runbook, and CONTRIBUTING placeholders from the answers and presets, creates `docs/steering/database.md` (`fileMatch`) for a database preset, prunes the full-tier documents on `lite` and relinks every reference to them, removes template-only files (`__fixtures__`, `examples/`, the template's ADR-0001, fixture-bound tests, `CLAUDE.md` when Claude is not a tool), resets `CHANGELOG.md`, runs `context:render`, `adapters:sync`, `context:validate`, and lists every placeholder left as `fill manually: path:line`. Refuses to run on an initialized project without `--force`.
+- Presets in `scripts/init/presets/`: app `nextjs`, `react-native`, `flutter`, `kotlin-android`, `node-api`, `python-api`, `generic` (`label`, `language`, `commands`, `structure`, `fileMatch`, `notes`); database `supabase`, `firebase`, `postgres`, `mysql`, `sqlite-drift`, `mongodb`, `none` (`label`, `migrationTool`, `migrationCommand`, `migrationPath`, `notes`, `fileMatch`). Schema in `scripts/init/presets/README.md`, enforced by `scripts/init/lib/presets.mjs` and a test per file.
+- `examples/todo-api/`: a fully filled `lite` project (`node-api` + `postgres`), F-001 `implemented` with evidence, F-002 `implementing` with an open assumption and an active handoff, rendered views and synced adapters. `npm run example:validate`; validated by `npm test`.
+- Tests: 38 new (`presets.test.mjs`, `init.test.mjs` with a dry-run plan snapshot and lite and full end-to-end runs on temp copies, draft-placeholder and nested-project validator cases, the example).
+
+#### Changed
+
+- `docs/steering/tech.md`: the Stack and Commands tables use `{{PRESET_*}}` placeholders; rows presets cannot know (auth, state management, deployment) are added by hand; new "Stack rules" section from the app preset's notes; the dependency approval rule has a conservative default instead of a placeholder. `structure.md`: the source and test rows come from the preset's `structure`. `product.md`: `{{PROJECT_DESCRIPTION}}` identity line and `{{CONTENT_LANGUAGE}}`. `docs/runbooks/database-migrations.md`: procedure and per-store notes from the database preset (`{{PRESET_DB_*}}`). `CONTRIBUTING.md`: command placeholders from the preset. `docs/context/ASSUMPTIONS.md`: owner and date placeholders.
+- Validator: an unresolved placeholder is a warning while the file's `status` is `draft` or `template`, an error otherwise; `walk` skips a nested directory with its own `sdd.config.json`, so `examples/` validates on its own and never collides with the root.
+- README: quick start (`Use this template`, `npm install`, `npm run init`), flag table, tier table with what `lite` prunes, "After init", "Example". `docs/automation/README.md`: init section, presets in the layout. Every "available from 2.0.0" marker is gone.
 
 ### Phase 3 — adapters, hooks, slash commands, conditional steering
 

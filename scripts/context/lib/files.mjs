@@ -8,6 +8,7 @@ export function normalize(filePath) {
 }
 
 // Lists files under `relativeDir` as repo-relative POSIX paths, sorted.
+// A nested directory with its own sdd.config.json is another project (an example, a fixture) and is skipped.
 export function walk(root, relativeDir = '') {
   const start = path.join(root, relativeDir);
   if (!fs.existsSync(start)) return [];
@@ -16,7 +17,7 @@ export function walk(root, relativeDir = '') {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       const item = path.join(directory, entry.name);
       if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name)) visit(item);
+        if (!SKIP_DIRS.has(entry.name) && !fs.existsSync(path.join(item, 'sdd.config.json'))) visit(item);
         continue;
       }
       result.push(normalize(path.relative(root, item)));

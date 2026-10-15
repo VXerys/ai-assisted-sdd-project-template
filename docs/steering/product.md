@@ -8,9 +8,9 @@ Short, always-loaded product context. The full product requirements live in `doc
 
 ## Vision
 
-{{PROJECT_NAME}} is a {{APPLICATION_TYPE}} for {{TARGET_USERS}} that {{PRIMARY_OUTCOME}}.
+{{PROJECT_DESCRIPTION}}
 
-One paragraph on why it exists now and what "working" looks like for the user.
+One paragraph on why it exists now and what "working" looks like for the user. Project content (specs, product docs, UI copy) is written in {{CONTENT_LANGUAGE}}; the framework text stays English.
 
 ## Personas
 

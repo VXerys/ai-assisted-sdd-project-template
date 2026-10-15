@@ -1,0 +1,14 @@
+{
+  "label": "PostgreSQL",
+  "migrationTool": "versioned SQL files applied by the project's migration runner",
+  "migrationCommand": "psql \"$DATABASE_URL\" -f db/migrations/<file>.sql",
+  "migrationPath": "db/migrations/",
+  "notes": [
+    "Every change is a new timestamped SQL file wrapped in `BEGIN; ... COMMIT;`; an applied migration is never edited.",
+    "Applied versions are tracked in a `schema_migrations` table (or the runner's own table); name the runner in tech.md.",
+    "Authorization is enforced with database roles and, for tenant-scoped rows, Row Level Security (RLS) policies written in the same migration as the table.",
+    "Destructive changes (drop, type narrowing, policy removal) need owner approval and a `pg_dump` first; backfills run in batches with a progress query.",
+    "The connection string comes from the environment and is never committed."
+  ],
+  "fileMatch": ["db/**", "src/db/**"]
+}

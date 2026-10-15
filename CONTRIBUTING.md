@@ -41,12 +41,12 @@ Read `docs/documentation/AI_COLLABORATION_MODEL.md`.
 Run the project-equivalent commands:
 
 ```bash
-{{CONTEXT_SYNC_COMMAND}}
-{{CONTEXT_VALIDATE_COMMAND}}
-{{FORMAT_COMMAND}}
-{{LINT_COMMAND}}
-{{TEST_COMMAND}}
-{{BUILD_COMMAND}}
+npm run context:render
+npm run context:validate
+{{PRESET_FORMAT}}
+{{PRESET_LINT}}
+{{PRESET_TEST}}
+{{PRESET_BUILD}}
 ```
 
 Update:

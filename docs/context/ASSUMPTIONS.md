@@ -2,8 +2,8 @@
 id: ASSUMPTIONS
 title: Assumptions Log
 status: active
-owner: ""
-last_updated: YYYY-MM-DD
+owner: "{{OWNER}}"
+last_updated: "{{YYYY-MM-DD}}"
 ---
 
 # Assumptions

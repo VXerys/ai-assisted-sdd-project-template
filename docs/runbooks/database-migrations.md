@@ -14,8 +14,8 @@ Applies to any store: relational, document, key-value, embedded local (for examp
 
 ## Procedure
 
-1. Write the change as a versioned file: `{{CREATE_CHANGE_COMMAND_OR_PATH}}`.
-2. Apply locally or to a disposable environment: `{{LOCAL_APPLY_COMMAND}}`.
+1. Write the change as a versioned file under `{{PRESET_DB_MIGRATION_PATH}}` ({{PRESET_DB_MIGRATION_TOOL}}).
+2. Apply locally or to a disposable environment: `{{PRESET_DB_MIGRATION_COMMAND}}`.
 3. Verify: schema or rules match the design; existing data stays valid; access rules still deny what they should; indexes support the expected queries; the application builds and its tests pass against the new shape.
 4. For on-device stores, verify an upgrade from the oldest supported installed version.
 5. Record the evidence as EV blocks in the feature's `verification.md`.
@@ -32,6 +32,6 @@ When rollback is unsafe, document the forward-fix strategy and get explicit risk
 
 ## Per-store notes
 
-Filled by the database preset (available from 2.0.0) or by hand. Record here the commands, the location of migration or rules files, how applied versions are tracked, and any store-specific constraint (for example: rules deploy separately from schema; local store versions bump in code; console changes are prohibited).
+Filled by the database preset chosen at `npm run init` ({{PRESET_DB}}); extend by hand with how applied versions are tracked and any constraint the preset does not know.
 
-- {{STORE_SPECIFIC_NOTE_OR_NONE}}
+- {{PRESET_DB_NOTES}}

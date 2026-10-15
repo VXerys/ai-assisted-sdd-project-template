@@ -1,0 +1,84 @@
+# GENERATED FILE. Rendered by `npm run context:render`. Do not edit by hand.
+# Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
+
+schema_version: 2
+project: Todo API
+tier: lite
+features:
+  - id: F-001
+    title: Create and list todos
+    status: implemented
+    phase: complete
+    spec_path: docs/specs/F-001-create-todo
+    tasks:
+      - id: T-001
+        title: POST /todos with title rules
+        status: done
+        requirements:
+          - FR-001
+          - FR-003
+        depends_on: []
+        evidence:
+          - EV-001
+          - EV-002
+      - id: T-002
+        title: GET /todos with keyset paging
+        status: done
+        requirements:
+          - FR-002
+        depends_on:
+          - T-001
+        evidence:
+          - EV-003
+      - id: T-003
+        title: Feature integration and verification
+        status: done
+        requirements:
+          - FR-001
+          - FR-002
+          - FR-003
+        depends_on:
+          - T-002
+        evidence:
+          - EV-004
+  - id: F-002
+    title: Close a todo
+    status: implementing
+    phase: in_progress
+    spec_path: docs/specs/F-002-close-todo
+    tasks:
+      - id: T-001
+        title: PATCH /todos/:id/close
+        status: done
+        requirements:
+          - FR-001
+        depends_on: []
+        evidence:
+          - EV-001
+      - id: T-002
+        title: Status filter on GET /todos
+        status: in_progress
+        requirements:
+          - FR-002
+        depends_on:
+          - T-001
+        evidence: []
+      - id: T-003
+        title: Feature integration and verification
+        status: planned
+        requirements:
+          - FR-001
+          - FR-002
+        depends_on:
+          - T-002
+        evidence: []
+active:
+  feature_id: F-002
+  task_id: T-002
+assumptions_open:
+  - id: A-002
+    feature: F-002
+    title: A cursor stays valid across status filters
+blockers: []
+generated_at: 2026-10-15T07:12:45.570Z
+source_hash: 44badd2ab8820330e0c1b30add98eca89e1988fd5d6260691a9749c88644bf24

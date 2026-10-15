@@ -53,7 +53,7 @@ Paste concise command results or link to feature verification evidence.
 
 - [ ] `tasks.md` status and evidence ids updated
 - [ ] `verification.md` EV blocks cover the acceptance criteria
-- [ ] Context views re-rendered (available from 2.0.0)
+- [ ] Context views re-rendered (`npm run context:render`)
 - [ ] `docs/handoff/current.md` updated
 - [ ] Feature registry or roadmap updated only when durable intent changed
 - [ ] Provider adapter remains non-canonical and portable

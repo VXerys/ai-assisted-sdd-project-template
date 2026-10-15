@@ -1,0 +1,27 @@
+{
+  "label": "Python API",
+  "language": "Python 3.12",
+  "commands": {
+    "install": "python -m pip install -e \".[dev]\"",
+    "dev": "uvicorn app.main:app --reload",
+    "format": "ruff format --check .",
+    "lint": "ruff check .",
+    "typecheck": "mypy .",
+    "test": "pytest",
+    "build": "python -m build"
+  },
+  "structure": [
+    { "path": "app/api/", "responsibility": "routers and request/response schemas", "rule": "no business logic; validate with pydantic, delegate to services" },
+    { "path": "app/services/", "responsibility": "use cases and domain rules", "rule": "framework-free; depends on `app/db/` through interfaces" },
+    { "path": "app/db/", "responsibility": "data access and migrations", "rule": "the only package that imports the database driver" },
+    { "path": "tests/", "responsibility": "pytest suites", "rule": "mirrors `app/`" },
+    { "path": "pyproject.toml", "responsibility": "dependencies and tool configuration", "rule": "every dependency is declared here; the virtualenv is never committed" }
+  ],
+  "fileMatch": ["app/**", "tests/**"],
+  "notes": [
+    "Request and response models are pydantic classes at the API boundary; services never receive raw dicts.",
+    "No blocking IO inside async handlers; use the async driver or run blocking work in a thread.",
+    "`ruff check .`, `mypy .`, and `pytest` clean before a task is done.",
+    "Dependencies are pinned through the lock file the project chose (pip-tools, uv, or poetry); state which in tech.md."
+  ]
+}

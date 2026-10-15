@@ -46,8 +46,13 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
     if (file !== 'CHANGELOG.md' && !file.startsWith('docs/handoff/archive/')) checkBacktickPaths(root, file, text, warning);
 
     if (!config.templateMode && !isTemplate(file) && placeholderApplies(config, file)) {
+      // A draft may still carry placeholders; a document past draft may not.
+      const draft = ['draft', 'template'].includes(scalar(data?.status));
       for (const line of taggedLines(text)) {
-        if (PLACEHOLDER.test(line.text)) error(file, line.number, `unresolved placeholder ${line.text.match(PLACEHOLDER)[0]}`);
+        if (!PLACEHOLDER.test(line.text)) continue;
+        const found = line.text.match(PLACEHOLDER)[0];
+        if (draft) warning(file, line.number, `unresolved placeholder ${found} (draft)`);
+        else error(file, line.number, `unresolved placeholder ${found}`);
       }
     }
 

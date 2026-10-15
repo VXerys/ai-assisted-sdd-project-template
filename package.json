@@ -9,6 +9,8 @@
   },
   "scripts": {
     "test": "node --test scripts/**/*.test.mjs",
+    "init": "node scripts/init/init.mjs",
+    "example:validate": "cd examples/todo-api && node ../../scripts/context/validate-context.mjs",
     "context:render": "node scripts/context/render.mjs",
     "context:validate": "node scripts/context/validate-context.mjs",
     "context:archive-handoff": "node scripts/context/archive-handoff.mjs",

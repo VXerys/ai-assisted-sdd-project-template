@@ -6,6 +6,26 @@ Read `docs/context/CONTEXT_SYSTEM.md` for the model: hand-edited sources (`docs/
 
 ## Commands
 
+### Init
+
+```bash
+npm run init                      # prompts for every value no flag set
+npm run init -- --yes --name "Habit Tracker" --tier lite --app flutter --db supabase --tools claude,kiro
+npm run init -- --dry-run --yes   # prints the plan, changes nothing
+npm run init -- --force ...       # re-run on a project whose templateMode is already false
+```
+
+Flags: `--name`, `--description`, `--tier lite|full`, `--app <preset>`, `--db <preset>`, `--tools <list>`, `--owner`, `--lang`, `--yes`, `--dry-run`, `--force`; the README has the table. Prompts read stdin line by line, so answers can be piped.
+
+The plan, printed before anything changes and executed in this order, each step idempotent:
+
+1. `write sdd.config.json`: `project`, `stack`, `tools`, `templateMode: false`; `validate.requiredFiles` loses pruned files and gains the `database.md` steering file when a database preset is chosen; `generated`, `frozen`, `limits` are kept.
+2. `fill`: `docs/steering/*.md`, `docs/product/prd.md`, `docs/product/idea-brief.md`, `docs/architecture/overview.md`, `docs/handoff/current.md`, `docs/context/ASSUMPTIONS.md`, `docs/runbooks/database-migrations.md`, `CONTRIBUTING.md`. Values: the answers (`{{PROJECT_NAME}}`, `{{PROJECT_DESCRIPTION}}`, `{{CONTENT_LANGUAGE}}`, `{{OWNER}}` and its variants, `{{YYYY-MM-DD}}` except on an `expires_after` line), the presets (`{{PRESET_*}}`, see `scripts/init/presets/README.md`), and `none` for the four "or none" rule placeholders of a fresh project. A placeholder with no value stays and is listed at the end as `fill manually: path:line`.
+3. `create docs/steering/database.md` (`inclusion: fileMatch`, patterns and rules from the database preset) unless `--db none`.
+4. `prune` (lite only): `docs/specs/_templates/system-architecture.md`, `docs/_templates/architecture-baseline.md`, `docs/runbooks/`, `docs/quality/test-strategy.md`, `docs/architecture/MODULE_ARCHITECTURE_GUIDE.md`, `docs/documentation/MODULARIZATION_GUIDE.md`; then `relink` every Markdown file that pointed at a pruned or removed path: a table row or list item is dropped, a prose line loses only that sentence.
+5. `remove` template-only files: `scripts/**/__fixtures__/`, `examples/`, `docs/adr/ADR-0001-v2-revamp.md`, the test files that need the fixtures, and `CLAUDE.md` when `claude` is not in `--tools`; `reset CHANGELOG.md` to a fresh `[Unreleased]`.
+6. `run` `context:render`, `adapters:sync`, `context:validate`; their summaries are printed and the validate exit code is init's exit code.
+
 ### Render context
 
 ```bash
@@ -62,7 +82,7 @@ Archives an active handoff to `docs/handoff/archive/<session_date>-<feature_id>-
 npm test
 ```
 
-Runs `node --test scripts/**/*.test.mjs`: parser unit tests, the glob matcher, adapter snapshots on `scripts/adapters/__fixtures__/multi-tool/`, every hook driven through stdin JSON, fixture repositories under `scripts/context/__fixtures__/` (`valid-lite`, `missing-evidence`, `implemented-with-open-task`, `stale-render`), and a smoke test against this repository.
+Runs `node --test scripts/**/*.test.mjs`: parser unit tests, the glob matcher, adapter snapshots on `scripts/adapters/__fixtures__/multi-tool/`, every hook driven through stdin JSON, fixture repositories under `scripts/context/__fixtures__/` (`valid-lite`, `missing-evidence`, `implemented-with-open-task`, `stale-render`), the schema of every preset file, `init` end to end on temp copies of this repository (lite and full, dry-run plan snapshot in `scripts/init/__fixtures__/`), `examples/todo-api` validated with 0 errors, and a smoke test against this repository.
 
 ## Claude Code hooks
 
@@ -93,15 +113,11 @@ Windows: the command string was verified under Git Bash, which expands `${CLAUDE
 
 ## Layout
 
-`scripts/context/` holds `render.mjs`, `validate-context.mjs`, `archive-handoff.mjs` as thin CLIs over `scripts/context/lib/` (parsers, `config`, `hash`, `git`, `model`, `views`, `render`, `checks`). `scripts/adapters/` holds `sync.mjs` over `render.mjs`. `scripts/hooks/` holds the four hook entry points. `scripts/lib/` holds `glob`, `steering`, `guard`, and `hook-io`, shared by adapters, hooks, and the validator. Everything is a function over strings and paths, so tests run on fixtures without the real repository.
-
-## Not yet shipped
-
-`init` with app and database presets and `examples/todo-api` (ADR-0001, phase 4) are available from 2.0.0. Nothing in this repository describes them beyond that.
+`scripts/context/` holds `render.mjs`, `validate-context.mjs`, `archive-handoff.mjs` as thin CLIs over `scripts/context/lib/` (parsers, `config`, `hash`, `git`, `model`, `views`, `render`, `checks`). `scripts/adapters/` holds `sync.mjs` over `render.mjs`. `scripts/init/` holds `init.mjs` over `lib/` (`presets`, `fill`, `prune`) and `presets/app/*.json`, `presets/db/*.json`. `scripts/hooks/` holds the four hook entry points. `scripts/lib/` holds `glob`, `steering`, `guard`, and `hook-io`, shared by adapters, hooks, and the validator. Everything is a function over strings and paths, so tests run on fixtures without the real repository.
 
 ## Template mode
 
-`sdd.config.json` starts with `templateMode: true`. After filling the steering files and core placeholders, set it to `false` so validation rejects unresolved placeholders in active artifacts.
+`sdd.config.json` starts with `templateMode: true`; `npm run init` sets it to `false`. From then on an unresolved placeholder in a `validate.placeholderSensitiveFiles` entry is an error, or a warning while that file's frontmatter `status` is `draft` or `template`.
 
 ## Provider adapters
 

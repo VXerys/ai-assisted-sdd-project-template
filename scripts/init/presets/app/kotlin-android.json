@@ -1,0 +1,27 @@
+{
+  "label": "Kotlin Android",
+  "language": "Kotlin (JVM 17) with Gradle Kotlin DSL",
+  "commands": {
+    "install": null,
+    "dev": "./gradlew installDebug",
+    "format": "./gradlew ktlintCheck",
+    "lint": "./gradlew lint",
+    "typecheck": "./gradlew compileDebugKotlin",
+    "test": "./gradlew testDebugUnitTest",
+    "build": "./gradlew assembleRelease"
+  },
+  "structure": [
+    { "path": "app/src/main/kotlin/", "responsibility": "application code by feature package", "rule": "ui -> viewmodel -> domain <- data; no Android imports in domain" },
+    { "path": "app/src/main/res/", "responsibility": "resources", "rule": "strings and dimensions come from resources, never literals" },
+    { "path": "app/src/test/", "responsibility": "JVM unit tests", "rule": "mirrors the main package layout" },
+    { "path": "app/src/androidTest/", "responsibility": "instrumented tests", "rule": "only for behavior that needs a device" },
+    { "path": "gradle/libs.versions.toml", "responsibility": "dependency version catalog", "rule": "every dependency is declared here once" }
+  ],
+  "fileMatch": ["app/src/**", "gradle/**"],
+  "notes": [
+    "Gradle wrapper only (`./gradlew`); a system Gradle is never used, and the wrapper resolves dependencies on the first build.",
+    "Dependencies enter through the version catalog; a new one needs the approval in tech.md.",
+    "`local.properties`, keystores, and signing configs stay out of the repository.",
+    "`./gradlew lint` and `testDebugUnitTest` green before a task is done; `ktlintCheck` needs the ktlint Gradle plugin."
+  ]
+}
