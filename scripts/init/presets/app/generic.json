@@ -19,5 +19,7 @@
   "notes": [
     "This preset sets no commands: replace every `none` in the Commands table of tech.md with the real command before the first task.",
     "Replace the `src/` and `tests/` rows in structure.md with the real layout."
-  ]
+  ],
+  "generatedPaths": [],
+  "gitignore": []
 }

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { parseFrontmatter } from './frontmatter.mjs';
-import { parseBlocks, parseKeyValues, parseList, blockBody, taggedLines, stripComment } from './markdown.mjs';
+import { parseBlocks, parseKeyValues, parseList, blockBody, taggedLines, stripComment, section } from './markdown.mjs';
 
 export const FEATURE_DIR = /^(F-\d{3})-[a-z0-9][a-z0-9-]*$/;
 export const FEATURE_FILES = ['requirements.md', 'design.md', 'tasks.md', 'verification.md', 'system-architecture.md'];
@@ -84,6 +84,49 @@ function readFence(lines, start) {
   return { text: body.join('\n').trim(), next: index };
 }
 
+export function acceptanceByRequirement(requirements) {
+  return new Map(requirements.fr.map((fr) => [fr.id, new Set(fr.ac)]));
+}
+
+// Backtick commands of the `## Commands` table in tech.md; `none` marks a purpose without a command.
+export function parseTechCommands(text) {
+  const commands = new Set();
+  const table = section(text, /^##\s+commands/i);
+  if (!table) return commands;
+  for (const line of table.split('\n')) {
+    if (!line.trim().startsWith('|')) continue;
+    for (const match of line.matchAll(/`([^`]+)`/g)) {
+      const command = match[1].trim();
+      if (command && command !== 'none') commands.add(command);
+    }
+  }
+  return commands;
+}
+
+// A heading that names an id but misses the exact form hides the block from the parsers above.
+const HEADING_FORMS = {
+  task: [{ loose: /^#+\s+T-?(\d+)\b/, strict: /^###\s+T-\d{3}\s+[—–-]+(\s|$)/, label: 'task heading', form: (n) => `### T-${n} — title` }],
+  requirement: [
+    { loose: /^#+\s+FR-?(\d+)\b/, strict: /^###\s+FR-\d{3}\b/, label: 'requirement heading', form: (n) => `### FR-${n} — title` },
+    { loose: /^\s*-\s+AC-?(\d+)\s*:/, strict: /^\s*-\s+AC-\d{3}\s*:/, label: 'acceptance criterion', form: (n) => `- AC-${n}: text`, quoteMatch: true }
+  ],
+  evidence: [{ loose: /^#+\s+EV-?(\d+)\b/, strict: /^###\s+EV-\d{3}\s+[—–-]+(\s|$)/, label: 'evidence heading', form: (n) => `### EV-${n} — title` }]
+};
+
+export function findMalformedHeadings(text, kind) {
+  const found = [];
+  for (const line of taggedLines(text)) {
+    if (line.inFence) continue;
+    for (const rule of HEADING_FORMS[kind]) {
+      const match = line.text.match(rule.loose);
+      if (!match || rule.strict.test(line.text)) continue;
+      const number = match[1].padStart(3, '0');
+      found.push({ line: line.number, text: (rule.quoteMatch ? match[0] : line.text).trim(), label: rule.label, expected: rule.form(number) });
+    }
+  }
+  return found;
+}
+
 export function parseRequirementIds(text) {
   const fr = [];
   const ac = [];
@@ -131,6 +174,7 @@ function loadFeature(root, dir, id) {
   const requirementsFile = files['requirements.md'];
   const verificationFile = files['verification.md'];
   const meta = tasksFile?.data ?? requirementsFile?.data ?? {};
+  // Blocks are parsed from the whole file so their line numbers are file lines; frontmatter holds no block syntax.
   return {
     id,
     dir,
@@ -138,8 +182,8 @@ function loadFeature(root, dir, id) {
     status: typeof meta.status === 'string' ? meta.status : null,
     tier: typeof meta.tier === 'string' ? meta.tier : 'lite',
     files,
-    tasks: tasksFile ? parseTasks(tasksFile.body) : [],
-    evidence: verificationFile ? parseEvidence(verificationFile.body) : [],
-    requirements: requirementsFile ? parseRequirementIds(requirementsFile.body) : { fr: [], ac: [] }
+    tasks: tasksFile ? parseTasks(tasksFile.text) : [],
+    evidence: verificationFile ? parseEvidence(verificationFile.text) : [],
+    requirements: requirementsFile ? parseRequirementIds(requirementsFile.text) : { fr: [], ac: [] }
   };
 }

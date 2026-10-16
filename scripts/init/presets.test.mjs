@@ -67,3 +67,45 @@ test('loadPreset rejects a name that is not a preset file', () => {
   assert.throws(() => loadPreset('app', 'rails'), /unknown app preset 'rails'/);
   assert.throws(() => loadPreset('db', '../etc'), /unknown db preset/);
 });
+
+test('no preset command contains reset, drop, or --force', () => {
+  const commands = [];
+  for (const name of EXPECTED_APP) commands.push(...Object.values(loadPreset('app', name).commands).filter(Boolean));
+  for (const name of EXPECTED_DB) {
+    const command = loadPreset('db', name).migrationCommand;
+    if (command) commands.push(command);
+  }
+  assert.ok(commands.length > 10);
+  for (const command of commands) assert.doesNotMatch(command, /\b(reset|drop)\b|--force/, command);
+});
+
+test('the supabase preset checks a change with supabase db diff and its notes no longer name db reset', () => {
+  const preset = loadPreset('db', 'supabase');
+  assert.equal(preset.migrationCommand, 'supabase db diff');
+  assert.ok(preset.notes.some((note) => note.includes('supabase db diff')));
+  assert.ok(!preset.notes.some((note) => note.includes('db reset')));
+});
+
+test('presets declare generatedPaths and gitignore lines, and the schema requires them', () => {
+  assert.deepEqual(loadPreset('app', 'flutter').generatedPaths, ['lib/**/*.g.dart', 'lib/**/*.freezed.dart']);
+  assert.deepEqual(loadPreset('app', 'kotlin-android').generatedPaths, ['build/**']);
+  for (const name of EXPECTED_APP.filter((entry) => !['flutter', 'kotlin-android'].includes(entry))) {
+    assert.deepEqual(loadPreset('app', name).generatedPaths, [], name);
+  }
+  assert.deepEqual(loadPreset('app', 'flutter').gitignore, ['ios/Pods/', '.flutter-plugins*', 'android/key.properties', '*.jks']);
+  assert.deepEqual(loadPreset('app', 'kotlin-android').gitignore, ['.gradle/', 'local.properties']);
+  assert.deepEqual(loadPreset('app', 'python-api').gitignore, ['.venv/', '__pycache__/']);
+  assert.deepEqual(loadPreset('db', 'supabase').gitignore, ['supabase/.temp/', 'supabase/.branches/']);
+  assert.deepEqual(loadPreset('db', 'firebase').gitignore, ['.firebase/', '*-debug.log']);
+  assert.deepEqual(loadPreset('db', 'none').gitignore, []);
+
+  const app = JSON.parse(fs.readFileSync(path.join(presetsDir, 'app', 'generic.json'), 'utf8'));
+  delete app.generatedPaths;
+  delete app.gitignore;
+  const appErrors = validatePreset('app', app);
+  assert.ok(appErrors.some((entry) => entry.includes('generatedPaths')));
+  assert.ok(appErrors.some((entry) => entry.includes('gitignore')));
+  const db = JSON.parse(fs.readFileSync(path.join(presetsDir, 'db', 'none.json'), 'utf8'));
+  delete db.gitignore;
+  assert.ok(validatePreset('db', db).some((entry) => entry.includes('gitignore')));
+});

@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 import { fillPlaceholders, remainingPlaceholders } from './lib/fill.mjs';
 import { relink, stripTemplateOnly, LITE_PRUNE, TEMPLATE_ONLY } from './lib/prune.mjs';
+import { slug, mergeGitignore, stripExampleLines, derivedPackageJson, DERIVED_WORKFLOW } from './lib/project.mjs';
 import { walk } from '../context/lib/files.mjs';
 import { INACTIVE_HANDOFF } from '../context/lib/handoff.mjs';
 
@@ -69,6 +70,46 @@ function fullProject() {
   }
   return full;
 }
+
+test('slug turns a project name into an npm package name', () => {
+  assert.equal(slug('Habit Tracker'), 'habit-tracker');
+  assert.equal(slug('  Shop_Admin v2! '), 'shop-admin-v2');
+  assert.equal(slug('***'), 'project');
+});
+
+test('mergeGitignore appends only new lines under one marker and is idempotent', () => {
+  const base = '# Dependencies\nnode_modules/\n\n# Build\ndist/\n';
+  const first = mergeGitignore(base, ['node_modules/', 'ios/Pods/', '*.jks', 'ios/Pods/']);
+  assert.equal(first.added, 2);
+  assert.equal(first.text, `${base}\n# sdd preset\nios/Pods/\n*.jks\n`);
+  const again = mergeGitignore(first.text, ['ios/Pods/', '*.jks']);
+  assert.equal(again.added, 0);
+  assert.equal(again.text, first.text);
+  const grown = mergeGitignore(first.text, ['ios/Pods/', '*.jks', '.venv/']);
+  assert.equal(grown.added, 1);
+  assert.equal(grown.text, `${base}\n# sdd preset\nios/Pods/\n*.jks\n.venv/\n`);
+  assert.equal(grown.text.split('# sdd preset').length, 2);
+  assert.deepEqual(mergeGitignore(base, ['node_modules/', 'dist/']), { text: base, added: 0 });
+  assert.equal(mergeGitignore('', ['.venv/']).text, '# sdd preset\n.venv/\n');
+});
+
+test('stripExampleLines drops example bullets and rows but keeps table headers and prose', () => {
+  const text = ['## Personas', '', '- Example: Reader, a commuter.', '- Real persona.', '', '| Signal | Source |', '|---|---|', '| Example: daily check-ins | event |', '', 'An Example: in prose stays.', ''].join('\n');
+  const { text: out, removed } = stripExampleLines(text);
+  assert.equal(removed, 2);
+  assert.equal(out, ['## Personas', '', '- Real persona.', '', '| Signal | Source |', '|---|---|', '', 'An Example: in prose stays.', ''].join('\n'));
+  assert.deepEqual(stripExampleLines('none\n'), { text: 'none\n', removed: 0 });
+});
+
+test('derivedPackageJson renames the package, resets the version, and drops the example script', () => {
+  const text = JSON.stringify({ name: 'ai-assisted-sdd-project-template', version: '2.0.0', description: 'template', scripts: { test: 'node --test', 'example:validate': 'x', init: 'y' } }, null, 2);
+  const pkg = JSON.parse(derivedPackageJson(text, { name: 'Habit Tracker', description: 'Habit Tracker is a Flutter project.' }));
+  assert.equal(pkg.name, 'habit-tracker');
+  assert.equal(pkg.version, '0.1.0');
+  assert.equal(pkg.description, 'Habit Tracker is a Flutter project.');
+  assert.deepEqual(Object.keys(pkg.scripts), ['test', 'init']);
+  assert.doesNotMatch(DERIVED_WORKFLOW, /examples|init\.mjs|--strict/);
+});
 
 test('fillPlaceholders replaces inline values, expands block placeholders line-wise, and leaves unknown ones', () => {
   const text = '# {{PROJECT_NAME}}\n| {{PRESET_STRUCTURE_ROWS}} | | |\n- {{PRESET_APP_NOTES}}\nowner: {{OWNER}} on {{YYYY-MM-DD}}\nkeep {{UNKNOWN}}\n';
@@ -166,6 +207,58 @@ test('init refuses to run twice unless --force is given', () => {
   assert.equal(validate(cwd).status, 0);
 });
 
+test('init rewrites CI and package.json for the derived repository, whose npm test and validate pass', () => {
+  const { cwd } = liteProject();
+  const workflow = read(cwd, '.github/workflows/context-integrity.yml');
+  assert.doesNotMatch(workflow, /examples|init\.mjs|--strict|template-init/);
+  for (const step of ['npm ci', 'npm test', 'npm run context:validate']) assert.ok(workflow.includes(`run: ${step}`), step);
+  const pkg = JSON.parse(read(cwd, 'package.json'));
+  assert.equal(pkg.name, 'habit-tracker');
+  assert.equal(pkg.version, '0.1.0');
+  assert.equal(pkg.scripts['example:validate'], undefined);
+  // Without this the nested test runner reports to the parent runner instead of stdout.
+  const env = { ...process.env };
+  delete env.NODE_TEST_CONTEXT;
+  const npm = (script) => spawnSync(`npm ${script}`, { cwd, encoding: 'utf8', shell: true, env });
+  const tests = npm('test');
+  assert.equal(tests.status, 0, `${tests.stdout}\n${tests.stderr}`);
+  const summary = `${tests.stdout}${tests.stderr}`;
+  assert.match(summary, /pass [1-9]\d*/);
+  assert.match(summary, /fail 0/);
+  const validated = npm('run context:validate');
+  assert.equal(validated.status, 0, `${validated.stdout}\n${validated.stderr}`);
+  assert.match(validated.stdout, /Context validation passed/);
+});
+
+test('init merges the preset generated globs into sdd.config.json and structure.md', () => {
+  const { cwd } = liteProject();
+  const config = JSON.parse(read(cwd, 'sdd.config.json'));
+  assert.ok(config.generated.includes('lib/**/*.g.dart'));
+  assert.ok(config.generated.includes('lib/**/*.freezed.dart'));
+  assert.equal(config.generated.filter((entry) => entry === 'lib/**/*.g.dart').length, 1, 'duplicated after --force');
+  assert.match(read(cwd, 'docs/steering/structure.md'), /generated API clients\): `lib\/\*\*\/\*\.g\.dart`, `lib\/\*\*\/\*\.freezed\.dart`/);
+  assert.match(read(cwd, 'AGENTS.md'), /`lib\/\*\*\/\*\.g\.dart`/);
+});
+
+test('init appends the preset gitignore lines once under the sdd preset marker', () => {
+  const { cwd } = liteProject();
+  const gitignore = read(cwd, '.gitignore');
+  assert.equal(gitignore.split('# sdd preset').length, 2, 'marker written more than once after --force');
+  const block = gitignore.split('# sdd preset\n')[1];
+  assert.equal(block, 'ios/Pods/\n.flutter-plugins*\nandroid/key.properties\n*.jks\nsupabase/.temp/\nsupabase/.branches/\n');
+  assert.equal(gitignore.match(/^node_modules\/$/gm).length, 1);
+});
+
+test('init strips the example personas, signals, and constraints from steering', () => {
+  const { cwd } = liteProject();
+  const product = read(cwd, 'docs/steering/product.md');
+  assert.doesNotMatch(product, /^\s*[-|]\s*Example:/m);
+  assert.match(product, /^\| Signal \| What it tells us \| Source \|$/m);
+  assert.match(product, /^## Personas$/m);
+  assert.doesNotMatch(read(cwd, 'AGENTS.md'), /Example:/);
+  for (const file of walk(cwd, 'docs/steering')) assert.doesNotMatch(read(cwd, file), /^\s*[-|]\s*Example:/m, file);
+});
+
 test('init rejects an unknown preset, tier, or tool before touching anything', () => {
   const cwd = copyRepo('reject');
   const before = treeDigest(cwd);
@@ -203,7 +296,7 @@ test('lite init fills steering from the presets and the answers', () => {
   assert.match(tech, /\| Data store \| Supabase \(PostgreSQL\) \|/);
   assert.match(tech, /\| Analyze or lint \| `flutter analyze` \|/);
   assert.match(tech, /\| Typecheck \| `none` \|/);
-  assert.match(tech, /\| Data store change check \| `supabase db reset` \|/);
+  assert.match(tech, /\| Data store change check \| `supabase db diff` \|/);
   assert.match(tech, /- `flutter analyze` at 0 issues/);
   assert.doesNotMatch(tech, /\{\{/);
   const structure = read(cwd, 'docs/steering/structure.md');

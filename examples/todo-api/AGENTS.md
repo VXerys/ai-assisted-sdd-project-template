@@ -1,6 +1,6 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
 Source: docs/steering/, sdd.config.json.
-source_hash: a2b445c205530343119f5b518cd1f56ccf2a882bd976cd850f3797972ebe66c7 -->
+source_hash: 769123490bc68191291a8dcdda4bc0a44ec2e1092da6870f73291631d95befdc -->
 
 # Repository contract: Todo API
 

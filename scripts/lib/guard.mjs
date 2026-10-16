@@ -3,7 +3,10 @@ import path from 'node:path';
 import { matchesAny, normalizePath } from './glob.mjs';
 import { ADAPTER_TARGETS } from '../adapters/render.mjs';
 
-export const SECRET_PATTERNS = ['.env*', '*.pem', '*.keystore', '*.jks', 'google-services.json'];
+export const SECRET_PATTERNS = [
+  '.env*', '*.pem', '*.keystore', '*.jks', 'google-services.json', 'key.properties', 'GoogleService-Info.plist',
+  '*.p12', '*.p8', '*.mobileprovision', '*.key', '*.pfx', 'id_rsa*', '*.secret'
+];
 
 // Returns {rule, pattern, reason} when an edit to `relativePath` must be refused, otherwise null.
 // `relativePath` is null for files outside the project; only the secret rule applies to those.

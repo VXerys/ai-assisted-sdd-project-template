@@ -7,8 +7,8 @@ const PRESETS_DIR = path.resolve(here, '..', 'presets');
 
 export const COMMAND_KEYS = ['install', 'dev', 'format', 'lint', 'typecheck', 'test', 'build'];
 export const STRUCTURE_KEYS = ['path', 'responsibility', 'rule'];
-const APP_KEYS = ['label', 'language', 'commands', 'structure', 'fileMatch', 'notes'];
-const DB_KEYS = ['label', 'migrationTool', 'migrationCommand', 'migrationPath', 'notes', 'fileMatch'];
+const APP_KEYS = ['label', 'language', 'commands', 'structure', 'fileMatch', 'notes', 'generatedPaths', 'gitignore'];
+const DB_KEYS = ['label', 'migrationTool', 'migrationCommand', 'migrationPath', 'notes', 'fileMatch', 'gitignore'];
 
 function listPresets(kind) {
   return fs
@@ -49,10 +49,13 @@ export function validatePreset(kind, raw) {
     }
     if (!isStringList(raw.fileMatch, { min: 1 })) errors.push('fileMatch must be a non-empty array of glob strings');
     if (!isStringList(raw.notes, { max: 5 })) errors.push('notes must be an array of at most 5 strings');
+    if (!isStringList(raw.generatedPaths)) errors.push('generatedPaths must be an array of glob strings');
+    if (!isStringList(raw.gitignore)) errors.push('gitignore must be an array of .gitignore lines');
   } else if (kind === 'db') {
     for (const key of ['migrationTool', 'migrationCommand', 'migrationPath']) if (!isStringOrNull(raw[key])) errors.push(`${key} must be a string or null`);
     if (!isStringList(raw.notes)) errors.push('notes must be an array of strings');
     if (!isStringList(raw.fileMatch)) errors.push('fileMatch must be an array of glob strings');
+    if (!isStringList(raw.gitignore)) errors.push('gitignore must be an array of .gitignore lines');
   } else {
     return [`unknown preset kind '${kind}'`];
   }

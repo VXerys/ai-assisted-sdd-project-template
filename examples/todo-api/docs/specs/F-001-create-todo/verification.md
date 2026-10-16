@@ -17,7 +17,7 @@ supersedes: null
 ## Evidence
 
 ### EV-001 — Create handler tests pass
-- command: `npm test -- test/todos-create.test.js`
+- command: `npm test`
 - output:
   ```text
   ✔ creates a todo and returns 201 with id, title, status, created_at
@@ -25,11 +25,11 @@ supersedes: null
   ℹ tests 3  ℹ pass 3  ℹ fail 0
   ```
 - date: 2026-10-02
-- commit: 3f9c2a1
+- commit: 0000000
 - covers: [AC-001, AC-002]
 
 ### EV-002 — Title normalization tests pass
-- command: `npm test -- test/todos-create.test.js`
+- command: `npm test`
 - output:
   ```text
   ✔ trims surrounding whitespace before storing the title
@@ -37,11 +37,11 @@ supersedes: null
   ℹ tests 6  ℹ pass 6  ℹ fail 0
   ```
 - date: 2026-10-03
-- commit: 8be41d7
+- commit: 0000000
 - covers: [AC-005, AC-006]
 
 ### EV-003 — List ordering and paging tests pass
-- command: `npm test -- test/todos-list.test.js`
+- command: `npm test`
 - output:
   ```text
   ✔ returns the newer todo first
@@ -49,18 +49,17 @@ supersedes: null
   ℹ tests 3  ℹ pass 3  ℹ fail 0
   ```
 - date: 2026-10-07
-- commit: c17e9a4
+- commit: 0000000
 - covers: [AC-003, AC-004]
 
-### EV-004 — Full suite and lint at the final commit
-- command: `npx eslint . && npm test`
+### EV-004 — Full suite at the final commit
+- command: `npm test`
 - output:
   ```text
-  (eslint: no output, exit 0)
   ℹ tests 14  ℹ pass 14  ℹ fail 0  ℹ duration_ms 2841.3
   ```
 - date: 2026-10-10
-- commit: 7d41c0e
+- commit: 0000000
 - covers: [AC-001, AC-002, AC-003, AC-004, AC-005, AC-006]
 
 ## Coverage

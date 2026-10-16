@@ -10,6 +10,7 @@ import { walk, readText, exists, writeLf } from '../context/lib/files.mjs';
 import { APP_PRESETS, DB_PRESETS, loadPreset, COMMAND_KEYS } from './lib/presets.mjs';
 import { fillPlaceholders, remainingPlaceholders } from './lib/fill.mjs';
 import { LITE_PRUNE, TEMPLATE_ONLY, isPruned, relink, stripTemplateOnly } from './lib/prune.mjs';
+import { DERIVED_WORKFLOW, derivedPackageJson, mergeGitignore, stripExampleLines } from './lib/project.mjs';
 
 const USAGE = `Usage: npm run init -- [flags]
 
@@ -227,8 +228,8 @@ function fillValues(answers) {
     PRESET_STRUCTURE_ROWS: app.structure.map((row) => `\`${row.path}\` | ${row.responsibility} | ${row.rule} |`),
     PRESET_APP_NOTES: app.notes.length ? app.notes : ['none'],
     PRESET_DB_NOTES: db.notes.length ? db.notes : ['none'],
+    GENERATED_CODE_PATHS_OR_NONE: app.generatedPaths.length ? app.generatedPaths.map((pattern) => `\`${pattern}\``).join(', ') : 'none',
     // True for a freshly initialized project; the team replaces `none` when the fact appears.
-    GENERATED_CODE_PATHS_OR_NONE: 'none',
     FROZEN_PATHS_OR_NONE: 'none',
     DEPENDENCY_RULE: 'none',
     DATA_RULE_OR_NONE: 'none'
@@ -261,6 +262,7 @@ function buildPlan(root, config, answers) {
   config.stack = { app: answers.app, database: answers.db };
   config.tools = answers.tools;
   config.templateMode = false;
+  config.generated = [...new Set([...(config.generated ?? []), ...answers.appPreset.generatedPaths])];
   if (config.validate?.requiredFiles) {
     config.validate.requiredFiles = config.validate.requiredFiles.filter((file) => !isPruned(file, pruned) && !isPruned(file, removed));
     if (dbSteering && !config.validate.requiredFiles.includes(dbSteering)) config.validate.requiredFiles.push(dbSteering);
@@ -285,6 +287,12 @@ function buildPlan(root, config, answers) {
     if (!blocks) continue;
     texts.set(file, text);
     actions.push({ verb: 'strip', target: file, note: `${blocks} template-only block`, apply: () => writeLf(root, file, texts.get(file)) });
+  }
+  for (const file of walk(root, config.paths?.steering ?? 'docs/steering').filter((entry) => entry.endsWith('.md'))) {
+    const { text, removed: lines } = stripExampleLines(current(file));
+    if (!lines) continue;
+    texts.set(file, text);
+    actions.push({ verb: 'strip', target: file, note: `${lines} example lines`, apply: () => writeLf(root, file, texts.get(file)) });
   }
   if (dbSteering) {
     const content = databaseSteering(answers);
@@ -311,9 +319,18 @@ function buildPlan(root, config, answers) {
   for (const file of walk(root, 'scripts').filter((entry) => entry.endsWith('.test.mjs') && !isPruned(entry, removed) && readText(root, entry).includes('__fixtures__'))) {
     actions.push({ verb: 'remove', target: file, note: 'test needs removed fixtures', apply: () => fs.rmSync(path.join(root, file), { force: true }) });
   }
-  const version = JSON.parse(readText(root, 'package.json')).version;
+  const packageText = readText(root, 'package.json');
+  const version = JSON.parse(packageText).version;
   const changelog = `# Changelog\n\nFormat: Keep a Changelog. Versions follow Semantic Versioning.\n\n## [Unreleased]\n\n- Initialized from ai-assisted-sdd-project-template ${version} on ${answers.date} (tier ${answers.tier}, app ${answers.app}, database ${answers.db}).\n`;
   actions.push({ verb: 'reset', target: 'CHANGELOG.md', note: 'fresh [Unreleased]', apply: () => writeLf(root, 'CHANGELOG.md', changelog) });
+
+  // The template CI validates examples/ and re-runs init; a project only tests and validates itself.
+  const workflow = '.github/workflows/context-integrity.yml';
+  actions.push({ verb: 'write', target: workflow, note: 'derived-repo CI', apply: () => writeLf(root, workflow, DERIVED_WORKFLOW) });
+  const packageJson = derivedPackageJson(packageText, { name: answers.name, description: answers.description });
+  actions.push({ verb: 'write', target: 'package.json', note: `${JSON.parse(packageJson).name} 0.1.0`, apply: () => writeLf(root, 'package.json', packageJson) });
+  const gitignore = mergeGitignore(exists(root, '.gitignore') ? readText(root, '.gitignore') : '', [...answers.appPreset.gitignore, ...answers.dbPreset.gitignore]);
+  if (gitignore.added) actions.push({ verb: 'append', target: '.gitignore', note: `${gitignore.added} preset lines`, apply: () => writeLf(root, '.gitignore', gitignore.text) });
 
   return { actions, remaining };
 }

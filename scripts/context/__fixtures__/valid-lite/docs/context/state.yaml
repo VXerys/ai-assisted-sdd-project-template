@@ -50,5 +50,5 @@ assumptions_open:
     feature: F-001
     title: Default page size for GET /todos
 blockers: []
-generated_at: 2026-10-15T03:08:59.190Z
-source_hash: 0541fcc8ba81d03cd4ae000001094f8605cb7304a2b3405ccaf8f18c07469e0d
+generated_at: 2026-10-16T02:07:57.559Z
+source_hash: 590ce132586f97fa5bc3181590e51c5b92f77e8d28fdda878c328d6c854038c2

@@ -2,42 +2,50 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import YAML from 'yaml';
-
-import { runHook, projectRoot, hookConfig, emit } from '../lib/hook-io.mjs';
-import { collectSourceFiles, sourceHash } from '../context/lib/hash.mjs';
 
 // Claude Code caps a single additionalContext string at 10,000 characters.
 const CONTEXT_CAP = 10000;
 
-runHook('session-start', (payload) => {
-  const root = projectRoot(payload);
-  const config = hookConfig(root);
-  if (!config.hooks.enabled) return;
+// Lib imports are dynamic so a missing node_modules warns the model instead of crashing the hook.
+try {
+  const [YAML, { runHook, projectRoot, hookConfig, emit }, { collectSourceFiles, sourceHash }] = await Promise.all([
+    import('yaml').then((module) => module.default),
+    import('../lib/hook-io.mjs'),
+    import('../context/lib/hash.mjs')
+  ]);
 
-  const briefPath = path.join(root, config.paths.context, 'BRIEF.md');
-  const text = fs.existsSync(briefPath) ? fs.readFileSync(briefPath, 'utf8') : null;
-  const context = text === null ? fallback(config) : briefContext(root, config, text);
-  emit({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: cap(context) } });
-});
+  runHook('session-start', (payload) => {
+    const root = projectRoot(payload);
+    const config = hookConfig(root);
+    if (!config.hooks.enabled) return;
 
-function briefContext(root, config, text) {
-  const lines = [];
-  const briefHash = text.match(/source_hash:\s*([0-9a-f]{64})/)?.[1] ?? null;
-  const currentHash = sourceHash(collectSourceFiles(root, config));
-  if (briefHash !== currentHash) lines.push('SDD brief is stale: sources changed since the last render; run npm run context:render');
-  lines.push(`SDD brief (rendered ${generatedAt(root, config)})`);
-  lines.push(text.replace(/\r\n/g, '\n').trimEnd());
-  return lines.join('\n');
-}
+    const briefPath = path.join(root, config.paths.context, 'BRIEF.md');
+    const text = fs.existsSync(briefPath) ? fs.readFileSync(briefPath, 'utf8') : null;
+    const context = text === null ? fallback(config) : briefContext(root, config, text);
+    emit({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: cap(context) } });
+  });
 
-function generatedAt(root, config) {
-  const statePath = path.join(root, config.paths.context, 'state.yaml');
-  try {
-    return String(YAML.parse(fs.readFileSync(statePath, 'utf8'))?.generated_at ?? 'unknown time');
-  } catch {
-    return 'unknown time';
+  function briefContext(root, config, text) {
+    const lines = [];
+    const briefHash = text.match(/source_hash:\s*([0-9a-f]{64})/)?.[1] ?? null;
+    const currentHash = sourceHash(collectSourceFiles(root, config));
+    if (briefHash !== currentHash) lines.push('SDD brief is stale: sources changed since the last render; run npm run context:render');
+    lines.push(`SDD brief (rendered ${generatedAt(root, config)})`);
+    lines.push(text.replace(/\r\n/g, '\n').trimEnd());
+    return lines.join('\n');
   }
+
+  function generatedAt(root, config) {
+    const statePath = path.join(root, config.paths.context, 'state.yaml');
+    try {
+      return String(YAML.parse(fs.readFileSync(statePath, 'utf8'))?.generated_at ?? 'unknown time');
+    } catch {
+      return 'unknown time';
+    }
+  }
+} catch (cause) {
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: `SDD hook session-start unavailable (${cause.message}); run npm install` } }));
+  process.exitCode = 0;
 }
 
 function fallback(config) {

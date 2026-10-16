@@ -97,7 +97,12 @@ test('pre-tool-guard denies a frozen path and asks for owner approval', () => {
 
 test('pre-tool-guard denies secret files anywhere, but not .env.example', () => {
   const cwd = copyFixture(contextFixtures, 'valid-lite');
-  for (const file of ['.env', 'apps/web/.env.local', 'certs/server.pem', 'android/app/google-services.json', 'android/release.keystore']) {
+  const secrets = [
+    '.env', 'apps/web/.env.local', 'certs/server.pem', 'android/app/google-services.json', 'android/release.keystore',
+    'android/key.properties', 'ios/Runner/GoogleService-Info.plist', 'certs/client.p12', 'keys/AuthKey_ABC123.p8',
+    'ios/profiles/dev.mobileprovision', 'certs/server.key', 'certs/bundle.pfx', '.ssh/id_rsa', '.ssh/id_rsa.pub', 'deploy/prod.secret'
+  ];
+  for (const file of secrets) {
     const output = json(run('pre-tool-guard', cwd, { tool_name: 'Write', tool_input: { file_path: abs(cwd, file), content: 'x' } }).stdout).hookSpecificOutput;
     assert.equal(output.permissionDecision, 'deny', file);
     assert.match(output.permissionDecisionReason, /secret/);
@@ -155,7 +160,9 @@ test('post-tool-render re-renders the context after a tasks.md edit', () => {
   fs.writeFileSync(tasks, read(cwd, 'docs/specs/F-001-create-todo/tasks.md').replace('- status: in_progress', '- status: review'));
   const { status, stdout } = run('post-tool-render', cwd, { ...edit(tasks), tool_response: {} });
   assert.equal(status, 0);
-  assert.match(stdout, /^SDD: re-rendered docs\/context\/ after docs\/specs\/F-001-create-todo\/tasks\.md changed\n$/);
+  const output = json(stdout).hookSpecificOutput;
+  assert.equal(output.hookEventName, 'PostToolUse');
+  assert.match(output.additionalContext, /^SDD: re-rendered docs\/context\/ after docs\/specs\/F-001-create-todo\/tasks\.md changed$/);
   const after = read(cwd, 'docs/context/state.yaml');
   assert.notEqual(after, before);
   assert.match(after, /status: review/);
@@ -165,7 +172,7 @@ test('post-tool-render also syncs adapters after a steering edit', () => {
   const cwd = copyFixture(contextFixtures, 'valid-lite');
   fs.appendFileSync(abs(cwd, 'docs/steering/rules.md'), '\n- New rule.\n');
   const { stdout } = run('post-tool-render', cwd, edit(abs(cwd, 'docs/steering/rules.md')));
-  assert.match(stdout, /re-rendered docs\/context\/ and adapters after docs\/steering\/rules\.md changed/);
+  assert.match(json(stdout).hookSpecificOutput.additionalContext, /re-rendered docs\/context\/ and adapters after docs\/steering\/rules\.md changed/);
   assert.match(read(cwd, 'AGENTS.md'), /New rule\./);
 });
 
@@ -194,7 +201,9 @@ test('stop-handoff-check warns when tasks.md changed but the handoff did not', (
   const { status, stdout, stderr } = run('stop-handoff-check', cwd, { hook_event_name: 'Stop', stop_hook_active: false });
   assert.equal(status, 0);
   assert.equal(stderr, '');
-  assert.match(stdout, /^SDD: docs\/specs\/F-001-create-todo\/tasks\.md changed but docs\/handoff\/current\.md did not\. Update the handoff/);
+  const output = json(stdout).hookSpecificOutput;
+  assert.equal(output.hookEventName, 'Stop');
+  assert.match(output.additionalContext, /^SDD: docs\/specs\/F-001-create-todo\/tasks\.md changed but docs\/handoff\/current\.md did not\. Update the handoff/);
   assert.doesNotMatch(stdout, /"decision"/);
 });
 
@@ -216,4 +225,55 @@ test('stop-handoff-check exits 0 silently outside a git repository', () => {
   const { status, stdout } = run('stop-handoff-check', cwd, { hook_event_name: 'Stop', stop_hook_active: false }, { GIT_DIR: path.join(cwd, 'nowhere') });
   assert.equal(status, 0);
   assert.equal(stdout, '');
+});
+
+const repo = path.resolve(here, '..', '..');
+
+// The repository without node_modules: what a derived project looks like before npm install.
+function copyRepoWithoutDeps() {
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-hooks-nodeps-'));
+  fs.cpSync(repo, target, { recursive: true, filter: (source) => !/[\\/](\.git|node_modules)([\\/]|$)/.test(source) });
+  // cpSync on Windows still copies some filtered-out children, so the directory is removed explicitly.
+  fs.rmSync(path.join(target, 'node_modules'), { recursive: true, force: true });
+  return target;
+}
+
+function runIn(cwd, name, payload) {
+  const result = spawnSync(process.execPath, [path.join(cwd, 'scripts', 'hooks', `${name}.mjs`)], {
+    cwd,
+    input: JSON.stringify({ session_id: 'test-session', cwd, ...payload }),
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_PROJECT_DIR: cwd }
+  });
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+}
+
+test('without node_modules the guard fails closed and the other hooks fail open with a warning', () => {
+  const cwd = copyRepoWithoutDeps();
+
+  const guard = runIn(cwd, 'pre-tool-guard', edit(abs(cwd, 'src/x.js')));
+  assert.equal(guard.status, 0, guard.stderr);
+  assert.deepEqual(json(guard.stdout), {
+    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: 'SDD guard unavailable: run npm install' }
+  });
+
+  const start = runIn(cwd, 'session-start', { hook_event_name: 'SessionStart', source: 'startup' });
+  assert.equal(start.status, 0, start.stderr);
+  const startOutput = json(start.stdout).hookSpecificOutput;
+  assert.equal(startOutput.hookEventName, 'SessionStart');
+  assert.match(startOutput.additionalContext, /^SDD hook session-start unavailable \(.*\); run npm install$/);
+
+  // post-tool-render and stop-handoff-check need no dependency; a missing lib is their import failure.
+  fs.rmSync(abs(cwd, 'scripts/lib/glob.mjs'));
+  const post = runIn(cwd, 'post-tool-render', edit(abs(cwd, 'docs/steering/rules.md')));
+  assert.equal(post.status, 0, post.stderr);
+  const postOutput = json(post.stdout).hookSpecificOutput;
+  assert.equal(postOutput.hookEventName, 'PostToolUse');
+  assert.match(postOutput.additionalContext, /^SDD hook post-tool-render unavailable \(.*\); run npm install$/);
+
+  const stop = runIn(cwd, 'stop-handoff-check', { hook_event_name: 'Stop', stop_hook_active: false });
+  assert.equal(stop.status, 0, stop.stderr);
+  const stopOutput = json(stop.stdout).hookSpecificOutput;
+  assert.equal(stopOutput.hookEventName, 'Stop');
+  assert.match(stopOutput.additionalContext, /^SDD hook stop-handoff-check unavailable \(.*\); run npm install$/);
 });

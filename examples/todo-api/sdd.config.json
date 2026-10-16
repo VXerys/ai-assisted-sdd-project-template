@@ -21,7 +21,7 @@
   ],
   "frozen": ["db/migrations/"],
   "limits": { "lite": 80, "full": 200, "systemArchitecture": 300, "steering": 120, "staleDays": 30, "briefTokens": 3000 },
-  "templateMode": false,
+  "templateMode": true,
   "validate": {
     "requiredFiles": [
       "AGENTS.md",

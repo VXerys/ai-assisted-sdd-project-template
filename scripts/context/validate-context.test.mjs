@@ -31,6 +31,30 @@ function read(cwd, file) {
   return fs.readFileSync(path.join(cwd, file), 'utf8');
 }
 
+function edit(cwd, file, from, to) {
+  const text = read(cwd, file);
+  assert.ok(text.includes(from), `${file} does not contain ${JSON.stringify(from)}`);
+  fs.writeFileSync(path.join(cwd, file), text.replaceAll(from, to));
+}
+
+function git(cwd, args) {
+  const result = spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', ...args], { cwd, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
+// Turns a fixture copy into a one-commit repository and returns the short HEAD.
+function gitInit(cwd) {
+  git(cwd, ['init', '-q']);
+  git(cwd, ['add', '-A']);
+  git(cwd, ['commit', '-q', '-m', 'fixture']);
+  return git(cwd, ['rev-parse', '--short', 'HEAD']);
+}
+
+const F1 = 'docs/specs/F-001-create-todo';
+const F2 = 'docs/specs/F-002-close-todo';
+const F2_FILES = ['requirements.md', 'design.md', 'tasks.md', 'verification.md'].map((name) => `${F2}/${name}`);
+
 test('valid-lite fixture validates with exit 0 and no errors', () => {
   const cwd = copyFixture('valid-lite');
   const { status, out } = run(validator, cwd);
@@ -91,7 +115,7 @@ test('missing-evidence fixture fails on the done task without evidence, with pat
   const cwd = copyFixture('missing-evidence');
   const { status, out } = run(validator, cwd);
   assert.equal(status, 1);
-  assert.match(out, /docs\/specs\/F-001-create-todo\/tasks\.md:\d+\s+error\s+T-001 is done without evidence/);
+  assert.match(out, /docs\/specs\/F-001-create-todo\/tasks\.md:30\s+error\s+T-001 is done without evidence/);
 });
 
 test('implemented-with-open-task fixture fails on the open task and the open assumption', () => {
@@ -222,4 +246,155 @@ test('the shipped examples/todo-api project validates with 0 errors on its own',
   assert.equal(status, 0, out);
   assert.match(out, /0 error\(s\)/);
   assert.match(out, /2 feature\(s\)/);
+});
+
+test('an EV commit missing from git log is an error; the HEAD commit passes', () => {
+  const cwd = copyFixture('valid-lite');
+  const head = gitInit(cwd);
+  edit(cwd, `${F1}/verification.md`, '- commit: a1b2c3d', '- commit: deadbee');
+  const broken = run(validator, cwd);
+  assert.equal(broken.status, 1);
+  assert.match(broken.out, /F-001-create-todo\/verification\.md:\d+\s+error\s+EV-001 commit deadbee is not in git log/);
+  edit(cwd, `${F1}/verification.md`, '- commit: deadbee', `- commit: ${head}`);
+  run(renderer, cwd);
+  const fixed = run(validator, cwd);
+  assert.equal(fixed.status, 0, fixed.out);
+  assert.doesNotMatch(fixed.out, /commit/);
+});
+
+test('outside a git repository an EV commit is a warning, not an error', () => {
+  const cwd = copyFixture('valid-lite');
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 0, out);
+  assert.match(out, /verification\.md:\d+\s+warning\s+EV-001 commit a1b2c3d cannot be checked: not a git repository/);
+});
+
+test('the 0000000 placeholder commit is exempt only when templateMode is true', () => {
+  const cwd = copyFixture('valid-lite');
+  gitInit(cwd);
+  edit(cwd, `${F1}/verification.md`, '- commit: a1b2c3d', '- commit: 0000000');
+  run(renderer, cwd);
+  const broken = run(validator, cwd);
+  assert.equal(broken.status, 1);
+  assert.match(broken.out, /error\s+EV-001 commit 0000000 is not in git log/);
+  edit(cwd, 'sdd.config.json', '"templateMode": false', '"templateMode": true');
+  run(renderer, cwd);
+  run(syncer, cwd);
+  const exempt = run(validator, cwd);
+  assert.equal(exempt.status, 0, exempt.out);
+  assert.doesNotMatch(exempt.out, /commit/);
+});
+
+test('an EV command outside the tech.md Commands table is an error unless prefixed manual:', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, `${F1}/verification.md`, '- command: `npm test`', '- command: `echo pass`');
+  run(renderer, cwd);
+  const broken = run(validator, cwd);
+  assert.equal(broken.status, 1);
+  assert.match(broken.out, /verification\.md:\d+\s+error\s+EV-001 command `echo pass` is not in the tech\.md Commands table/);
+  edit(cwd, `${F1}/verification.md`, '- command: `echo pass`', '- command: `manual: open /todos in a browser`');
+  run(renderer, cwd);
+  const manual = run(validator, cwd);
+  assert.equal(manual.status, 0, manual.out);
+});
+
+test('an EV date after today is an error', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, `${F1}/verification.md`, '- date: 2026-10-14', '- date: 2999-01-01');
+  run(renderer, cwd);
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 1);
+  assert.match(out, /verification\.md:\d+\s+error\s+EV-001 date 2999-01-01 is in the future/);
+});
+
+test('a done task whose evidence covers no criterion of one of its FRs is an error', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, `${F1}/tasks.md`, '- status: done\n- requirements: [FR-001]', '- status: done\n- requirements: [FR-001, FR-002]');
+  run(renderer, cwd);
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 1);
+  assert.match(out, /tasks\.md:\d+\s+error\s+T-001 is done but its evidence covers no acceptance criterion of FR-002/);
+});
+
+test('a task jumping planned to done is an error naming the skipped states; planned to blocked is accepted', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, `${F1}/tasks.md`, '- status: planned\n- requirements: [FR-001, FR-002]', '- status: done\n- requirements: [FR-001, FR-002]');
+  const skip = run(validator, cwd);
+  assert.equal(skip.status, 1);
+  assert.match(skip.out, /tasks\.md:\d+\s+error\s+T-003 moved from planned to done, skipping in_progress, review/);
+  edit(cwd, `${F1}/tasks.md`, '- status: done\n- requirements: [FR-001, FR-002]', '- status: blocked\n- requirements: [FR-001, FR-002]');
+  const blocked = run(validator, cwd);
+  assert.doesNotMatch(blocked.out, /T-003 moved|T-003 cannot move/);
+});
+
+test('a task leaving done is an error; a new task is accepted', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, `${F1}/tasks.md`, '- status: done\n- requirements: [FR-001]', '- status: planned\n- requirements: [FR-001]');
+  fs.appendFileSync(path.join(cwd, `${F1}/tasks.md`), '\n### T-004 — New\n- status: in_progress\n- requirements: [FR-001]\n- depends_on: []\n- evidence: []\n');
+  const { out } = run(validator, cwd);
+  assert.match(out, /tasks\.md:\d+\s+error\s+T-001 cannot move from done to planned/);
+  assert.doesNotMatch(out, /T-004 (moved|cannot)/);
+});
+
+test('a feature jumping draft to approved is an error naming review', () => {
+  const cwd = copyFixture('valid-lite');
+  for (const file of F2_FILES) edit(cwd, file, 'status: draft', 'status: approved');
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 1);
+  assert.match(out, /F-002-close-todo\/tasks\.md:1\s+error\s+F-002 moved from draft to approved, skipping review/);
+});
+
+test('approved requires a criterion per FR; implemented also requires an FR and a task', () => {
+  const cwd = copyFixture('valid-lite');
+  for (const file of F2_FILES) edit(cwd, file, 'status: draft', 'status: approved');
+  edit(cwd, `${F2}/requirements.md`, '- AC-001: Given an open todo, when PATCH /todos/:id/close is called, then its state is closed.\n', '');
+  const approved = run(validator, cwd);
+  assert.equal(approved.status, 1);
+  assert.match(approved.out, /F-002-close-todo\/requirements\.md:\d+\s+error\s+FR-001 has no acceptance criterion; required from approved onward/);
+  for (const file of F2_FILES) edit(cwd, file, 'status: approved', 'status: implemented');
+  edit(cwd, `${F2}/requirements.md`, '### FR-001 — Close a todo\n', '');
+  const implemented = run(validator, cwd);
+  assert.match(implemented.out, /F-002-close-todo\/requirements\.md:1\s+error\s+F-002 is implemented without a functional requirement/);
+  assert.match(implemented.out, /F-002-close-todo\/tasks\.md:1\s+error\s+F-002 is implemented without a task/);
+});
+
+test('an assumption without a feature is an error, and so is an unknown feature id', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, 'docs/context/ASSUMPTIONS.md', '- status: open\n- feature: F-001', '- status: open');
+  edit(cwd, 'docs/context/ASSUMPTIONS.md', '- status: confirmed\n- feature: F-001', '- status: confirmed\n- feature: F-009');
+  run(renderer, cwd);
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 1);
+  assert.match(out, /ASSUMPTIONS\.md:\d+\s+error\s+A-002 has no feature/);
+  assert.match(out, /ASSUMPTIONS\.md:\d+\s+error\s+A-001 references unknown feature F-009/);
+});
+
+test('malformed task, requirement, criterion and evidence headings are errors naming the expected form', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, `${F1}/tasks.md`, '### T-002 — GET /todos handler', '#### T-002 — GET /todos handler');
+  edit(cwd, `${F1}/tasks.md`, '### T-003 — Feature integration and verification', '### T-003 Feature integration and verification');
+  edit(cwd, `${F1}/requirements.md`, '### FR-002 — List todos', '### FR2 — List todos');
+  edit(cwd, `${F1}/requirements.md`, '- AC-003:', '- AC003:');
+  edit(cwd, `${F1}/verification.md`, '### EV-001 — POST handler tests pass', '#### EV-001 — POST handler tests pass');
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 1);
+  assert.match(out, /tasks\.md:\d+\s+error\s+malformed task heading '#### T-002 — GET \/todos handler'; expected '### T-002 — title'/);
+  assert.match(out, /tasks\.md:\d+\s+error\s+malformed task heading '### T-003 Feature integration and verification'; expected '### T-003 — title'/);
+  assert.match(out, /requirements\.md:\d+\s+error\s+malformed requirement heading '### FR2 — List todos'; expected '### FR-002 — title'/);
+  assert.match(out, /requirements\.md:\d+\s+error\s+malformed acceptance criterion '- AC003:'; expected '- AC-003: text'/);
+  assert.match(out, /verification\.md:\d+\s+error\s+malformed evidence heading '#### EV-001 — POST handler tests pass'; expected '### EV-001 — title'/);
+});
+
+test('a placeholder in a feature file is a warning while draft and an error from review on', () => {
+  const cwd = copyFixture('valid-lite');
+  fs.appendFileSync(path.join(cwd, `${F2}/design.md`), '\nRoute: {{ROUTE}}\n');
+  run(renderer, cwd);
+  const draft = run(validator, cwd);
+  assert.equal(draft.status, 0, draft.out);
+  assert.match(draft.out, /F-002-close-todo\/design\.md:\d+\s+warning\s+unresolved placeholder \{\{ROUTE\}\} \(draft\)/);
+  for (const file of F2_FILES) edit(cwd, file, 'status: draft', 'status: review');
+  run(renderer, cwd);
+  const review = run(validator, cwd);
+  assert.equal(review.status, 1);
+  assert.match(review.out, /F-002-close-todo\/design\.md:\d+\s+error\s+unresolved placeholder \{\{ROUTE\}\}$/m);
 });

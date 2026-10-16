@@ -19,7 +19,7 @@ Evidence that acceptance criteria hold at a named commit. A claim without a comm
 ## Evidence
 
 ### EV-001 — Close handler tests pass
-- command: `npm test -- test/todos-close.test.js`
+- command: `npm test`
 - output:
   ```text
   ✔ closes an open todo and returns 200 with status closed and closed_at
@@ -29,7 +29,7 @@ Evidence that acceptance criteria hold at a named commit. A claim without a comm
   ℹ tests 4  ℹ pass 4  ℹ fail 0
   ```
 - date: 2026-10-13
-- commit: 9a2d5f0
+- commit: 0000000
 - covers: [AC-001, AC-002, AC-003]
 
 ## Coverage

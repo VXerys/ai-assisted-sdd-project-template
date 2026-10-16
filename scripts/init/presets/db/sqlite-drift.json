@@ -10,5 +10,6 @@
     "There is no row-level security on device; the device owner owns the data, and sync code enforces the server's rules.",
     "Generated `*.g.dart` files are rebuilt, never hand-edited."
   ],
-  "fileMatch": ["lib/data/db/**", "drift_schemas/**"]
+  "fileMatch": ["lib/data/db/**", "drift_schemas/**"],
+  "gitignore": []
 }

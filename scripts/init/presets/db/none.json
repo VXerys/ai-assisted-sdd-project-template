@@ -4,5 +4,6 @@
   "migrationCommand": null,
   "migrationPath": null,
   "notes": [],
-  "fileMatch": []
+  "fileMatch": [],
+  "gitignore": []
 }

@@ -18,6 +18,7 @@ Init plan: Habit Tracker (tier lite, app flutter, db supabase, tools claude,kiro
   fill     docs/quality/review-checklist.md  (2 placeholders)
   fill     CONTRIBUTING.md  (4 placeholders)
   strip    CONTRIBUTING.md  (1 template-only block)
+  strip    docs/steering/product.md  (4 example lines)
   create   docs/steering/database.md  (supabase preset, fileMatch)
   prune    docs/specs/_templates/system-architecture.md  (lite tier)
   prune    docs/_templates/architecture-baseline.md  (lite tier)
@@ -42,12 +43,17 @@ Init plan: Habit Tracker (tier lite, app flutter, db supabase, tools claude,kiro
   remove   scripts/migrate/  (template-only)
   remove   examples/  (template-only)
   remove   docs/adr/ADR-0001-v2-revamp.md  (template-only)
+  remove   docs/adr/ADR-0002-v2.1-hardening.md  (template-only)
   remove   docs/MIGRATION-v1-to-v2.md  (template-only)
   remove   scripts/adapters/sync.test.mjs  (test needs removed fixtures)
+  remove   scripts/context/lib/files.test.mjs  (test needs removed fixtures)
   remove   scripts/context/validate-context.test.mjs  (test needs removed fixtures)
   remove   scripts/hooks/hooks.test.mjs  (test needs removed fixtures)
   remove   scripts/init/init.test.mjs  (test needs removed fixtures)
   reset    CHANGELOG.md  (fresh [Unreleased])
+  write    .github/workflows/context-integrity.yml  (derived-repo CI)
+  write    package.json  (habit-tracker 0.1.0)
+  append   .gitignore  (6 preset lines)
   run      context:render
   run      adapters:sync
   run      context:validate

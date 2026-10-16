@@ -23,5 +23,7 @@
     "Dependencies enter through the version catalog; a new one needs the approval in tech.md.",
     "`local.properties`, keystores, and signing configs stay out of the repository.",
     "`./gradlew lint` and `testDebugUnitTest` green before a task is done; `ktlintCheck` needs the ktlint Gradle plugin."
-  ]
+  ],
+  "generatedPaths": ["build/**"],
+  "gitignore": [".gradle/", "local.properties"]
 }

@@ -1,10 +1,10 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run context:render`.
 Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
-source_hash: 44badd2ab8820330e0c1b30add98eca89e1988fd5d6260691a9749c88644bf24 -->
+source_hash: 4a9022d3a4a763c48681ca18c2649d034d4b2ba8e6da7e9b4699b568539330f6 -->
 
 # Project State
 
-- Generated at: 2026-10-15T07:12:45.570Z
+- Generated at: 2026-10-16T02:10:34.919Z
 - Project: Todo API (tier `lite`)
 - Active: F-002 / T-002
 - Open assumptions: 1
@@ -20,5 +20,15 @@ source_hash: 44badd2ab8820330e0c1b30add98eca89e1988fd5d6260691a9749c88644bf24 --
 <!-- GENERATED:GIT_FACTS:START -->
 ## Git
 
-Git facts unavailable.
+- Branch: `feat/v2.1-phase-1-hardening`
+- HEAD: `e964956`
+- Worktree: dirty
+
+Recent commits:
+
+- `e964956 Merge pull request #5 from VXerys/feat/v2-phase-5-release`
+- `075af29 fix(ci): normalize backslash paths before resolve; quote test glob for POSIX shells`
+- `0f062dd feat(v2): phase 5 release — README, migration guide, changelog 2.0.0, CI`
+- `01d11de feat(v2): phase 4 init with presets and examples/todo-api`
+- `20fb5c6 feat(v2): phase 3 adapters, hooks, slash commands, conditional steering`
 <!-- GENERATED:GIT_FACTS:END -->

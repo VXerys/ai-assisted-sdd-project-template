@@ -3,39 +3,48 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { runHook, projectRoot, hookConfig, relativeTo, emit } from '../lib/hook-io.mjs';
-import { guardDecision } from '../lib/guard.mjs';
-import { loadSteering, steeringFor } from '../lib/steering.mjs';
-
 const SESSION_DIR = '.claude/.sdd-session';
 
-runHook('pre-tool-guard', (payload) => {
-  const root = projectRoot(payload);
-  const config = hookConfig(root);
-  if (!config.hooks.enabled) return;
+// Lib imports are dynamic so a missing node_modules denies the edit instead of silently disabling the guard.
+try {
+  const [{ runHook, projectRoot, hookConfig, relativeTo, emit }, { guardDecision }, { loadSteering, steeringFor }] = await Promise.all([
+    import('../lib/hook-io.mjs'),
+    import('../lib/guard.mjs'),
+    import('../lib/steering.mjs')
+  ]);
 
-  const rawPath = payload.tool_input?.file_path;
-  if (!rawPath) return;
-  const relativePath = relativeTo(root, rawPath);
+  runHook('pre-tool-guard', (payload) => {
+    const root = projectRoot(payload);
+    const config = hookConfig(root);
+    if (!config.hooks.enabled) return;
 
-  const decision = guardDecision(relativePath, config, rawPath);
-  if (decision) {
-    emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: decision.reason } });
-    return;
-  }
-  if (relativePath === null) return;
+    const rawPath = payload.tool_input?.file_path;
+    if (!rawPath) return;
+    const relativePath = relativeTo(root, rawPath);
 
-  const session = readSession(root, payload.session_id);
-  const fresh = steeringFor(relativePath, loadSteering(root, config)).filter((entry) => !session.surfaced.includes(entry.name));
-  if (!fresh.length) return;
-  session.surfaced.push(...fresh.map((entry) => entry.name));
-  writeSession(root, payload.session_id, session);
+    const decision = guardDecision(relativePath, config, rawPath);
+    if (decision) {
+      emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: decision.reason } });
+      return;
+    }
+    if (relativePath === null) return;
 
-  const context = fresh
-    .map((entry) => `SDD steering: ${entry.file} applies to ${relativePath} (pattern ${entry.patterns.join(', ')}). Follow it for this and later edits:\n\n${entry.body.trim()}`)
-    .join('\n\n');
-  emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: context } });
-});
+    const session = readSession(root, payload.session_id);
+    const fresh = steeringFor(relativePath, loadSteering(root, config)).filter((entry) => !session.surfaced.includes(entry.name));
+    if (!fresh.length) return;
+    session.surfaced.push(...fresh.map((entry) => entry.name));
+    writeSession(root, payload.session_id, session);
+
+    const context = fresh
+      .map((entry) => `SDD steering: ${entry.file} applies to ${relativePath} (pattern ${entry.patterns.join(', ')}). Follow it for this and later edits:\n\n${entry.body.trim()}`)
+      .join('\n\n');
+    emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: context } });
+  });
+} catch (cause) {
+  process.stderr.write(`pre-tool-guard: ${cause.message}\n`);
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: 'SDD guard unavailable: run npm install' } }));
+  process.exitCode = 0;
+}
 
 function sessionFile(root, sessionId) {
   const id = String(sessionId ?? 'default').replace(/[^\w-]/g, '_');

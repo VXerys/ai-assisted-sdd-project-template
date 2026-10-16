@@ -23,5 +23,7 @@
     "Secrets are read in server code only; a variable reaches the browser only with the `NEXT_PUBLIC_` prefix.",
     "Route handlers validate every request body at the boundary and return typed errors.",
     "`npx tsc --noEmit` at 0 errors and `npm run lint` clean before a task is done."
-  ]
+  ],
+  "generatedPaths": [],
+  "gitignore": ["node_modules/", ".next/", "dist/"]
 }

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { parseFrontmatter } from './frontmatter.mjs';
-import { parseTasks, parseEvidence, parseRequirementIds } from './specs.mjs';
+import { parseTasks, parseEvidence, parseRequirementIds, acceptanceByRequirement, findMalformedHeadings, parseTechCommands } from './specs.mjs';
 import { parseAssumptions } from './assumptions.mjs';
 import { parseHandoff } from './handoff.mjs';
 import { sourceHash } from './hash.mjs';
@@ -169,4 +169,48 @@ test('renderBrief cuts lowest-priority sections first and lists what was cut', (
   assert.doesNotMatch(tight, /## Features/);
   assert.match(tight, /Cut for budget:.*features/);
   assert.ok(tight.length <= 200 * 4 + 200, 'stays near the budget');
+});
+
+test('acceptanceByRequirement maps each FR to the criteria under its heading and drops unmapped ones', () => {
+  const text = '- AC-000: orphan before any FR.\n\n### FR-001 — A\n\n- AC-001: given x.\n\n## Rules\n\n- AC-009: not under an FR.\n\n### FR-002 — B\n\n- AC-002: given y.\n';
+  const map = acceptanceByRequirement(parseRequirementIds(text));
+  assert.deepEqual([...map.keys()], ['FR-001', 'FR-002']);
+  assert.deepEqual([...map.get('FR-001')], ['AC-001']);
+  assert.deepEqual([...map.get('FR-002')], ['AC-002']);
+});
+
+test('findMalformedHeadings flags wrong depth, padding and dash for tasks, requirements and evidence, outside fences', () => {
+  const tasks = ['```markdown', '#### T-001 — fenced', '```', '### T-001 — fine', '#### T-002 — too deep', '### T3 — no dash or padding', '### T-004 no dash', '### T-005 - ascii dash is fine'].join('\n');
+  assert.deepEqual(
+    findMalformedHeadings(tasks, 'task').map((item) => [item.line, item.text, item.expected]),
+    [
+      [5, '#### T-002 — too deep', '### T-002 — title'],
+      [6, '### T3 — no dash or padding', '### T-003 — title'],
+      [7, '### T-004 no dash', '### T-004 — title']
+    ]
+  );
+  const requirements = ['### FR-001 — fine', '- AC-001: fine', '### FR002 — bad', '### FR-3 — bad', '- AC004: bad', '- AC-5: bad'].join('\n');
+  assert.deepEqual(
+    findMalformedHeadings(requirements, 'requirement').map((item) => [item.line, item.expected]),
+    [
+      [3, '### FR-002 — title'],
+      [4, '### FR-003 — title'],
+      [5, '- AC-004: text'],
+      [6, '- AC-005: text']
+    ]
+  );
+  const evidence = ['### EV-001 — fine', '### EV-1 — bad', '#### EV-002 — bad'].join('\n');
+  assert.deepEqual(
+    findMalformedHeadings(evidence, 'evidence').map((item) => [item.line, item.expected]),
+    [
+      [2, '### EV-001 — title'],
+      [3, '### EV-002 — title']
+    ]
+  );
+});
+
+test('parseTechCommands reads the backtick commands of the Commands table and drops none', () => {
+  const text = ['# Tech', '', '| Concern | Technology |', '|---|---|', '| Runtime | `Node 22` |', '', '## Commands', '', '| Purpose | Command |', '|---|---|', '| Test | `npm test` |', '| Build | `none` |', '| Lint | `npx eslint .` |', '', '## Stack rules', '', '- run `npm audit` weekly'].join('\n');
+  assert.deepEqual([...parseTechCommands(text)], ['npm test', 'npx eslint .']);
+  assert.equal(parseTechCommands('# Tech\n\nno table\n').size, 0);
 });

@@ -80,5 +80,5 @@ assumptions_open:
     feature: F-002
     title: A cursor stays valid across status filters
 blockers: []
-generated_at: 2026-10-15T07:12:45.570Z
-source_hash: 44badd2ab8820330e0c1b30add98eca89e1988fd5d6260691a9749c88644bf24
+generated_at: 2026-10-16T02:10:34.919Z
+source_hash: 4a9022d3a4a763c48681ca18c2649d034d4b2ba8e6da7e9b4699b568539330f6

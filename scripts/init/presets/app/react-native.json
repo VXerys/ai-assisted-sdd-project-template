@@ -23,5 +23,7 @@
     "Native modules enter only through an approved dependency; check Expo compatibility first.",
     "Secrets never ship in the JS bundle; use `expo-constants` extra or a native secret store.",
     "`npx tsc --noEmit` at 0 errors and `npx eslint .` clean before a task is done."
-  ]
+  ],
+  "generatedPaths": [],
+  "gitignore": ["ios/Pods/", "android/.gradle/"]
 }

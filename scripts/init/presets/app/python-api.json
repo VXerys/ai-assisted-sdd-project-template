@@ -23,5 +23,7 @@
     "No blocking IO inside async handlers; use the async driver or run blocking work in a thread.",
     "`ruff check .`, `mypy .`, and `pytest` clean before a task is done.",
     "Dependencies are pinned through the lock file the project chose (pip-tools, uv, or poetry); state which in tech.md."
-  ]
+  ],
+  "generatedPaths": [],
+  "gitignore": [".venv/", "__pycache__/"]
 }

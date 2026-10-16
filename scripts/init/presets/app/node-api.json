@@ -22,5 +22,7 @@
     "Errors map to HTTP status codes in one place; handlers never leak stack traces or driver messages.",
     "Configuration comes from the environment; the process fails fast on a missing required variable.",
     "`npx eslint .` clean and `npm test` green before a task is done; `npx tsc --noEmit` applies when the project is TypeScript."
-  ]
+  ],
+  "generatedPaths": [],
+  "gitignore": ["node_modules/", "dist/"]
 }
