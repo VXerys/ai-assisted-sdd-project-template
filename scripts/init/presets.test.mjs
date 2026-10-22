@@ -67,8 +67,8 @@ test('app presets declare CI setup steps and run only commands they have, never 
   assert.deepEqual(loadPreset('app', 'flutter').ci.run, ['install', 'lint', 'test', 'build']);
   const setup = (name) => loadPreset('app', name).ci.setup.map((step) => `${step.uses.replace(/@.*/, '')} ${step.version}`);
   assert.deepEqual(setup('flutter'), ['subosito/flutter-action v2.23.0']);
-  assert.deepEqual(setup('kotlin-android'), ['actions/setup-java v4.9.1']);
-  assert.deepEqual(setup('python-api'), ['actions/setup-python v5.6.0']);
+  assert.deepEqual(setup('kotlin-android'), ['actions/setup-java v6.1.0']);
+  assert.deepEqual(setup('python-api'), ['actions/setup-python v7.1.0']);
   // `npx expo run:android` installs on a device or emulator, which a CI runner does not have.
   assert.ok(!loadPreset('app', 'react-native').ci.run.includes('build'));
   assert.deepEqual(loadPreset('app', 'generic').ci, { setup: [], run: [] });

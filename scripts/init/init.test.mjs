@@ -114,8 +114,23 @@ test('derivedWorkflow sets up the preset toolchain and runs the SDD tooling step
   ]);
   const python = YAML.parse(derivedWorkflow(loadPreset('app', 'python-api'))).jobs.verify.steps;
   assert.equal(python.find((step) => step.uses?.startsWith('actions/setup-python@')).with['python-version'], '3.12');
-  assert.match(derivedWorkflow(loadPreset('app', 'generic')), /uses: actions\/checkout@[0-9a-f]{40} # v4\.4\.0\n/);
+  assert.match(derivedWorkflow(loadPreset('app', 'generic')), /uses: actions\/checkout@[0-9a-f]{40} # v7\.0\.1\n/);
   assert.ok(python.some((step) => step.run === 'python -m pip install -e ".[dev]"'));
+});
+
+// Dependabot updates the template workflows only, so a bump there must be carried into PINNED_ACTIONS,
+// or derived projects start on an older action than the template tests with.
+test('every pin of checkout and setup-node in the template workflows matches PINNED_ACTIONS', () => {
+  const pins = Object.values(PINNED_ACTIONS);
+  for (const file of ['.github/workflows/context-integrity.yml', '.github/workflows/release.yml']) {
+    const text = fs.readFileSync(path.join(repo, file), 'utf8');
+    for (const pin of pins) {
+      const name = pin.uses.split('@')[0];
+      const used = [...text.matchAll(new RegExp(`uses: (${name.replace('/', '\\/')}@[0-9a-f]{40}) # (\\S+)`, 'g'))];
+      assert.ok(used.length, `${file} does not use ${name}`);
+      for (const [, uses, version] of used) assert.deepEqual({ uses, version }, pin, `${file}: ${name} drifted from PINNED_ACTIONS`);
+    }
+  }
 });
 
 test('fillPlaceholders replaces inline values, expands block placeholders line-wise, and leaves unknown ones', () => {

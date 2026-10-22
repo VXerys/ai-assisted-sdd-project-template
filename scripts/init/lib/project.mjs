@@ -42,8 +42,8 @@ function scalar(value) {
 // Actions are pinned to a full commit SHA (GitHub hardening guidance); the trailing release comment
 // is what Dependabot reads to propose updates.
 export const PINNED_ACTIONS = {
-  checkout: { uses: 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262', version: 'v4.4.0' },
-  setupNode: { uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020', version: 'v4.4.0' }
+  checkout: { uses: 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1', version: 'v7.0.1' },
+  setupNode: { uses: 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1', version: 'v7.1.0' }
 };
 
 function renderStep({ name, uses, version, run, with: inputs }) {
