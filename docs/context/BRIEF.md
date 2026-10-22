@@ -1,6 +1,6 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run context:render`.
 Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
-source_hash: e2c2181e6b10bb2c9884e737a3923150cb08f7927be0f404c48005bbd01bd378 -->
+source_hash: ab904ab50e6049826da9397d722a84a7fc29053d2b548ed9b6d096533eaf4f77 -->
 
 # Brief
 
@@ -29,7 +29,7 @@ Prohibited without explicit owner approval:
 - Publishing, deploying, or sending messages on the owner's behalf.
 
 ## Read-only paths
-Generated: `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/`
+Generated: `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude/rules/`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/`
 Frozen: none
 
 ## Open assumptions

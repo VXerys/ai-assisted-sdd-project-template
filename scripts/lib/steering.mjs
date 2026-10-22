@@ -3,7 +3,6 @@ import path from 'node:path';
 import { walk, readText } from '../context/lib/files.mjs';
 import { parseFrontmatter } from '../context/lib/frontmatter.mjs';
 import { taggedLines } from '../context/lib/markdown.mjs';
-import { matchesAny } from './glob.mjs';
 
 export const INCLUSIONS = ['always', 'fileMatch', 'manual'];
 
@@ -31,11 +30,6 @@ export function loadSteering(root, config) {
 export function patternList(value) {
   if (value === undefined || value === null) return [];
   return (Array.isArray(value) ? value : [value]).map(String).filter(Boolean);
-}
-
-// Returns the fileMatch steering entries whose pattern matches `relativePath`.
-export function steeringFor(relativePath, steering) {
-  return steering.filter((entry) => entry.inclusion === 'fileMatch' && matchesAny(relativePath, entry.patterns));
 }
 
 function headingTitle(body) {

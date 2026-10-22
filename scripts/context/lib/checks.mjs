@@ -1,14 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import YAML from 'yaml';
 
 import { walk, exists, readText } from './files.mjs';
 import { parseFrontmatter, isPlaceholder, scalar } from './frontmatter.mjs';
-import { loadFeatures, FEATURE_STATUSES, TASK_STATUSES } from './specs.mjs';
+import { loadFeatures, FEATURE_STATUSES, TASK_STATUSES, acceptanceByRequirement, findMalformedHeadings, parseTechCommands } from './specs.mjs';
 import { parseAssumptions, ASSUMPTION_STATUSES } from './assumptions.mjs';
 import { parseHandoff } from './handoff.mjs';
 import { taggedLines } from './markdown.mjs';
 import { patternList } from '../../lib/steering.mjs';
+import { matchesGlob } from '../../lib/glob.mjs';
 import { renderOutputs, staleOutputs } from './render.mjs';
 import { renderAdapters, staleAdapters } from '../../adapters/render.mjs';
 
@@ -21,6 +23,27 @@ const BACKTICK_PATH = /`((?:docs|scripts)\/[A-Za-z0-9_./-]+)`/g;
 // Files that name paths of earlier versions on purpose; their backtick paths are not checked.
 const HISTORICAL_FILES = new Set(['CHANGELOG.md', 'docs/MIGRATION-v1-to-v2.md']);
 const DAY = 24 * 60 * 60 * 1000;
+const PLACEHOLDER_COMMIT = '0000000';
+const MANUAL_COMMAND = /^manual:/;
+
+// Allowed status moves; anything else is either a skip (a longer path exists) or not a transition at all.
+const TASK_TRANSITIONS = {
+  planned: ['in_progress', 'blocked', 'deferred'],
+  in_progress: ['review', 'blocked', 'deferred'],
+  review: ['done'],
+  blocked: ['in_progress'],
+  done: [],
+  deferred: []
+};
+const FEATURE_TRANSITIONS = {
+  draft: ['review', 'superseded'],
+  review: ['approved', 'superseded'],
+  approved: ['implementing', 'superseded'],
+  implementing: ['verification', 'superseded'],
+  verification: ['implemented', 'superseded'],
+  implemented: ['superseded'],
+  superseded: []
+};
 
 export function validateRepo(root, config, { now = new Date() } = {}) {
   const findings = [];
@@ -47,7 +70,8 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
     checkLinks(root, file, text, error);
     if (!HISTORICAL_FILES.has(file) && !file.startsWith('docs/handoff/archive/')) checkBacktickPaths(root, file, text, warning);
 
-    if (!config.templateMode && !isTemplate(file) && placeholderApplies(config, file)) {
+    // Feature files get their own placeholder rule in checkFeature, keyed on the feature status.
+    if (!config.templateMode && !isTemplate(file) && !featureFiles.has(file) && placeholderApplies(config, file)) {
       // A draft may still carry placeholders; a document past draft may not.
       const draft = ['draft', 'template'].includes(scalar(data?.status));
       for (const line of taggedLines(text)) {
@@ -76,7 +100,15 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
   checkSteering(root, config, { error, warning });
   checkAdrs(root, { error });
   const assumptions = checkAssumptions(root, config, features, { error, warning });
-  for (const feature of features) checkFeature(feature, assumptions, config, now, { error, warning });
+  const trust = {
+    previous: readPreviousStatuses(root, config),
+    git: gitHistory(root),
+    commands: parseTechCommands(exists(root, `${config.paths.steering}/tech.md`) ? readText(root, `${config.paths.steering}/tech.md`) : ''),
+    today: localDate(now)
+  };
+  for (const feature of features) checkFeature(feature, assumptions, config, now, trust, { error, warning });
+  const repoFiles = walk(root);
+  for (const feature of features) checkTraceLinks(feature, repoFiles, { error, warning });
   checkHandoff(root, config, features, now, { error, warning });
   checkGenerated(root, config, { error });
   checkAdapters(root, config, { error });
@@ -87,6 +119,11 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
 function placeholderApplies(config, file) {
   const list = config.validate.placeholderSensitiveFiles;
   return list.length === 0 || list.includes(file);
+}
+
+function localDate(date) {
+  const pad = (value) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 function checkLinks(root, file, text, error) {
@@ -149,7 +186,7 @@ function checkAdrs(root, { error }) {
   }
 }
 
-function checkAssumptions(root, config, features, { error, warning }) {
+function checkAssumptions(root, config, features, { error }) {
   const file = config.paths.assumptions;
   if (!exists(root, file)) return [];
   const entries = parseAssumptions(parseFrontmatter(readText(root, file)).body);
@@ -159,12 +196,72 @@ function checkAssumptions(root, config, features, { error, warning }) {
     if (seen.has(entry.id)) error(file, entry.line, `duplicate assumption id ${entry.id}`);
     seen.add(entry.id);
     if (!ASSUMPTION_STATUSES.includes(entry.status)) error(file, entry.fieldLines.status ?? entry.line, `${entry.id} has unknown status '${entry.status ?? ''}'`);
-    if (entry.feature && !featureIds.has(entry.feature)) warning(file, entry.fieldLines.feature ?? entry.line, `${entry.id} references unknown feature ${entry.feature}`);
+    if (!entry.feature) error(file, entry.fieldLines.feature ?? entry.line, `${entry.id} has no feature`);
+    else if (!featureIds.has(entry.feature)) error(file, entry.fieldLines.feature ?? entry.line, `${entry.id} references unknown feature ${entry.feature}`);
   }
   return entries;
 }
 
-function checkFeature(feature, assumptions, config, now, { error, warning }) {
+// Statuses from the state.yaml on disk, which is the last rendered state until the next render.
+function readPreviousStatuses(root, config) {
+  const file = `${config.paths.context}/state.yaml`;
+  if (!exists(root, file)) return null;
+  let state;
+  try {
+    state = YAML.parse(readText(root, file));
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(state?.features)) return null;
+  const features = new Map();
+  const tasks = new Map();
+  for (const feature of state.features) {
+    if (typeof feature?.id !== 'string') continue;
+    features.set(feature.id, feature.status);
+    for (const task of feature.tasks ?? []) if (typeof task?.id === 'string') tasks.set(`${feature.id}/${task.id}`, task.status);
+  }
+  return { features, tasks };
+}
+
+function git(root, args) {
+  try {
+    execFileSync('git', args, { cwd: root, stdio: ['ignore', 'ignore', 'ignore'] });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function gitHistory(root) {
+  const reason = !git(root, ['rev-parse', '--git-dir']) ? 'not a git repository' : !git(root, ['rev-parse', '--verify', '--quiet', 'HEAD']) ? 'no commits yet' : null;
+  return { reason, has: (commit) => git(root, ['cat-file', '-e', `${commit}^{commit}`]) };
+}
+
+// Returns null when the move is allowed, otherwise the error text; a reachable target names the skipped states.
+function transitionError(graph, id, from, to) {
+  if (from === to || !(from in graph) || !(to in graph)) return null;
+  if (graph[from].includes(to)) return null;
+  const route = shortestPath(graph, from, to);
+  if (!route) return `${id} cannot move from ${from} to ${to}`;
+  return `${id} moved from ${from} to ${to}, skipping ${route.slice(1, -1).join(', ')}`;
+}
+
+function shortestPath(graph, from, to) {
+  const queue = [[from]];
+  const seen = new Set([from]);
+  while (queue.length) {
+    const route = queue.shift();
+    for (const next of graph[route.at(-1)]) {
+      if (next === to) return [...route, next];
+      if (seen.has(next)) continue;
+      seen.add(next);
+      queue.push([...route, next]);
+    }
+  }
+  return null;
+}
+
+function checkFeature(feature, assumptions, config, now, trust, { error, warning }) {
   const files = feature.files;
   for (const name of ['requirements.md', 'tasks.md', 'verification.md']) {
     if (!files[name]) error(`${feature.dir}/${name}`, 1, `${feature.id} is missing ${name}`);
@@ -199,6 +296,14 @@ function checkFeature(feature, assumptions, config, now, { error, warning }) {
       const age = (now - new Date(`${verified}T00:00:00Z`)) / DAY;
       if (Number.isFinite(age) && age > config.limits.staleDays) warning(file, 1, `last_verified ${verified} is older than ${config.limits.staleDays} days`);
     }
+
+    // Fenced lines are skipped: a design may quote a template language that uses the same braces.
+    for (const line of taggedLines(entry.text)) {
+      if (line.inFence || !PLACEHOLDER.test(line.text)) continue;
+      const found = line.text.match(PLACEHOLDER)[0];
+      if (masterStatus === 'draft') warning(file, line.number, `unresolved placeholder ${found} (draft)`);
+      else error(file, line.number, `unresolved placeholder ${found}`);
+    }
   }
 
   const tasksFile = files['tasks.md']?.path ?? `${feature.dir}/tasks.md`;
@@ -206,13 +311,27 @@ function checkFeature(feature, assumptions, config, now, { error, warning }) {
   const requirementsFile = files['requirements.md']?.path ?? `${feature.dir}/requirements.md`;
   const frIds = new Set(feature.requirements.fr.map((fr) => fr.id));
   const acIds = new Set(feature.requirements.ac.map((ac) => ac.id));
+  const acByFr = acceptanceByRequirement(feature.requirements);
   const taskIds = new Set(feature.tasks.map((task) => task.id));
   const evidenceById = new Map(feature.evidence.map((ev) => [ev.id, ev]));
+
+  for (const [name, kind] of [['requirements.md', 'requirement'], ['tasks.md', 'task'], ['verification.md', 'evidence']]) {
+    if (!files[name]) continue;
+    for (const item of findMalformedHeadings(files[name].text, kind)) {
+      error(files[name].path, item.line, `malformed ${item.label} '${item.text}'; expected '${item.expected}'`);
+    }
+  }
 
   checkUnique(feature.requirements.fr, requirementsFile, 'requirement', error);
   checkUnique(feature.requirements.ac, requirementsFile, 'acceptance criterion', error);
   checkUnique(feature.tasks, tasksFile, 'task', error);
   checkUnique(feature.evidence, verificationFile, 'evidence', error);
+
+  const previousFeature = trust.previous?.features.get(feature.id);
+  if (previousFeature !== undefined && masterStatus) {
+    const message = transitionError(FEATURE_TRANSITIONS, feature.id, previousFeature, masterStatus);
+    if (message) error(tasksFile, 1, message);
+  }
 
   for (const ev of feature.evidence) {
     for (const key of ['command', 'output', 'date', 'commit']) {
@@ -220,6 +339,14 @@ function checkFeature(feature, assumptions, config, now, { error, warning }) {
     }
     if (ev.covers.length === 0) error(verificationFile, ev.fieldLines.covers ?? ev.line, `${ev.id} covers no acceptance criterion`);
     for (const ac of ev.covers) if (!acIds.has(ac)) error(verificationFile, ev.fieldLines.covers ?? ev.line, `${ev.id} covers unknown ${ac}`);
+    if (ev.command && !MANUAL_COMMAND.test(ev.command) && !trust.commands.has(ev.command)) {
+      error(verificationFile, ev.fieldLines.command ?? ev.line, `${ev.id} command \`${ev.command}\` is not in the tech.md Commands table (prefix manual: for a manual check)`);
+    }
+    if (ev.date && ev.date > trust.today) error(verificationFile, ev.fieldLines.date ?? ev.line, `${ev.id} date ${ev.date} is in the future`);
+    if (ev.commit && !(config.templateMode && ev.commit === PLACEHOLDER_COMMIT)) {
+      if (trust.git.reason) warning(verificationFile, ev.fieldLines.commit ?? ev.line, `${ev.id} commit ${ev.commit} cannot be checked: ${trust.git.reason}`);
+      else if (!trust.git.has(ev.commit)) error(verificationFile, ev.fieldLines.commit ?? ev.line, `${ev.id} commit ${ev.commit} is not in git log`);
+    }
   }
 
   for (const task of feature.tasks) {
@@ -227,9 +354,21 @@ function checkFeature(feature, assumptions, config, now, { error, warning }) {
     for (const fr of task.requirements) if (!frIds.has(fr)) error(tasksFile, task.fieldLines.requirements ?? task.line, `${task.id} references unknown requirement ${fr}`);
     for (const dep of task.depends_on) if (!taskIds.has(dep)) error(tasksFile, task.fieldLines.depends_on ?? task.line, `${task.id} depends on unknown task ${dep}`);
     for (const ev of task.evidence) if (!evidenceById.has(ev)) error(tasksFile, task.fieldLines.evidence ?? task.line, `${task.id} references unknown evidence ${ev}`);
+    const previousTask = trust.previous?.tasks.get(`${feature.id}/${task.id}`);
+    if (previousTask !== undefined && task.status) {
+      const message = transitionError(TASK_TRANSITIONS, task.id, previousTask, task.status);
+      if (message) error(tasksFile, task.fieldLines.status ?? task.line, message);
+    }
     if (task.status === 'done') {
       const usable = task.evidence.filter((ev) => evidenceById.get(ev)?.covers.length);
       if (usable.length === 0) error(tasksFile, task.fieldLines.evidence ?? task.line, `${task.id} is done without evidence that covers an acceptance criterion`);
+      const covered = new Set(task.evidence.flatMap((ev) => evidenceById.get(ev)?.covers ?? []));
+      for (const fr of task.requirements) {
+        const criteria = acByFr.get(fr);
+        if (criteria && ![...criteria].some((ac) => covered.has(ac))) {
+          error(tasksFile, task.fieldLines.evidence ?? task.line, `${task.id} is done but its evidence covers no acceptance criterion of ${fr}`);
+        }
+      }
     }
     if (masterStatus === 'implemented' && !['done', 'deferred'].includes(task.status)) {
       error(tasksFile, task.fieldLines.status ?? task.line, `${feature.id} is implemented but ${task.id} is ${task.status}`);
@@ -244,9 +383,38 @@ function checkFeature(feature, assumptions, config, now, { error, warning }) {
     report(requirementsFile, fr.line, `${fr.id} has no task in tasks.md`);
   }
 
+  const approvedOnward = FEATURE_STATUSES.indexOf(masterStatus) >= FEATURE_STATUSES.indexOf('approved') && masterStatus !== 'superseded';
+  if (approvedOnward) {
+    for (const fr of feature.requirements.fr) {
+      if (fr.ac.length === 0) error(requirementsFile, fr.line, `${fr.id} has no acceptance criterion; required from approved onward`);
+    }
+  }
+
   if (masterStatus === 'implemented') {
+    if (feature.requirements.fr.length === 0) error(requirementsFile, 1, `${feature.id} is implemented without a functional requirement`);
+    if (feature.tasks.length === 0) error(tasksFile, 1, `${feature.id} is implemented without a task`);
     for (const entry of assumptions.filter((item) => item.status === 'open' && item.feature === feature.id)) {
       error(config.paths.assumptions, entry.line, `${entry.id} is open but ${feature.id} is implemented`);
+    }
+  }
+}
+
+// Optional links from a feature to code: `targets` globs in requirements.md frontmatter and `[test: path]`
+// on an acceptance criterion. A dangling link is a warning while the feature is planned, an error once code exists.
+function checkTraceLinks(feature, repoFiles, { error, warning }) {
+  const requirements = feature.files['requirements.md'];
+  if (!requirements) return;
+  const report = ['implementing', 'verification', 'implemented'].includes(feature.status) ? error : warning;
+  const targets = requirements.data?.targets;
+  if (targets !== undefined && targets !== null) {
+    if (!Array.isArray(targets)) error(requirements.path, 1, 'targets must be a list of path globs');
+    else for (const pattern of targets) {
+      if (!repoFiles.some((file) => matchesGlob(file, String(pattern)))) report(requirements.path, 1, `${feature.id} target ${pattern} matches no file`);
+    }
+  }
+  for (const ac of feature.requirements.ac) {
+    for (const file of ac.tests ?? []) {
+      if (!repoFiles.includes(file.replace(/^\.\//, ''))) report(requirements.path, ac.line, `${ac.id} links test ${file}, which does not exist`);
     }
   }
 }

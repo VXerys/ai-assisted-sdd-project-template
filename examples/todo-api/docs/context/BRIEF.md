@@ -1,6 +1,6 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run context:render`.
 Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
-source_hash: 44badd2ab8820330e0c1b30add98eca89e1988fd5d6260691a9749c88644bf24 -->
+source_hash: ac7a4080a419ba2de56c7869c48293a37000caa5a2df20c7f8279aa8d2af95c0 -->
 
 # Brief
 
@@ -49,7 +49,7 @@ Prohibited without explicit owner approval:
 - Deploying or sending messages on the owner's behalf.
 
 ## Read-only paths
-Generated: `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`
+Generated: `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/rules/`
 Frozen: `db/migrations/`
 
 ## Open assumptions

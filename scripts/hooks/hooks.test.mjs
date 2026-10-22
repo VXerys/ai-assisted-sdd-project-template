@@ -97,7 +97,12 @@ test('pre-tool-guard denies a frozen path and asks for owner approval', () => {
 
 test('pre-tool-guard denies secret files anywhere, but not .env.example', () => {
   const cwd = copyFixture(contextFixtures, 'valid-lite');
-  for (const file of ['.env', 'apps/web/.env.local', 'certs/server.pem', 'android/app/google-services.json', 'android/release.keystore']) {
+  const secrets = [
+    '.env', 'apps/web/.env.local', 'certs/server.pem', 'android/app/google-services.json', 'android/release.keystore',
+    'android/key.properties', 'ios/Runner/GoogleService-Info.plist', 'certs/client.p12', 'keys/AuthKey_ABC123.p8',
+    'ios/profiles/dev.mobileprovision', 'certs/server.key', 'certs/bundle.pfx', '.ssh/id_rsa', '.ssh/id_rsa.pub', 'deploy/prod.secret'
+  ];
+  for (const file of secrets) {
     const output = json(run('pre-tool-guard', cwd, { tool_name: 'Write', tool_input: { file_path: abs(cwd, file), content: 'x' } }).stdout).hookSpecificOutput;
     assert.equal(output.permissionDecision, 'deny', file);
     assert.match(output.permissionDecisionReason, /secret/);
@@ -120,22 +125,12 @@ test('pre-tool-guard normalizes a backslash file_path before matching', () => {
   assert.equal(output.permissionDecision, 'deny');
 });
 
-test('pre-tool-guard surfaces a fileMatch steering file once per session', () => {
+test('pre-tool-guard leaves fileMatch steering to .claude/rules and writes no session state', () => {
   const cwd = copyFixture(adapterFixtures, 'multi-tool');
-  const payload = { session_id: 'abc-123', ...edit(abs(cwd, 'src/db/users.js')) };
-  const first = run('pre-tool-guard', cwd, payload);
-  assert.equal(first.status, 0);
-  const output = json(first.stdout).hookSpecificOutput;
-  assert.equal(output.hookEventName, 'PreToolUse');
-  assert.equal(output.permissionDecision, undefined);
-  assert.match(output.additionalContext, /^SDD steering: docs\/steering\/database\.md applies to src\/db\/users\.js/);
-  assert.match(output.additionalContext, /Append-only; never edit an applied migration/);
-  assert.ok(fs.existsSync(abs(cwd, '.claude/.sdd-session/abc-123.json')));
-
-  assert.equal(run('pre-tool-guard', cwd, payload).stdout, '');
-  assert.equal(run('pre-tool-guard', cwd, { ...payload, tool_input: { file_path: abs(cwd, 'migrations/002.sql') } }).stdout, '');
-  assert.match(run('pre-tool-guard', cwd, { ...payload, session_id: 'other' }).stdout, /database\.md/);
-  assert.equal(run('pre-tool-guard', cwd, { ...payload, tool_input: { file_path: abs(cwd, 'src/api.js') } }).stdout, '');
+  const result = run('pre-tool-guard', cwd, { session_id: 'abc-123', ...edit(abs(cwd, 'src/db/users.js')) });
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, '');
+  assert.equal(fs.existsSync(abs(cwd, '.claude/.sdd-session')), false);
 });
 
 test('pre-tool-guard does nothing when hooks are disabled in sdd.config.json', () => {
@@ -148,6 +143,52 @@ test('pre-tool-guard does nothing when hooks are disabled in sdd.config.json', (
   assert.equal(stdout, '');
 });
 
+test('pre-tool-guard checks Bash and PowerShell commands', () => {
+  const cwd = copyFixture(contextFixtures, 'valid-lite');
+  const shell = (tool, command) => run('pre-tool-guard', cwd, { tool_name: tool, tool_input: { command } }).stdout;
+
+  const bash = json(shell('Bash', 'echo x >> docs/context/BRIEF.md')).hookSpecificOutput;
+  assert.equal(bash.permissionDecision, 'deny');
+  assert.match(bash.permissionDecisionReason, /generated path.*shell command writes docs\/context\/BRIEF\.md/);
+  assert.equal(json(shell('PowerShell', 'Set-Content -Path src/legacy/a.js -Value x')).hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(json(shell('Bash', 'cat .env')).hookSpecificOutput.permissionDecisionReason, /secret.*shell command reads \.env/);
+  assert.equal(shell('Bash', 'npm test && git status'), '');
+});
+
+test('pre-tool-guard refuses Read of a secret file only', () => {
+  const cwd = copyFixture(contextFixtures, 'valid-lite');
+  const readFile = (file) => run('pre-tool-guard', cwd, { tool_name: 'Read', tool_input: { file_path: abs(cwd, file) } }).stdout;
+  assert.equal(json(readFile('.env.local')).hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(readFile('docs/context/state.yaml'), '');
+});
+
+test('pre-tool-guard asks before an edit to the gate in a derived project', () => {
+  const cwd = copyFixture(contextFixtures, 'valid-lite');
+  const output = json(run('pre-tool-guard', cwd, edit(abs(cwd, 'sdd.config.json'))).stdout).hookSpecificOutput;
+  assert.equal(output.permissionDecision, 'ask');
+  assert.match(output.permissionDecisionReason, /SDD configuration or check code/);
+});
+
+test('pre-tool-guard resolves the root of a nested git worktree', () => {
+  const main = copyFixture(contextFixtures, 'valid-lite');
+  fs.mkdirSync(abs(main, '.git'));
+  const worktree = abs(main, '.claude/worktrees/w1');
+  fs.cpSync(path.join(contextFixtures, 'valid-lite'), worktree, { recursive: true });
+  fs.writeFileSync(path.join(worktree, '.git'), 'gitdir: ../../../.git/worktrees/w1\n');
+  const target = path.join(worktree, 'docs', 'context', 'state.yaml');
+
+  for (const cwd of [worktree, main]) {
+    const result = spawnSync(process.execPath, [hook('pre-tool-guard')], {
+      input: JSON.stringify({ session_id: 'wt', cwd, ...edit(target) }),
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: main }
+    });
+    const output = json(result.stdout).hookSpecificOutput;
+    assert.equal(output.permissionDecision, 'deny', cwd);
+    assert.match(output.permissionDecisionReason, /^SDD guard: docs\/context\/state\.yaml is a generated path/);
+  }
+});
+
 test('post-tool-render re-renders the context after a tasks.md edit', () => {
   const cwd = copyFixture(contextFixtures, 'valid-lite');
   const before = read(cwd, 'docs/context/state.yaml');
@@ -155,7 +196,9 @@ test('post-tool-render re-renders the context after a tasks.md edit', () => {
   fs.writeFileSync(tasks, read(cwd, 'docs/specs/F-001-create-todo/tasks.md').replace('- status: in_progress', '- status: review'));
   const { status, stdout } = run('post-tool-render', cwd, { ...edit(tasks), tool_response: {} });
   assert.equal(status, 0);
-  assert.match(stdout, /^SDD: re-rendered docs\/context\/ after docs\/specs\/F-001-create-todo\/tasks\.md changed\n$/);
+  const output = json(stdout).hookSpecificOutput;
+  assert.equal(output.hookEventName, 'PostToolUse');
+  assert.match(output.additionalContext, /^SDD: re-rendered docs\/context\/ after docs\/specs\/F-001-create-todo\/tasks\.md changed$/);
   const after = read(cwd, 'docs/context/state.yaml');
   assert.notEqual(after, before);
   assert.match(after, /status: review/);
@@ -165,7 +208,7 @@ test('post-tool-render also syncs adapters after a steering edit', () => {
   const cwd = copyFixture(contextFixtures, 'valid-lite');
   fs.appendFileSync(abs(cwd, 'docs/steering/rules.md'), '\n- New rule.\n');
   const { stdout } = run('post-tool-render', cwd, edit(abs(cwd, 'docs/steering/rules.md')));
-  assert.match(stdout, /re-rendered docs\/context\/ and adapters after docs\/steering\/rules\.md changed/);
+  assert.match(json(stdout).hookSpecificOutput.additionalContext, /re-rendered docs\/context\/ and adapters after docs\/steering\/rules\.md changed/);
   assert.match(read(cwd, 'AGENTS.md'), /New rule\./);
 });
 
@@ -194,7 +237,9 @@ test('stop-handoff-check warns when tasks.md changed but the handoff did not', (
   const { status, stdout, stderr } = run('stop-handoff-check', cwd, { hook_event_name: 'Stop', stop_hook_active: false });
   assert.equal(status, 0);
   assert.equal(stderr, '');
-  assert.match(stdout, /^SDD: docs\/specs\/F-001-create-todo\/tasks\.md changed but docs\/handoff\/current\.md did not\. Update the handoff/);
+  const output = json(stdout).hookSpecificOutput;
+  assert.equal(output.hookEventName, 'Stop');
+  assert.match(output.additionalContext, /^SDD: docs\/specs\/F-001-create-todo\/tasks\.md changed but docs\/handoff\/current\.md did not\. Update the handoff/);
   assert.doesNotMatch(stdout, /"decision"/);
 });
 
@@ -216,4 +261,55 @@ test('stop-handoff-check exits 0 silently outside a git repository', () => {
   const { status, stdout } = run('stop-handoff-check', cwd, { hook_event_name: 'Stop', stop_hook_active: false }, { GIT_DIR: path.join(cwd, 'nowhere') });
   assert.equal(status, 0);
   assert.equal(stdout, '');
+});
+
+const repo = path.resolve(here, '..', '..');
+
+// The repository without node_modules: what a derived project looks like before npm install.
+function copyRepoWithoutDeps() {
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-hooks-nodeps-'));
+  fs.cpSync(repo, target, { recursive: true, filter: (source) => !/[\\/](\.git|node_modules)([\\/]|$)/.test(source) });
+  // cpSync on Windows still copies some filtered-out children, so the directory is removed explicitly.
+  fs.rmSync(path.join(target, 'node_modules'), { recursive: true, force: true });
+  return target;
+}
+
+function runIn(cwd, name, payload) {
+  const result = spawnSync(process.execPath, [path.join(cwd, 'scripts', 'hooks', `${name}.mjs`)], {
+    cwd,
+    input: JSON.stringify({ session_id: 'test-session', cwd, ...payload }),
+    encoding: 'utf8',
+    env: { ...process.env, CLAUDE_PROJECT_DIR: cwd }
+  });
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+}
+
+test('without node_modules the guard fails closed and the other hooks fail open with a warning', () => {
+  const cwd = copyRepoWithoutDeps();
+
+  const guard = runIn(cwd, 'pre-tool-guard', edit(abs(cwd, 'src/x.js')));
+  assert.equal(guard.status, 0, guard.stderr);
+  assert.deepEqual(json(guard.stdout), {
+    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: 'SDD guard unavailable: run npm install' }
+  });
+
+  const start = runIn(cwd, 'session-start', { hook_event_name: 'SessionStart', source: 'startup' });
+  assert.equal(start.status, 0, start.stderr);
+  const startOutput = json(start.stdout).hookSpecificOutput;
+  assert.equal(startOutput.hookEventName, 'SessionStart');
+  assert.match(startOutput.additionalContext, /^SDD hook session-start unavailable \(.*\); run npm install$/);
+
+  // post-tool-render and stop-handoff-check need no dependency; a missing lib is their import failure.
+  fs.rmSync(abs(cwd, 'scripts/lib/glob.mjs'));
+  const post = runIn(cwd, 'post-tool-render', edit(abs(cwd, 'docs/steering/rules.md')));
+  assert.equal(post.status, 0, post.stderr);
+  const postOutput = json(post.stdout).hookSpecificOutput;
+  assert.equal(postOutput.hookEventName, 'PostToolUse');
+  assert.match(postOutput.additionalContext, /^SDD hook post-tool-render unavailable \(.*\); run npm install$/);
+
+  const stop = runIn(cwd, 'stop-handoff-check', { hook_event_name: 'Stop', stop_hook_active: false });
+  assert.equal(stop.status, 0, stop.stderr);
+  const stopOutput = json(stop.stdout).hookSpecificOutput;
+  assert.equal(stopOutput.hookEventName, 'Stop');
+  assert.match(stopOutput.additionalContext, /^SDD hook stop-handoff-check unavailable \(.*\); run npm install$/);
 });

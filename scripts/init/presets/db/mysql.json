@@ -10,5 +10,6 @@
     "Destructive changes need owner approval and a `mysqldump` first.",
     "Credentials come from the environment and are never committed."
   ],
-  "fileMatch": ["db/**", "src/db/**"]
+  "fileMatch": ["db/**", "src/db/**"],
+  "gitignore": []
 }

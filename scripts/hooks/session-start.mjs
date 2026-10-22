@@ -2,55 +2,36 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import YAML from 'yaml';
-
-import { runHook, projectRoot, hookConfig, emit } from '../lib/hook-io.mjs';
-import { collectSourceFiles, sourceHash } from '../context/lib/hash.mjs';
+import { spawnSync } from 'node:child_process';
 
 // Claude Code caps a single additionalContext string at 10,000 characters.
 const CONTEXT_CAP = 10000;
 
-runHook('session-start', (payload) => {
-  const root = projectRoot(payload);
-  const config = hookConfig(root);
-  if (!config.hooks.enabled) return;
-
-  const briefPath = path.join(root, config.paths.context, 'BRIEF.md');
-  const text = fs.existsSync(briefPath) ? fs.readFileSync(briefPath, 'utf8') : null;
-  const context = text === null ? fallback(config) : briefContext(root, config, text);
-  emit({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: cap(context) } });
-});
-
-function briefContext(root, config, text) {
-  const lines = [];
-  const briefHash = text.match(/source_hash:\s*([0-9a-f]{64})/)?.[1] ?? null;
-  const currentHash = sourceHash(collectSourceFiles(root, config));
-  if (briefHash !== currentHash) lines.push('SDD brief is stale: sources changed since the last render; run npm run context:render');
-  lines.push(`SDD brief (rendered ${generatedAt(root, config)})`);
-  lines.push(text.replace(/\r\n/g, '\n').trimEnd());
-  return lines.join('\n');
+// A cloud session starts from a fresh clone: install the tooling before importing it, so the brief
+// and the guard work there too. Locally a missing node_modules stays a warning for the owner.
+const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+let installNote = '';
+if (process.env.CLAUDE_CODE_REMOTE === 'true' && !fs.existsSync(path.join(root, 'node_modules', 'yaml'))) {
+  const install = spawnSync('npm', ['ci', '--no-audit', '--no-fund'], { cwd: root, encoding: 'utf8', shell: process.platform === 'win32' });
+  installNote = install.status === 0 ? 'SDD: installed the tooling with npm ci (cloud session).\n' : `SDD: npm ci failed in the cloud session (${(install.stderr || '').trim().split('\n').pop()}).\n`;
 }
 
-function generatedAt(root, config) {
-  const statePath = path.join(root, config.paths.context, 'state.yaml');
-  try {
-    return String(YAML.parse(fs.readFileSync(statePath, 'utf8'))?.generated_at ?? 'unknown time');
-  } catch {
-    return 'unknown time';
-  }
-}
+// Lib imports are dynamic so a missing node_modules warns the model instead of crashing the hook.
+try {
+  const [{ runHook, projectRoot, hookConfig, emit }, { briefText }] = await Promise.all([
+    import('../lib/hook-io.mjs'),
+    import('../lib/brief.mjs')
+  ]);
 
-function fallback(config) {
-  const steering = config.paths.steering;
-  return [
-    `SDD: ${config.paths.context}/BRIEF.md is absent. Run npm run context:render, or read in this order:`,
-    `1. ${steering}/rules.md, ${steering}/tech.md, ${steering}/structure.md, ${steering}/workflow.md, ${steering}/product.md`,
-    `2. ${config.paths.handoff}`,
-    `3. The active feature's tasks.md under ${config.paths.specs}/ (the one with an in_progress task, otherwise the one the handoff names)`,
-    '4. The requirements.md, design.md, and system-architecture.md sections that task references',
-    `5. ${config.paths.assumptions}, open entries only`,
-    '6. git status, branch, and recent log'
-  ].join('\n');
+  runHook('session-start', (payload) => {
+    const projectDir = projectRoot(payload);
+    const config = hookConfig(projectDir);
+    if (!config.hooks.enabled) return;
+    emit({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: cap(installNote + briefText(projectDir, config)) } });
+  });
+} catch (cause) {
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: `${installNote}SDD hook session-start unavailable (${cause.message}); run npm install` } }));
+  process.exitCode = 0;
 }
 
 function cap(text) {

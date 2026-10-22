@@ -26,7 +26,8 @@ Never hand-edit. Listed in `sdd.config.json` under `generated`:
 - `docs/context/PROJECT_STATE.md`
 - `docs/context/PROGRESS.md`
 - `docs/context/BRIEF.md`
-- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/` (only the tools in `sdd.config.json` are written)
+- `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude/rules/`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/` (only the tools in `sdd.config.json` are written)
+- `.sdd/manifest.json` (written by `init` and `sdd upgrade`)
 - Project-specific generated code (example: `*.g.dart`, `*.freezed.dart`, generated API clients): {{GENERATED_CODE_PATHS_OR_NONE}}
 
 ## Frozen paths

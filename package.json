@@ -3,18 +3,25 @@
   "version": "2.0.0",
   "private": true,
   "description": "Stack-agnostic spec-driven development and context-engineering repository template.",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
+  "bin": {
+    "sdd": "scripts/sdd/cli.mjs"
+  },
   "scripts": {
     "test": "node --test \"scripts/**/*.test.mjs\"",
+    "test:unit": "node --test \"scripts/*/*.test.mjs\" \"scripts/*/lib/*.test.mjs\"",
+    "test:e2e": "node --test \"scripts/init/e2e/*.test.mjs\"",
     "init": "node scripts/init/init.mjs",
     "example:validate": "cd examples/todo-api && node ../../scripts/context/validate-context.mjs",
     "context:render": "node scripts/context/render.mjs",
     "context:validate": "node scripts/context/validate-context.mjs",
     "context:archive-handoff": "node scripts/context/archive-handoff.mjs",
-    "adapters:sync": "node scripts/adapters/sync.mjs"
+    "adapters:sync": "node scripts/adapters/sync.mjs",
+    "sdd": "node scripts/sdd/cli.mjs"
   },
   "dependencies": {
     "yaml": "^2.9.1"

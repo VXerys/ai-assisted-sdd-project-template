@@ -17,7 +17,7 @@ supersedes: null
 ## Evidence
 
 ### EV-001 — POST handler tests pass
-- command: `npm test -- test/todos.test.js`
+- command: `npm test`
 - output:
   ```text
   ok 1 - creates a todo

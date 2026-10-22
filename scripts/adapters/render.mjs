@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { readText, exists, walk, writeLf } from '../context/lib/files.mjs';
@@ -7,12 +8,18 @@ import { sourceHash } from '../context/lib/hash.mjs';
 import { TOOLS } from '../context/lib/config.mjs';
 import { loadSteering } from '../lib/steering.mjs';
 
-export const AGENTS_LINE_CAP = 400;
+// ADR-0003: AGENTS.md is read natively by Claude Code (through CLAUDE.md), Codex, Cursor, Copilot, and Kiro,
+// so it inlines only these steering files; every other file reaches each tool once, in its own format.
+export const AGENTS_INLINE = ['rules', 'tech'];
+export const AGENTS_LINE_CAP = 150;
 const SOURCES = 'docs/steering/, sdd.config.json';
 const BODY_ORDER = ['rules', 'tech', 'structure', 'workflow', 'product'];
+const GENERATED_MARK = 'GENERATED FILE — DO NOT EDIT';
 
 // Every adapter path adapters:sync can write; sdd.config.json lists them under `generated`.
-export const ADAPTER_TARGETS = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.cursor/rules/', '.github/copilot-instructions.md', '.github/instructions/', '.kiro/steering/'];
+export const ADAPTER_TARGETS = ['AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.claude/rules/', '.cursor/rules/', '.github/copilot-instructions.md', '.github/instructions/', '.kiro/steering/'];
+// Directories whose generated files a sync removes once their steering source is gone or inlined.
+const ADAPTER_DIRS = ['.claude/rules', '.cursor/rules', '.github/instructions', '.kiro/steering'];
 
 function banner(hash) {
   return `<!-- GENERATED FILE — DO NOT EDIT. Rendered by \`npm run adapters:sync\`.\nSource: ${SOURCES}.\nsource_hash: ${hash} -->\n`;
@@ -38,27 +45,43 @@ export function renderAdapters(root, config, { all = false } = {}) {
   const agentsLines = agents.split('\n').length;
   if (agentsLines > AGENTS_LINE_CAP) warnings.push(`AGENTS.md has ${agentsLines} lines, over the cap of ${AGENTS_LINE_CAP}; shorten docs/steering/`);
 
-  if (tools.has('claude')) outputs['CLAUDE.md'] = renderClaude(root, hash);
+  const rest = steering.filter((entry) => !isInlined(entry));
+  if (tools.has('claude')) {
+    outputs['CLAUDE.md'] = renderClaude(root, hash);
+    for (const entry of rest.filter((item) => item.inclusion !== 'manual')) outputs[`.claude/rules/${entry.name}.md`] = renderClaudeRule(entry, hash);
+  }
   if (tools.has('gemini')) outputs['GEMINI.md'] = renderGemini(hash);
-  if (tools.has('cursor')) for (const entry of steering) outputs[`.cursor/rules/${entry.name}.mdc`] = renderCursor(entry, hash);
+  if (tools.has('cursor')) for (const entry of rest) outputs[`.cursor/rules/${entry.name}.mdc`] = renderCursor(entry, hash);
   if (tools.has('copilot')) {
     outputs['.github/copilot-instructions.md'] = renderCopilot(root, config, steering, hash);
-    for (const entry of steering.filter((item) => item.inclusion === 'fileMatch')) {
+    for (const entry of rest.filter((item) => item.inclusion !== 'manual')) {
       outputs[`.github/instructions/${entry.name}.instructions.md`] = renderCopilotInstructions(entry, hash);
     }
   }
-  if (tools.has('kiro')) for (const entry of steering) outputs[`.kiro/steering/${entry.name}.md`] = renderKiro(entry, hash);
+  if (tools.has('kiro')) for (const entry of rest) outputs[`.kiro/steering/${entry.name}.md`] = renderKiro(entry, hash);
 
   return { outputs, warnings, hash };
 }
 
+function isInlined(entry) {
+  return entry.inclusion === 'always' && AGENTS_INLINE.includes(entry.name);
+}
+
+// Generated files left in an adapter directory after their steering source was removed or inlined.
+export function orphanAdapters(root, outputs) {
+  return ADAPTER_DIRS.flatMap((dir) => walk(root, dir))
+    .filter((file) => !(file in outputs) && readText(root, file).includes(GENERATED_MARK));
+}
+
 export function staleAdapters(root, outputs) {
-  return Object.entries(outputs)
+  const stale = Object.entries(outputs)
     .filter(([file, content]) => !exists(root, file) || normalize(readText(root, file)) !== normalize(content))
     .map(([file]) => file);
+  return [...stale, ...orphanAdapters(root, outputs)];
 }
 
 export function writeAdapters(root, outputs) {
+  for (const file of orphanAdapters(root, outputs)) fs.rmSync(path.join(root, file), { force: true });
   for (const [file, content] of Object.entries(outputs)) writeLf(root, file, content);
   return Object.keys(outputs);
 }
@@ -94,6 +117,8 @@ function demote(body, depth) {
 
 function renderAgents(root, config, steering, hash) {
   const always = orderedAlways(steering);
+  const inlined = always.filter(isInlined);
+  const pointers = always.filter((entry) => !isInlined(entry));
   const conditional = steering.filter((entry) => entry.inclusion === 'fileMatch');
   const manual = steering.filter((entry) => entry.inclusion === 'manual');
   const paths = config.paths;
@@ -105,7 +130,7 @@ function renderAgents(root, config, steering, hash) {
 
   lines.push('## Read first', '');
   lines.push(`1. \`${paths.context}/BRIEF.md\` (single entry point; rendered, never hand-edited)`);
-  lines.push(`2. ${always.map((entry) => `\`${entry.file}\``).join(', ') || `\`${paths.steering}/\``}`);
+  lines.push(`2. The ${inlined.map((entry) => entry.title).join(' and ') || 'steering'} sections below; the other steering files in the table reach each tool through its rule files, otherwise read one before work on its topic`);
   lines.push(`3. The active feature under \`${paths.specs}/\`: \`tasks.md\`, then the sections it references`, '');
   lines.push(`Fallback when \`BRIEF.md\` is absent: \`${paths.context}/NEW_CHAT_PROTOCOL.md\`.`, '');
 
@@ -120,19 +145,27 @@ function renderAgents(root, config, steering, hash) {
   lines.push(`| Task status | \`${paths.specs}/F-XXX-name/tasks.md\` (master) |`);
   lines.push(`| Unknowns | \`${paths.assumptions}\` |`, `| Session delta | \`${paths.handoff}\` |`);
   lines.push('| Current behavior | code, tests, schema, configuration |', '');
-  lines.push('Chat history and provider memory are never a source of truth.', '');
 
   lines.push('## Read-only paths', '');
   lines.push(`Generated (edit the sources, then run \`npm run context:render\` or \`npm run adapters:sync\`): ${config.generated.map((entry) => `\`${entry}\``).join(', ') || 'none'}`, '');
   lines.push(`Frozen (explicit owner approval required): ${config.frozen.map((entry) => `\`${entry}\``).join(', ') || 'none'}`, '');
 
-  for (const entry of always) lines.push(`## ${entry.title}`, '', demote(entry.body, 1), '');
+  for (const entry of inlined) lines.push(`## ${entry.title}`, '', demote(entry.body, 1), '');
+
+  // The standard files already have a row in the Source of truth table.
+  const unlisted = pointers.filter((entry) => !BODY_ORDER.includes(entry.name));
+  if (unlisted.length) {
+    lines.push('## Other steering', '');
+    for (const entry of unlisted) lines.push(`- \`${entry.file}\`: ${entry.description || entry.title}`);
+    lines.push('');
+  }
 
   if (conditional.length || manual.length) {
     lines.push('## Conditional rules', '');
-    if (conditional.length) lines.push('Apply the section when the edited path matches its pattern.', '');
-    for (const entry of conditional) {
-      lines.push(`### ${entry.title} (\`${entry.file}\`) applies to ${entry.patterns.map((pattern) => `\`${pattern}\``).join(', ')}`, '', demote(entry.body, 2), '');
+    if (conditional.length) {
+      lines.push('Read the file before editing a path that matches its pattern.', '');
+      for (const entry of conditional) lines.push(`- \`${entry.file}\` applies to ${entry.patterns.map((pattern) => `\`${pattern}\``).join(', ')}: ${entry.description || entry.title}`);
+      lines.push('');
     }
     if (manual.length) {
       lines.push('Read on request:', '');
@@ -142,7 +175,8 @@ function renderAgents(root, config, steering, hash) {
   }
 
   lines.push('## Commands', '');
-  lines.push(`Project commands: the Commands table in \`${paths.steering}/tech.md\` (the Tech section above). Context: \`npm run context:render\`, then \`npm run context:validate\`. Adapters: \`npm run adapters:sync\`.`);
+  lines.push(`Project commands: the Commands table in \`${paths.steering}/tech.md\` (the Tech section above). Context: \`npm run context:render\`, then \`npm run context:validate\`. Adapters: \`npm run adapters:sync\`.`, '');
+  lines.push('Without hooks (multi-repository cloud sessions, project threads, tools without hooks): run `npm run sdd -- brief` first, and `npm run sdd -- guard --check` and `npm run sdd -- validate` before claiming done.');
   return `${lines.join('\n')}\n`;
 }
 
@@ -245,7 +279,16 @@ function renderCopilot(root, config, steering, hash) {
 }
 
 function renderCopilotInstructions(entry, hash) {
-  return `---\napplyTo: ${quote(entry.patterns.join(','))}\n---\n${banner(hash)}${entry.body.replace(/^\n+/, '')}`;
+  const applyTo = entry.inclusion === 'fileMatch' ? entry.patterns.join(',') : '**';
+  return `---\napplyTo: ${quote(applyTo)}\n---\n${banner(hash)}${entry.body.replace(/^\n+/, '')}`;
+}
+
+// Claude Code loads a rule without `paths` at launch and a rule with `paths` when a matching file is read or edited.
+function renderClaudeRule(entry, hash) {
+  const body = entry.body.replace(/^\n+/, '');
+  if (entry.inclusion !== 'fileMatch') return `${banner(hash)}${body}`;
+  const paths = entry.patterns.map((pattern) => `  - ${quote(pattern)}`).join('\n');
+  return `---\npaths:\n${paths}\n---\n${banner(hash)}${body}`;
 }
 
 function renderKiro(entry, hash) {

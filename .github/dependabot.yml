@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Actions are pinned to commit SHAs; Dependabot reads the trailing `# vX.Y.Z` comment to propose updates.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly

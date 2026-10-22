@@ -9,6 +9,7 @@ created: YYYY-MM-DD
 last_updated: YYYY-MM-DD
 last_verified: YYYY-MM-DD
 supersedes: null
+targets: []          # optional: globs of the code this feature owns, e.g. ["lib/features/streak/**"]
 ---
 
 # Requirements: {{FEATURE_NAME}}
@@ -35,13 +36,13 @@ One observable outcome, then the signals that show it was reached.
 
 ## Functional requirements
 
-Number acceptance criteria once per feature (AC-001, AC-002, ...); `tasks.md` and `verification.md` reference these ids.
+Number acceptance criteria once per feature (AC-001, AC-002, ...); `tasks.md` and `verification.md` reference these ids. End a criterion with `[test: path#name]` (or `[tests: a, b]`) once a test proves it; the validator checks that `targets` and test links name existing files, as errors from `implementing` on.
 
 ### FR-001 — Short title
 
 The system shall {{OBSERVABLE_BEHAVIOR}}.
 
-- AC-001: Given {{STATE}}, when {{ACTION}}, then {{RESULT}}.
+- AC-001: Given {{STATE}}, when {{ACTION}}, then {{RESULT}}. [test: {{TEST_FILE}}#{{TEST_NAME}}]
 - AC-002: Given the failure or edge state, when the same action, then {{RESULT}}.
 
 ## Business and validation rules

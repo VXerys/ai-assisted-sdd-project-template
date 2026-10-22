@@ -10,6 +10,8 @@ import { walk, readText, exists, writeLf } from '../context/lib/files.mjs';
 import { APP_PRESETS, DB_PRESETS, loadPreset, COMMAND_KEYS } from './lib/presets.mjs';
 import { fillPlaceholders, remainingPlaceholders } from './lib/fill.mjs';
 import { LITE_PRUNE, TEMPLATE_ONLY, isPruned, relink, stripTemplateOnly } from './lib/prune.mjs';
+import { WORKFLOW_PATH, derivedWorkflow, derivedPackageJson, mergeGitignore, stripExampleLines } from './lib/project.mjs';
+import { DEFAULT_MANAGED, MANIFEST_PATH, writeManifest } from '../sdd/upgrade.mjs';
 
 const USAGE = `Usage: npm run init -- [flags]
 
@@ -26,6 +28,7 @@ Flags (a missing flag is asked for; --yes takes the default instead):
   --tools <list>         comma-separated: ${TOOLS.join(', ')}   default: claude
   --owner <name>         owner written into frontmatter     default: git user.name
   --lang <language>      language of the project content    default: English
+  --date <YYYY-MM-DD>    date written into the documents    default: today (sdd upgrade replays the recorded one)
   --yes                  accept defaults, never prompt
   --dry-run              print the plan, change nothing
   --force                run again on a project whose templateMode is already false
@@ -94,6 +97,7 @@ async function main() {
 
   console.log(`Init plan: ${answers.name} (tier ${answers.tier}, app ${answers.app}, db ${answers.db}, tools ${answers.tools.join(',')})`);
   for (const action of plan.actions) console.log(`  ${action.verb.padEnd(8)} ${action.target}${action.note ? `  (${action.note})` : ''}`);
+  console.log(`  write    ${MANIFEST_PATH}  (hashes of the managed files, for sdd upgrade)`);
   for (const script of ['context:render', 'adapters:sync', 'context:validate']) console.log(`  run      ${script}`);
 
   if (args.dryRun) {
@@ -103,6 +107,7 @@ async function main() {
   }
 
   for (const action of plan.actions) action.apply();
+  writeManifest(root, plan.version, plan.managed);
   console.log('');
   const render = runScript(root, 'scripts/context/render.mjs');
   const sync = runScript(root, 'scripts/adapters/sync.mjs');
@@ -114,7 +119,7 @@ async function main() {
 
 function parseArgs(argv) {
   const args = { tools: null };
-  const valued = ['name', 'description', 'tier', 'app', 'db', 'tools', 'owner', 'lang'];
+  const valued = ['name', 'description', 'tier', 'app', 'db', 'tools', 'owner', 'lang', 'date'];
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--yes') args.yes = true;
@@ -168,7 +173,8 @@ async function collectAnswers(args, root) {
   answers.tools = [...new Set(answers.tools.split(',').map((tool) => tool.trim()).filter(Boolean))];
   for (const tool of answers.tools) if (!TOOLS.includes(tool)) throw new Error(`unknown tool '${tool}'; choose from ${TOOLS.join(', ')}`);
   if (!answers.description) answers.description = describe(answers.name, answers.app);
-  answers.date = new Date().toISOString().slice(0, 10);
+  if (args.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(args.date)) throw new Error('--date must be YYYY-MM-DD');
+  answers.date = args.date ?? new Date().toISOString().slice(0, 10);
   return answers;
 }
 
@@ -206,6 +212,15 @@ function gitUserName(root) {
   }
 }
 
+// The template commit init ran from; null outside a git checkout (sdd upgrade then falls back to v<version>).
+function gitHead(root) {
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return null;
+  }
+}
+
 function code(value) {
   return value === null ? 'none' : value;
 }
@@ -227,8 +242,8 @@ function fillValues(answers) {
     PRESET_STRUCTURE_ROWS: app.structure.map((row) => `\`${row.path}\` | ${row.responsibility} | ${row.rule} |`),
     PRESET_APP_NOTES: app.notes.length ? app.notes : ['none'],
     PRESET_DB_NOTES: db.notes.length ? db.notes : ['none'],
+    GENERATED_CODE_PATHS_OR_NONE: app.generatedPaths.length ? app.generatedPaths.map((pattern) => `\`${pattern}\``).join(', ') : 'none',
     // True for a freshly initialized project; the team replaces `none` when the fact appears.
-    GENERATED_CODE_PATHS_OR_NONE: 'none',
     FROZEN_PATHS_OR_NONE: 'none',
     DEPENDENCY_RULE: 'none',
     DATA_RULE_OR_NONE: 'none'
@@ -261,6 +276,14 @@ function buildPlan(root, config, answers) {
   config.stack = { app: answers.app, database: answers.db };
   config.tools = answers.tools;
   config.templateMode = false;
+  config.generated = [...new Set([...(config.generated ?? []), ...answers.appPreset.generatedPaths])];
+  // sdd upgrade rebuilds the base from this version's init with these answers (ADR-0003).
+  const version = JSON.parse(readText(root, 'package.json')).version;
+  config.template = {
+    version,
+    commit: gitHead(root),
+    answers: { name: answers.name, description: answers.description, tier: answers.tier, app: answers.app, db: answers.db, tools: answers.tools, owner: answers.owner, lang: answers.lang, date: answers.date }
+  };
   if (config.validate?.requiredFiles) {
     config.validate.requiredFiles = config.validate.requiredFiles.filter((file) => !isPruned(file, pruned) && !isPruned(file, removed));
     if (dbSteering && !config.validate.requiredFiles.includes(dbSteering)) config.validate.requiredFiles.push(dbSteering);
@@ -285,6 +308,12 @@ function buildPlan(root, config, answers) {
     if (!blocks) continue;
     texts.set(file, text);
     actions.push({ verb: 'strip', target: file, note: `${blocks} template-only block`, apply: () => writeLf(root, file, texts.get(file)) });
+  }
+  for (const file of walk(root, config.paths?.steering ?? 'docs/steering').filter((entry) => entry.endsWith('.md'))) {
+    const { text, removed: lines } = stripExampleLines(current(file));
+    if (!lines) continue;
+    texts.set(file, text);
+    actions.push({ verb: 'strip', target: file, note: `${lines} example lines`, apply: () => writeLf(root, file, texts.get(file)) });
   }
   if (dbSteering) {
     const content = databaseSteering(answers);
@@ -311,11 +340,25 @@ function buildPlan(root, config, answers) {
   for (const file of walk(root, 'scripts').filter((entry) => entry.endsWith('.test.mjs') && !isPruned(entry, removed) && readText(root, entry).includes('__fixtures__'))) {
     actions.push({ verb: 'remove', target: file, note: 'test needs removed fixtures', apply: () => fs.rmSync(path.join(root, file), { force: true }) });
   }
-  const version = JSON.parse(readText(root, 'package.json')).version;
+  const packageText = readText(root, 'package.json');
   const changelog = `# Changelog\n\nFormat: Keep a Changelog. Versions follow Semantic Versioning.\n\n## [Unreleased]\n\n- Initialized from ai-assisted-sdd-project-template ${version} on ${answers.date} (tier ${answers.tier}, app ${answers.app}, database ${answers.db}).\n`;
   actions.push({ verb: 'reset', target: 'CHANGELOG.md', note: 'fresh [Unreleased]', apply: () => writeLf(root, 'CHANGELOG.md', changelog) });
 
-  return { actions, remaining };
+  // The template CI validates examples/ and re-runs init, so a project never keeps it.
+  const workflow = derivedWorkflow(answers.appPreset);
+  const ciRun = answers.appPreset.ci.run.join(', ') || 'no app commands';
+  actions.push({
+    verb: exists(root, WORKFLOW_PATH) ? 'replace' : 'write',
+    target: WORKFLOW_PATH,
+    note: `${answers.app} preset: ${ciRun}; strict context:validate`,
+    apply: () => writeLf(root, WORKFLOW_PATH, workflow)
+  });
+  const packageJson = derivedPackageJson(packageText, { name: answers.name, description: answers.description });
+  actions.push({ verb: 'write', target: 'package.json', note: `${JSON.parse(packageJson).name} 0.1.0`, apply: () => writeLf(root, 'package.json', packageJson) });
+  const gitignore = mergeGitignore(exists(root, '.gitignore') ? readText(root, '.gitignore') : '', [...answers.appPreset.gitignore, ...answers.dbPreset.gitignore]);
+  if (gitignore.added) actions.push({ verb: 'append', target: '.gitignore', note: `${gitignore.added} preset lines`, apply: () => writeLf(root, '.gitignore', gitignore.text) });
+
+  return { actions, remaining, version, managed: Array.isArray(config.managed) ? config.managed : DEFAULT_MANAGED };
 }
 
 function runScript(root, script) {

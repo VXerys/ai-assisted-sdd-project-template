@@ -10,5 +10,6 @@
     "Deploying rules or indexes to a project is a production action that needs owner approval.",
     "Mass updates or deletes over a collection need owner approval and an export (`gcloud firestore export`) first."
   ],
-  "fileMatch": ["firestore.rules", "firestore.indexes.json", "storage.rules", "functions/**"]
+  "fileMatch": ["firestore.rules", "firestore.indexes.json", "storage.rules", "functions/**"],
+  "gitignore": [".firebase/", "*-debug.log"]
 }

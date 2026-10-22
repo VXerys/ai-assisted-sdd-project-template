@@ -74,7 +74,47 @@ test('Copilot gets a short pointer file plus one applyTo instructions file per f
   const database = read(cwd, '.github/instructions/database.instructions.md');
   assert.match(database, /^applyTo: "src\/db\/\*\*,migrations\/\*\*"$/m);
   assert.match(database, /Append-only; never edit an applied migration/);
-  assert.equal(fs.existsSync(path.join(cwd, '.github/instructions/product.instructions.md')), false);
+  assert.match(read(cwd, '.github/instructions/product.instructions.md'), /^applyTo: "\*\*"$/m);
+  assert.equal(fs.existsSync(path.join(cwd, '.github/instructions/rules.instructions.md')), false, 'rules.md is inlined in AGENTS.md');
+  assert.equal(fs.existsSync(path.join(cwd, '.github/instructions/release.instructions.md')), false, 'manual files stay on request');
+});
+
+test('AGENTS.md inlines only rules and tech; every other steering file reaches each tool once', () => {
+  const cwd = copyFixture('multi-tool');
+  run(cwd);
+  const agents = read(cwd, 'AGENTS.md');
+  assert.match(agents, /^## Rules$/m);
+  assert.match(agents, /^## Tech$/m);
+  assert.doesNotMatch(agents, /^## (Structure|Workflow|Product)$/m);
+  assert.doesNotMatch(agents, /Append-only; never edit an applied migration/, 'fileMatch bodies stay out of AGENTS.md');
+  assert.match(agents, /- `docs\/steering\/database\.md` applies to `src\/db\/\*\*`, `migrations\/\*\*`/);
+  for (const dir of ['.cursor/rules', '.kiro/steering']) {
+    assert.equal(fs.existsSync(path.join(cwd, dir, dir.startsWith('.cursor') ? 'rules.mdc' : 'rules.md')), false, `${dir} duplicates rules.md`);
+  }
+});
+
+test('Claude Code gets .claude/rules: always files without paths, fileMatch files with paths, manual files none', () => {
+  const cwd = copyFixture('multi-tool');
+  run(cwd);
+  assert.match(read(cwd, '.claude/rules/database.md'), /^---\npaths:\n {2}- "src\/db\/\*\*"\n {2}- "migrations\/\*\*"\n---\n<!-- GENERATED FILE/);
+  assert.match(read(cwd, '.claude/rules/product.md'), /^<!-- GENERATED FILE/);
+  assert.equal(fs.existsSync(path.join(cwd, '.claude/rules/release.md')), false);
+  assert.equal(fs.existsSync(path.join(cwd, '.claude/rules/rules.md')), false);
+});
+
+test('a sync removes a generated adapter whose steering source is gone, and --check reports it first', () => {
+  const cwd = copyFixture('multi-tool');
+  run(cwd);
+  fs.rmSync(path.join(cwd, 'docs/steering/release.md'));
+  const stale = run(cwd, ['--check']);
+  assert.equal(stale.status, 1);
+  assert.match(stale.out, /\.cursor\/rules\/release\.mdc: stale/);
+  run(cwd);
+  assert.equal(fs.existsSync(path.join(cwd, '.cursor/rules/release.mdc')), false);
+  assert.equal(fs.existsSync(path.join(cwd, '.kiro/steering/release.md')), false);
+  fs.writeFileSync(path.join(cwd, '.cursor/rules/hand-written.mdc'), 'kept: no generated banner\n');
+  run(cwd);
+  assert.ok(fs.existsSync(path.join(cwd, '.cursor/rules/hand-written.mdc')));
 });
 
 test('GEMINI.md imports AGENTS.md and adds three adapter lines', () => {
@@ -141,16 +181,17 @@ test('--check fails when a steering change is not synced, and sync is idempotent
   run(cwd);
   assert.equal(read(cwd, 'AGENTS.md'), first);
   fs.appendFileSync(path.join(cwd, 'docs/steering/rules.md'), '\n- New rule.\n');
+  fs.appendFileSync(path.join(cwd, 'docs/steering/structure.md'), '\n- New structure rule.\n');
   const stale = run(cwd, ['--check']);
   assert.equal(stale.status, 1);
   assert.match(stale.out, /AGENTS\.md: stale/);
-  assert.match(stale.out, /\.cursor\/rules\/rules\.mdc: stale/);
+  assert.match(stale.out, /\.cursor\/rules\/structure\.mdc: stale/);
 });
 
-test('an AGENTS.md over 400 lines is a warning, not a failure', () => {
+test('an AGENTS.md over 150 lines is a warning, not a failure', () => {
   const cwd = copyFixture('multi-tool');
-  fs.appendFileSync(path.join(cwd, 'docs/steering/rules.md'), '\n' + '- Padding rule.\n'.repeat(400));
+  fs.appendFileSync(path.join(cwd, 'docs/steering/rules.md'), '\n' + '- Padding rule.\n'.repeat(150));
   const { status, out } = run(cwd);
   assert.equal(status, 0, out);
-  assert.match(out, /AGENTS\.md has \d+ lines, over the cap of 400/);
+  assert.match(out, /AGENTS\.md has \d+ lines, over the cap of 150/);
 });

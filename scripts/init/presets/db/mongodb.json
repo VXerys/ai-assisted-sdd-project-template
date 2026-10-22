@@ -10,5 +10,6 @@
     "Authorization uses database roles per environment; tenant filtering lives in the application data layer and is tested.",
     "Destructive updates (`$unset`, `$rename`, mass deletes) need owner approval and a `mongodump` first."
   ],
-  "fileMatch": ["migrations/**", "src/db/**"]
+  "fileMatch": ["migrations/**", "src/db/**"],
+  "gitignore": []
 }

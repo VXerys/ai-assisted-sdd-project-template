@@ -42,7 +42,7 @@ docs/steering/*.md + sdd.config.json         adapters:sync        AGENTS.md     
 2. `npm install`
 3. `npm run init`, answer the prompts (or pass flags), and read the plan it prints.
 
-`init` writes `sdd.config.json`, fills the steering and project documents from your answers and the presets, prunes the documents your tier does not use, removes template-only files, then renders the context views, syncs the tool adapters, and validates. `--dry-run` prints the plan and changes nothing; `--yes` takes every default; `--force` re-runs on an initialized project.
+`init` writes `sdd.config.json`, fills the steering and project documents from your answers and the presets, prunes the documents your tier does not use, removes template-only files, replaces the template CI with a workflow that runs the app preset's commands and strict context validation, then renders the context views, syncs the tool adapters, and validates. `--dry-run` prints the plan and changes nothing; `--yes` takes every default; `--force` re-runs on an initialized project.
 
 | Flag | Values | Default |
 |---|---|---|
@@ -57,15 +57,15 @@ docs/steering/*.md + sdd.config.json         adapters:sync        AGENTS.md     
 
 Example: `npm run init -- --yes --name "Habit Tracker" --tier lite --app flutter --db supabase --tools claude,kiro`.
 
-After init: review `docs/steering/tech.md` and `structure.md` against the real repository (every command listed must run), write `docs/product/prd.md`, record expensive-to-reverse choices as ADRs, create the first feature from `docs/specs/_templates/`, and implement one task at a time. Do not write every document before the first useful slice.
+After init: review `docs/steering/tech.md` and `structure.md` against the real repository (every command listed must run, and `.github/workflows/context-integrity.yml` runs them in CI), write `docs/product/prd.md`, record expensive-to-reverse choices as ADRs, create the first feature from `docs/specs/_templates/`, and implement one task at a time. Do not write every document before the first useful slice.
 
 ## Daily workflow
 
 1. Start from `docs/context/BRIEF.md`: active feature and task, open assumptions, blockers, next step. The Claude Code SessionStart hook injects it; other tools read it through `AGENTS.md`. When the brief is absent, `docs/context/NEW_CHAT_PROTOCOL.md` gives the fallback read order.
 2. Take the task the brief names. In Claude Code, `/sdd:task T-XXX` builds the task prompt from the brief and the spec, sets the task `in_progress`, and implements it. Elsewhere, fill `docs/_templates/task-prompt.md` by hand.
 3. Run the commands in `docs/steering/tech.md` and record each result as an EV block in the feature's `verification.md`; add the id to the task's `evidence`.
-4. Update `tasks.md`, then `npm run context:render` and `npm run context:validate`. The Claude Code PostToolUse hook re-renders after spec edits; the PreToolUse hook denies edits to generated and frozen paths.
-5. Close the session with `docs/handoff/current.md`: changed files, commands, uncommitted work, one exact next step. In Claude Code, `/sdd:handoff` writes it; `/sdd:review` fills the code-review template, `/sdd:bug` opens a bug investigation, `/sdd:render` runs the three context commands.
+4. Update `tasks.md`, then `npm run context:render` and `npm run context:validate`. The Claude Code PostToolUse hook re-renders after spec edits; the PreToolUse hook denies edits to generated and frozen paths, also through Bash or PowerShell, and refuses any access to secret files.
+5. Close the session with `docs/handoff/current.md`: changed files, commands, uncommitted work, one exact next step. In Claude Code, `/sdd:handoff` writes it; `/sdd:review` fills the code-review template, `/sdd:bug` opens a bug investigation, `/sdd:converge` turns the gaps between code and acceptance criteria into tasks, `/sdd:adopt` onboards an existing codebase, `/sdd:render` runs the three context commands.
 
 ## Commands
 
@@ -77,7 +77,12 @@ After init: review `docs/steering/tech.md` and `structure.md` against the real r
 | `npm run context:archive-handoff` | archives an active handoff under `docs/handoff/archive/` and resets `current.md` |
 | `npm run adapters:sync` | writes `AGENTS.md` and the adapters for the tools in `sdd.config.json`; `--check`, `--all` |
 | `npm run example:validate` | validates `examples/todo-api` on its own |
-| `npm test` | `node --test scripts/**/*.test.mjs` |
+| `npm test` | `node --test scripts/**/*.test.mjs`; in the template, `test:unit` and `test:e2e` run the two halves |
+| `npm run sdd -- brief` | prints the session brief; sessions without hooks run it first |
+| `npm run sdd -- guard --check` | fails when the diff against the base branch touches a secret or frozen path; warns on SDD configuration (`--strict` fails) |
+| `npm run sdd -- status` | lists managed files edited since the last `init` or upgrade (`.sdd/manifest.json`) |
+| `npm run sdd -- check --from <template>` | exits 1 when the template checkout has a newer version |
+| `npm run sdd -- upgrade --from <template>` | 3-way merges a newer template into the project; `--dry-run`, `--to <ref>`, `--conflict inline\|rej` |
 
 Details, hooks, and slash commands: `docs/automation/README.md`. The validator checks and the context model: `docs/context/CONTEXT_SYSTEM.md`.
 
@@ -92,12 +97,26 @@ Details, hooks, and slash commands: `docs/automation/README.md`. The validator c
 
 | Tool | What it gets | Rendered from |
 |---|---|---|
-| Claude Code | `CLAUDE.md` (imports `AGENTS.md`), four hooks in `.claude/settings.json` (SessionStart injects the brief, PreToolUse guards generated, frozen, and secret paths, PostToolUse re-renders, Stop warns when the handoff is stale), `/sdd:task`, `/sdd:bug`, `/sdd:review`, `/sdd:handoff`, `/sdd:render` | steering, `.claude/` |
+| Claude Code | `CLAUDE.md` (imports `AGENTS.md`), `.claude/rules/<name>.md` (other `always` files without `paths`, `fileMatch` files with `paths`), four hooks in `.claude/settings.json` (SessionStart injects the brief and installs the tooling in a cloud session, PreToolUse guards generated, frozen, protected, and secret paths including Bash and PowerShell commands, PostToolUse re-renders, Stop warns when the handoff is stale), `/sdd:task`, `/sdd:bug`, `/sdd:review`, `/sdd:converge`, `/sdd:adopt`, `/sdd:handoff`, `/sdd:render` | steering, `.claude/` |
 | Codex, Antigravity | `AGENTS.md` | steering, `sdd.config.json` |
-| Cursor | `.cursor/rules/<name>.mdc`, one per steering file, with `globs` for `fileMatch` files | steering |
-| GitHub Copilot | `.github/copilot-instructions.md` and `.github/instructions/<name>.instructions.md` with `applyTo` | steering |
+| Cursor | `AGENTS.md` plus `.cursor/rules/<name>.mdc` for every steering file not inlined in it, with `globs` for `fileMatch` files | steering |
+| GitHub Copilot | `AGENTS.md`, a short `.github/copilot-instructions.md`, and `.github/instructions/<name>.instructions.md` with `applyTo` | steering |
 | Gemini CLI | `GEMINI.md` (imports `AGENTS.md`) | steering |
-| Kiro | `.kiro/steering/<name>.md`, the steering files verbatim | steering |
+| Kiro | `AGENTS.md` plus `.kiro/steering/<name>.md` for every steering file not inlined in it, verbatim | steering |
+
+`AGENTS.md` inlines only `rules.md` and `tech.md` (target 150 lines): every tool above reads it natively, so a tool's own files carry only the rest, and nothing loads twice (ADR-0003).
+
+## Upgrading a project
+
+`init` records the template version, commit, and your answers in `sdd.config.json` (`template`) and the hash of every managed file in `.sdd/manifest.json`. To take a newer template release:
+
+1. Clone or fetch this template repository somewhere with its tags.
+2. In the project, with a clean working tree: `npm run sdd -- check --from ../ai-assisted-sdd-project-template`, then `npm run sdd -- upgrade --from ../ai-assisted-sdd-project-template --dry-run`, then without `--dry-run`.
+3. Upgrade rebuilds the old and the new template output from your recorded answers, takes the new file where you never edited it, 3-way merges where you did, and leaves conflict markers (or `<file>.rej` with `--conflict rej`). It never touches steering, specs, product documents, ADRs, the handoff, or assumptions. It then renders, syncs, and validates.
+
+A project initialized before 2.1.0 has no `template` record: pass `--base-ref v2.0.0 --answers answers.json` (name, description, tier, app, db, tools, owner, lang, date). The managed list can be replaced with `managed` in `sdd.config.json`.
+
+Distribution: the tooling ships inside this template until it is extracted to the `@vxerys/sdd` package (ADR-0003). A project that depends on it from a GitHub tag needs `allow-git=root` in its `.npmrc`, because npm 12 blocks git dependencies by default.
 
 Steering files carry `inclusion: always | fileMatch | manual` frontmatter; a database preset adds a `database.md` steering file with `fileMatch`, which Claude Code surfaces once per session when a matching file is edited.
 
@@ -133,3 +152,7 @@ v2 is a fresh design. A project on v1 of this template stays on v1 until migrate
 ## AI collaboration
 
 A conversational AI drafts requirements, architecture alternatives, design, tasks, and ADR proposals; its output is a proposal until committed. A repository-integrated coding agent inspects real code, implements approved tasks, runs verification, and updates evidence and handoff. Neither invents paths, APIs, schema fields, or commands. See `docs/documentation/AI_COLLABORATION_MODEL.md`.
+
+## License
+
+MIT, see `LICENSE`. `init` removes the template's license, security policy, code owners, and release pipeline, so a project chooses its own.

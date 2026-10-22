@@ -17,10 +17,25 @@ export const TEMPLATE_ONLY = [
   'scripts/context/__fixtures__/',
   'scripts/adapters/__fixtures__/',
   'scripts/init/__fixtures__/',
+  // Init's own tests assume the template state (inactive handoff, templateMode true) and would
+  // re-run init, or the project's npm test recursively, inside a derived project.
+  'scripts/init/init.test.mjs',
+  'scripts/init/e2e/',
   'scripts/migrate/',
+  'scripts/ci/',
   'examples/',
   'docs/adr/ADR-0001-v2-revamp.md',
-  'docs/MIGRATION-v1-to-v2.md'
+  'docs/adr/ADR-0002-v2.1-hardening.md',
+  'docs/adr/ADR-0003-v2.1-amendments.md',
+  'docs/MIGRATION-v1-to-v2.md',
+  'docs/research/',
+  // The template's own license, policy, owners, and release pipeline; a project chooses its own.
+  'LICENSE',
+  'SECURITY.md',
+  '.github/CODEOWNERS',
+  '.github/workflows/release.yml',
+  'release-please-config.json',
+  '.release-please-manifest.json'
 ];
 
 const TEMPLATE_ONLY_BLOCK = /^[ \t]*<!-- template-only:start -->\n[\s\S]*?^[ \t]*<!-- template-only:end -->\n?/gm;

@@ -82,7 +82,7 @@ Archives an active handoff to `docs/handoff/archive/<session_date>-<feature_id>-
 npm test
 ```
 
-Runs `node --test scripts/**/*.test.mjs`: parser unit tests, the glob matcher, adapter snapshots on `scripts/adapters/__fixtures__/multi-tool/`, every hook driven through stdin JSON, fixture repositories under `scripts/context/__fixtures__/` (`valid-lite`, `missing-evidence`, `implemented-with-open-task`, `stale-render`), the schema of every preset file, `init` end to end on temp copies of this repository (lite and full, dry-run plan snapshot in `scripts/init/__fixtures__/`), `examples/todo-api` validated with 0 errors, and a smoke test against this repository.
+Runs `node --test scripts/**/*.test.mjs`. In the template repository, `npm run test:unit` leaves out the init end-to-end files in `scripts/init/e2e/` and `npm run test:e2e` runs only them; init removes both from a derived project. Coverage: parser unit tests, the shell-command target parser behind the guard, the glob matcher, adapter snapshots on `scripts/adapters/__fixtures__/multi-tool/`, every hook driven through stdin JSON, fixture repositories under `scripts/context/__fixtures__/` (`valid-lite`, `missing-evidence`, `implemented-with-open-task`, `stale-render`), the schema of every preset file, `init` end to end on temp copies of this repository (lite and full, dry-run plan snapshot in `scripts/init/__fixtures__/`), `examples/todo-api` validated with 0 errors, and a smoke test against this repository.
 
 ## Claude Code hooks
 
@@ -91,22 +91,34 @@ Runs `node --test scripts/**/*.test.mjs`: parser unit tests, the glob matcher, a
 | Event (matcher) | Script | Behavior |
 |---|---|---|
 | SessionStart (`startup\|resume\|compact`) | `session-start.mjs` | Emits `docs/context/BRIEF.md` as `additionalContext`, prefixed by `SDD brief (rendered <generated_at>)`. When the brief's `source_hash` no longer matches the sources, a `stale` warning line comes first. Without a brief, the fallback read order. Capped at 10,000 characters. |
-| PreToolUse (`Edit\|Write\|MultiEdit`) | `pre-tool-guard.mjs` | Returns `permissionDecision: deny` for `tool_input.file_path` matching `generated` or `frozen` in `sdd.config.json`, or `.env*` (except `.env.example`), `*.pem`, `*.keystore`, `*.jks`, `google-services.json`; the reason names the rule and the command to run instead (`npm run context:render`, `npm run adapters:sync`). Otherwise, when the path matches a `fileMatch` steering pattern not yet surfaced for this `session_id`, emits that steering file as `additionalContext` once; state lives in `.claude/.sdd-session/<session_id>.json` (gitignored). |
-| PostToolUse (`Edit\|Write\|MultiEdit`) | `post-tool-render.mjs` | After an edit under `docs/specs/` or `docs/steering/`, or to `ASSUMPTIONS.md`, the handoff, or `sdd.config.json`: runs `context:render --quiet`, and after steering or config also `adapters:sync --quiet`. Prints one line naming what re-rendered, or which command failed. |
+| PreToolUse (`Edit\|Write\|MultiEdit\|NotebookEdit\|Read\|Bash\|PowerShell`) | `pre-tool-guard.mjs` | Edit, Write, MultiEdit, NotebookEdit: `permissionDecision: deny` for a path matching `generated` or `frozen` in `sdd.config.json` or a secret pattern (`SECRET_PATTERNS` in `scripts/lib/guard.mjs`: `.env*` except `.env.example`/`.sample`/`.template`, keys, keystores, certificates, Firebase and Apple config); `ask` for SDD configuration and check code (`PROTECTED_PATTERNS`: `sdd.config.json`, `.claude/settings.json`, `.claude/commands/`, `.claude/skills/sdd-*`, `.github/workflows/`, the `scripts/` tooling) once `templateMode` is false. Read: deny for secrets only. Bash and PowerShell: `scripts/lib/shell-targets.mjs` extracts the paths a command writes (redirects, `tee`, `rm`, `mv`, `cp` destination, `sed -i`, `Set-Content`, `Out-File`, `Remove-Item`, `Copy-Item -Destination`, quoted paths in `node -e` write calls) and reads; a write that hits any rule or a read of a secret is refused. It is a tripwire, not a parser: an obfuscated command gets through, and CI is the hard gate. The project root is the git top level of the event's `cwd` (or of the target file, inside a nested worktree such as `.claude/worktrees/<name>/`), because `CLAUDE_PROJECT_DIR` stays on the main checkout. `fileMatch` steering is not injected here: `adapters:sync` renders it to `.claude/rules/<name>.md` with `paths:`, which Claude Code loads when a matching file is read or edited (ADR-0003). |
+| PostToolUse (`Edit\|Write\|MultiEdit\|NotebookEdit`) | `post-tool-render.mjs` | After an edit under `docs/specs/` or `docs/steering/`, or to `ASSUMPTIONS.md`, the handoff, or `sdd.config.json`: runs `context:render --quiet`, and after steering or config also `adapters:sync --quiet`. Prints one line naming what re-rendered, or which command failed. |
 | Stop | `stop-handoff-check.mjs` | Reads `git status --porcelain`; when a `docs/specs/F-*/tasks.md` changed but `docs/handoff/current.md` did not, prints a warning naming the handoff. Never blocks; silent when `stop_hook_active` is true or outside a git repository. |
 
-Known uncertainty: `hookSpecificOutput.additionalContext` is documented for SessionStart; for PreToolUse it was not verified against a running Claude Code session. If a version ignores it, the fileMatch steering text is not injected, and `AGENTS.md` ("Conditional rules") remains the fallback the agent already has. Nothing else in the hook depends on it.
+In a cloud session (`CLAUDE_CODE_REMOTE=true`) without `node_modules`, SessionStart runs `npm ci` first, so the brief and the guard work in a fresh clone. Sessions that load no repository hooks (several repositories in one cloud session, project threads, tools without hooks) run `npm run sdd -- brief`, `npm run sdd -- guard --check`, and `npm run sdd -- validate` instead; `AGENTS.md` says so in its Commands section.
 
 Windows: the command string was verified under Git Bash, which expands `${CLAUDE_PROJECT_DIR}` (also with a space in the path); cmd.exe passes `${...}` through literally and node fails to find the script. If a Claude Code build runs hooks through cmd.exe, override the commands with `%CLAUDE_PROJECT_DIR%` in `.claude/settings.local.json`.
 
+## Cloud sessions and scheduled tasks
+
+Checked against the Claude Code docs on 2026-10-22 (`code.claude.com/docs/en/cloud-environments`, `.../routines`); recheck when a behavior below matters.
+
+- A cloud session with one repository runs this repository's `.claude/settings.json` hooks and loads `.claude/commands/` and `.claude/rules/`. A session with several repositories, and a project thread, load no repository hooks: the session runs `npm run sdd -- brief` first and `npm run sdd -- guard --check` and `npm run sdd -- validate` before it reports done.
+- Plugins a repository enables are not installed in cloud sessions, and `~/.claude` does not load there; everything the gate needs lives in the repository.
+- A scheduled task (routine) prompt is not owner approval. A routine that would need a prohibited action from `rules.md` stops and reports instead.
+- Routines run at most hourly and push to `claude/`-prefixed branches; protect the default branch and let a pull request carry the change.
+- Before a routine picks work, `npm run sdd -- next --json` names the ready tasks and the ones whose `scope` is disjoint from every `in_progress` or `review` task; a routine takes only a parallel-safe task.
+
 ## Slash commands
 
-`.claude/commands/sdd/<name>.md` becomes `/sdd:<name>`. Each file is an instruction list the agent follows with its own tools; `allowed-tools` limits what the command may run.
+`.claude/commands/sdd/<name>.md` becomes `/sdd:<name>`. Each file is an instruction list the agent follows with its own tools; `allowed-tools` limits what the command may run. Commands that write (`task`, `handoff`, `bug`, `render`, `converge`, `adopt`) set `disable-model-invocation: true`, so only a person starts them.
 
 | Command | Does |
 |---|---|
 | `/sdd:task <T-id>` | finds the task block, reads only the FR, AC, design, and architecture sections it references, prints the filled `docs/_templates/task-prompt.md`, sets the task `in_progress`, implements, records evidence, renders and validates; stops on the stop conditions |
-| `/sdd:bug <title>` | creates `docs/quality/bugs/BUG-XXX-<slug>.md` from `bug-investigation.md` with the next free id; symptom only, no fix |
+| `/sdd:bug <title>` | creates `docs/quality/bugs/BUG-XXX-<slug>.md` from `bug-investigation.md` with the next free id; symptom and the unchanged behavior (`UB-XXX ... SHALL CONTINUE TO ...`) the fix must keep, no fix |
+| `/sdd:converge [F-id]` | gives every AC a verdict (`met`, `partial`, `missing`, `contradicts`) with file and line evidence and appends a `## Convergence` task per gap to `tasks.md`; a converged feature leaves `tasks.md` byte-identical; unrequested behavior is reported, never tasked |
+| `/sdd:adopt` | brownfield onboarding: fills steering from the real repository (commands proven by running them), logs pitfalls and unknowns, and proposes one bounded first feature |
 | `/sdd:review [git-ref]` | fills `code-review.md` against `git diff <ref>`; read-only, prints the review |
 | `/sdd:handoff` | rewrites `docs/handoff/current.md` from the session, then runs render and validate |
 | `/sdd:render` | runs `context:render`, `adapters:sync`, `context:validate` and reports every error line |
