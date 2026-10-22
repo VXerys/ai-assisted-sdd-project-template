@@ -6,9 +6,12 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
+import YAML from 'yaml';
+
 import { fillPlaceholders, remainingPlaceholders } from './lib/fill.mjs';
 import { relink, stripTemplateOnly, LITE_PRUNE, TEMPLATE_ONLY } from './lib/prune.mjs';
-import { slug, mergeGitignore, stripExampleLines, derivedPackageJson, DERIVED_WORKFLOW } from './lib/project.mjs';
+import { slug, mergeGitignore, stripExampleLines, derivedPackageJson, derivedWorkflow, WORKFLOW_PATH } from './lib/project.mjs';
+import { APP_PRESETS, loadPreset } from './lib/presets.mjs';
 import { walk } from '../context/lib/files.mjs';
 import { INACTIVE_HANDOFF } from '../context/lib/handoff.mjs';
 
@@ -108,7 +111,63 @@ test('derivedPackageJson renames the package, resets the version, and drops the 
   assert.equal(pkg.version, '0.1.0');
   assert.equal(pkg.description, 'Habit Tracker is a Flutter project.');
   assert.deepEqual(Object.keys(pkg.scripts), ['test', 'init']);
-  assert.doesNotMatch(DERIVED_WORKFLOW, /examples|init\.mjs|--strict/);
+});
+
+// What the template CI carries and a derived repository must not: the example project and the init job.
+const TEMPLATE_CI = /examples\/|template-init|working-directory|init\.mjs/;
+const workflowSteps = (text) => YAML.parse(text).jobs.verify.steps.map((step) => step.run ?? step.uses);
+
+test('derivedWorkflow gives every app preset one verify job without template-only steps', () => {
+  for (const name of APP_PRESETS) {
+    const preset = loadPreset('app', name);
+    const text = derivedWorkflow(preset);
+    assert.doesNotMatch(text, TEMPLATE_CI, name);
+    const workflow = YAML.parse(text);
+    assert.deepEqual(Object.keys(workflow.jobs), ['verify'], name);
+    const steps = workflow.jobs.verify.steps;
+    const runs = steps.filter((step) => step.run).map((step) => step.run);
+    for (const key of preset.ci.run) assert.ok(runs.includes(preset.commands[key]), `${name}: ${key}`);
+    for (const setup of preset.ci.setup) assert.ok(steps.some((step) => step.uses === setup.uses), `${name}: ${setup.uses}`);
+    assert.equal(runs.filter((run) => run === 'npm ci').length, 1, `${name}: npm ci`);
+    assert.equal(runs.filter((run) => run === 'npm test').length, 1, `${name}: npm test`);
+    assert.equal(runs.at(-1), 'npm run context:validate -- --strict', name);
+  }
+});
+
+test('derivedWorkflow sets up the preset toolchain and runs the SDD tooling steps once', () => {
+  assert.deepEqual(workflowSteps(derivedWorkflow(loadPreset('app', 'flutter'))), [
+    'actions/checkout@v4',
+    'actions/setup-node@v4',
+    'subosito/flutter-action@v2',
+    'npm ci',
+    'flutter pub get',
+    'flutter analyze',
+    'flutter test',
+    'flutter build appbundle --release',
+    'npm test',
+    'npm run context:validate -- --strict'
+  ]);
+  // A Node preset's install and test are the SDD tooling's own, so they are not repeated.
+  assert.deepEqual(workflowSteps(derivedWorkflow(loadPreset('app', 'nextjs'))), [
+    'actions/checkout@v4',
+    'actions/setup-node@v4',
+    'npm ci',
+    'npm run lint',
+    'npx tsc --noEmit',
+    'npm test',
+    'npm run build',
+    'npm run context:validate -- --strict'
+  ]);
+  assert.deepEqual(workflowSteps(derivedWorkflow(loadPreset('app', 'generic'))), [
+    'actions/checkout@v4',
+    'actions/setup-node@v4',
+    'npm ci',
+    'npm test',
+    'npm run context:validate -- --strict'
+  ]);
+  const python = YAML.parse(derivedWorkflow(loadPreset('app', 'python-api'))).jobs.verify.steps;
+  assert.equal(python.find((step) => step.uses === 'actions/setup-python@v5').with['python-version'], '3.12');
+  assert.ok(python.some((step) => step.run === 'python -m pip install -e ".[dev]"'));
 });
 
 test('fillPlaceholders replaces inline values, expands block placeholders line-wise, and leaves unknown ones', () => {
@@ -194,6 +253,7 @@ test('--dry-run prints the plan, changes nothing, and matches its snapshot', () 
   const snapshot = path.join(snapshotDir, 'dry-run-plan.txt');
   if (process.env.UPDATE_SNAPSHOTS) fs.writeFileSync(snapshot, plan);
   assert.equal(plan, fs.readFileSync(snapshot, 'utf8'));
+  assert.match(plan, /^ {2}replace {2}\.github\/workflows\/context-integrity\.yml {2}\(flutter preset: install, lint, test, build; strict context:validate\)$/m);
   assert.match(result.stdout, /Dry run: nothing changed\./);
 });
 
@@ -207,11 +267,12 @@ test('init refuses to run twice unless --force is given', () => {
   assert.equal(validate(cwd).status, 0);
 });
 
-test('init rewrites CI and package.json for the derived repository, whose npm test and validate pass', () => {
+test('init replaces the template CI and package.json for the derived repository, whose npm test and strict validate pass', () => {
   const { cwd } = liteProject();
-  const workflow = read(cwd, '.github/workflows/context-integrity.yml');
-  assert.doesNotMatch(workflow, /examples|init\.mjs|--strict|template-init/);
-  for (const step of ['npm ci', 'npm test', 'npm run context:validate']) assert.ok(workflow.includes(`run: ${step}`), step);
+  assert.match(read(repo, WORKFLOW_PATH), TEMPLATE_CI, 'the template CI no longer carries the steps this test proves are gone');
+  const workflow = read(cwd, WORKFLOW_PATH);
+  assert.doesNotMatch(workflow, TEMPLATE_CI);
+  assert.equal(workflow, derivedWorkflow(loadPreset('app', 'flutter')));
   const pkg = JSON.parse(read(cwd, 'package.json'));
   assert.equal(pkg.name, 'habit-tracker');
   assert.equal(pkg.version, '0.1.0');
@@ -225,9 +286,9 @@ test('init rewrites CI and package.json for the derived repository, whose npm te
   const summary = `${tests.stdout}${tests.stderr}`;
   assert.match(summary, /pass [1-9]\d*/);
   assert.match(summary, /fail 0/);
-  const validated = npm('run context:validate');
+  const validated = npm('run context:validate -- --strict');
   assert.equal(validated.status, 0, `${validated.stdout}\n${validated.stderr}`);
-  assert.match(validated.stdout, /Context validation passed/);
+  assert.match(validated.stdout, /Context validation passed: 0 error\(s\), 0 warning\(s\).*strict/);
 });
 
 test('init merges the preset generated globs into sdd.config.json and structure.md', () => {
@@ -384,6 +445,7 @@ test('full init keeps the runbook with the database preset notes and the full-ti
   assert.match(tech, /\| Typecheck \| `npx tsc --noEmit` \|/);
   assert.match(tech, /Server Components by default/);
   assert.equal(JSON.parse(read(cwd, 'sdd.config.json')).project.tier, 'full');
+  assert.equal(read(cwd, WORKFLOW_PATH), derivedWorkflow(loadPreset('app', 'nextjs')));
   assert.match(out, /Context validation passed: 0 error\(s\)/);
   assert.equal(validate(cwd).status, 0);
 });

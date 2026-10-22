@@ -4,6 +4,14 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+### Fixed
+
+- `npm run init` no longer leaves the template CI in a new project. That workflow validated `examples/` (removed by init) and ran the `template-init` job, so the first CI run of every derived project failed. Init now replaces `.github/workflows/context-integrity.yml` with a `verify` job built from the app preset: Node 22 for the SDD tooling, the preset's toolchain setup, its `ci.run` commands (install, lint, typecheck, test, build where the preset has them), `npm test`, and `npm run context:validate -- --strict`. The dry-run plan shows the replacement.
+
+### Added
+
+- App presets carry a `ci` key (`setup` steps and the `run` command keys), checked by the preset schema. `flutter`, `kotlin-android`, and `python-api` set up Flutter stable, Temurin 17, and Python 3.12; `react-native` leaves out `build`, which needs a device or emulator.
+
 ## [2.0.0] — 2026-10-15
 
 The v2 revamp (ADR-0001): one template family, canonical steering files, rendered context and tool adapters, an enforced traceability validator, Claude Code hooks and slash commands, `init` with stack presets, a filled example project, and a migration guide for v1 projects. Node 22 and the `yaml` dependency are required. v1 projects stay on v1 until migrated with `docs/MIGRATION-v1-to-v2.md`.

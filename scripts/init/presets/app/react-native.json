@@ -25,5 +25,6 @@
     "`npx tsc --noEmit` at 0 errors and `npx eslint .` clean before a task is done."
   ],
   "generatedPaths": [],
-  "gitignore": ["ios/Pods/", "android/.gradle/"]
+  "gitignore": ["ios/Pods/", "android/.gradle/"],
+  "ci": { "setup": [], "run": ["install", "lint", "typecheck", "test"] }
 }

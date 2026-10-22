@@ -24,5 +24,6 @@
     "`npx eslint .` clean and `npm test` green before a task is done; `npx tsc --noEmit` applies when the project is TypeScript."
   ],
   "generatedPaths": [],
-  "gitignore": ["node_modules/", "dist/"]
+  "gitignore": ["node_modules/", "dist/"],
+  "ci": { "setup": [], "run": ["install", "lint", "typecheck", "test", "build"] }
 }

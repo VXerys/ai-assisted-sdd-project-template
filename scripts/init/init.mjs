@@ -10,7 +10,7 @@ import { walk, readText, exists, writeLf } from '../context/lib/files.mjs';
 import { APP_PRESETS, DB_PRESETS, loadPreset, COMMAND_KEYS } from './lib/presets.mjs';
 import { fillPlaceholders, remainingPlaceholders } from './lib/fill.mjs';
 import { LITE_PRUNE, TEMPLATE_ONLY, isPruned, relink, stripTemplateOnly } from './lib/prune.mjs';
-import { DERIVED_WORKFLOW, derivedPackageJson, mergeGitignore, stripExampleLines } from './lib/project.mjs';
+import { WORKFLOW_PATH, derivedWorkflow, derivedPackageJson, mergeGitignore, stripExampleLines } from './lib/project.mjs';
 
 const USAGE = `Usage: npm run init -- [flags]
 
@@ -324,9 +324,15 @@ function buildPlan(root, config, answers) {
   const changelog = `# Changelog\n\nFormat: Keep a Changelog. Versions follow Semantic Versioning.\n\n## [Unreleased]\n\n- Initialized from ai-assisted-sdd-project-template ${version} on ${answers.date} (tier ${answers.tier}, app ${answers.app}, database ${answers.db}).\n`;
   actions.push({ verb: 'reset', target: 'CHANGELOG.md', note: 'fresh [Unreleased]', apply: () => writeLf(root, 'CHANGELOG.md', changelog) });
 
-  // The template CI validates examples/ and re-runs init; a project only tests and validates itself.
-  const workflow = '.github/workflows/context-integrity.yml';
-  actions.push({ verb: 'write', target: workflow, note: 'derived-repo CI', apply: () => writeLf(root, workflow, DERIVED_WORKFLOW) });
+  // The template CI validates examples/ and re-runs init, so a project never keeps it.
+  const workflow = derivedWorkflow(answers.appPreset);
+  const ciRun = answers.appPreset.ci.run.join(', ') || 'no app commands';
+  actions.push({
+    verb: exists(root, WORKFLOW_PATH) ? 'replace' : 'write',
+    target: WORKFLOW_PATH,
+    note: `${answers.app} preset: ${ciRun}; strict context:validate`,
+    apply: () => writeLf(root, WORKFLOW_PATH, workflow)
+  });
   const packageJson = derivedPackageJson(packageText, { name: answers.name, description: answers.description });
   actions.push({ verb: 'write', target: 'package.json', note: `${JSON.parse(packageJson).name} 0.1.0`, apply: () => writeLf(root, 'package.json', packageJson) });
   const gitignore = mergeGitignore(exists(root, '.gitignore') ? readText(root, '.gitignore') : '', [...answers.appPreset.gitignore, ...answers.dbPreset.gitignore]);

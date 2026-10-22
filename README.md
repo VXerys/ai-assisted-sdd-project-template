@@ -42,7 +42,7 @@ docs/steering/*.md + sdd.config.json         adapters:sync        AGENTS.md     
 2. `npm install`
 3. `npm run init`, answer the prompts (or pass flags), and read the plan it prints.
 
-`init` writes `sdd.config.json`, fills the steering and project documents from your answers and the presets, prunes the documents your tier does not use, removes template-only files, then renders the context views, syncs the tool adapters, and validates. `--dry-run` prints the plan and changes nothing; `--yes` takes every default; `--force` re-runs on an initialized project.
+`init` writes `sdd.config.json`, fills the steering and project documents from your answers and the presets, prunes the documents your tier does not use, removes template-only files, replaces the template CI with a workflow that runs the app preset's commands and strict context validation, then renders the context views, syncs the tool adapters, and validates. `--dry-run` prints the plan and changes nothing; `--yes` takes every default; `--force` re-runs on an initialized project.
 
 | Flag | Values | Default |
 |---|---|---|
@@ -57,7 +57,7 @@ docs/steering/*.md + sdd.config.json         adapters:sync        AGENTS.md     
 
 Example: `npm run init -- --yes --name "Habit Tracker" --tier lite --app flutter --db supabase --tools claude,kiro`.
 
-After init: review `docs/steering/tech.md` and `structure.md` against the real repository (every command listed must run), write `docs/product/prd.md`, record expensive-to-reverse choices as ADRs, create the first feature from `docs/specs/_templates/`, and implement one task at a time. Do not write every document before the first useful slice.
+After init: review `docs/steering/tech.md` and `structure.md` against the real repository (every command listed must run, and `.github/workflows/context-integrity.yml` runs them in CI), write `docs/product/prd.md`, record expensive-to-reverse choices as ADRs, create the first feature from `docs/specs/_templates/`, and implement one task at a time. Do not write every document before the first useful slice.
 
 ## Daily workflow
 

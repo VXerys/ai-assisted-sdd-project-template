@@ -63,6 +63,31 @@ test('validatePreset reports every schema violation with its key', () => {
   assert.ok(validatePreset('db', { label: 'x', migrationTool: 1, migrationCommand: null, migrationPath: null, notes: [], fileMatch: [] }).some((entry) => entry.includes('migrationTool')));
 });
 
+test('app presets declare CI setup steps and run only commands they have, never dev', () => {
+  assert.deepEqual(loadPreset('app', 'flutter').ci.run, ['install', 'lint', 'test', 'build']);
+  assert.deepEqual(loadPreset('app', 'flutter').ci.setup.map((step) => step.uses), ['subosito/flutter-action@v2']);
+  assert.deepEqual(loadPreset('app', 'kotlin-android').ci.setup.map((step) => step.uses), ['actions/setup-java@v4']);
+  assert.deepEqual(loadPreset('app', 'python-api').ci.setup.map((step) => step.uses), ['actions/setup-python@v5']);
+  // `npx expo run:android` installs on a device or emulator, which a CI runner does not have.
+  assert.ok(!loadPreset('app', 'react-native').ci.run.includes('build'));
+  assert.deepEqual(loadPreset('app', 'generic').ci, { setup: [], run: [] });
+  for (const name of EXPECTED_APP) {
+    const preset = loadPreset('app', name);
+    for (const key of preset.ci.run) assert.equal(typeof preset.commands[key], 'string', `${name}: ${key}`);
+  }
+
+  const base = JSON.parse(fs.readFileSync(path.join(presetsDir, 'app', 'flutter.json'), 'utf8'));
+  const errorsFor = (ci) => validatePreset('app', { ...base, ci });
+  assert.ok(validatePreset('app', { ...base, ci: undefined }).some((entry) => entry.includes('ci must be an object')));
+  assert.ok(errorsFor({ setup: [], run: ['typecheck'] }).some((entry) => entry.includes("'typecheck' has no command")));
+  assert.ok(errorsFor({ setup: [], run: ['dev'] }).some((entry) => entry.includes("'dev' must be one of")));
+  assert.ok(errorsFor({ setup: [], run: ['test', 'test'] }).some((entry) => entry.includes('twice')));
+  assert.ok(errorsFor({ setup: [{ name: 'Setup' }], run: [] }).some((entry) => entry.includes('ci.setup[0].uses')));
+  assert.ok(errorsFor({ setup: [{ name: 'Setup', uses: 'a/b@v1', with: { list: [1] } }], run: [] }).some((entry) => entry.includes('ci.setup[0].with')));
+  assert.ok(errorsFor({ setup: [{ name: 'Setup', uses: 'a/b@v1', run: 'x' }], run: [] }).some((entry) => entry.includes('ci.setup[0].run is not a known key')));
+  assert.ok(errorsFor({ setup: [], run: [], cache: true }).some((entry) => entry.includes('ci.cache is not a known key')));
+});
+
 test('loadPreset rejects a name that is not a preset file', () => {
   assert.throws(() => loadPreset('app', 'rails'), /unknown app preset 'rails'/);
   assert.throws(() => loadPreset('db', '../etc'), /unknown db preset/);

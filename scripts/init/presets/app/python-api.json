@@ -25,5 +25,11 @@
     "Dependencies are pinned through the lock file the project chose (pip-tools, uv, or poetry); state which in tech.md."
   ],
   "generatedPaths": [],
-  "gitignore": [".venv/", "__pycache__/"]
+  "gitignore": [".venv/", "__pycache__/"],
+  "ci": {
+    "setup": [
+      { "name": "Setup Python", "uses": "actions/setup-python@v5", "with": { "python-version": "3.12" } }
+    ],
+    "run": ["install", "lint", "typecheck", "test", "build"]
+  }
 }

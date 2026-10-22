@@ -51,7 +51,7 @@ Init plan: Habit Tracker (tier lite, app flutter, db supabase, tools claude,kiro
   remove   scripts/hooks/hooks.test.mjs  (test needs removed fixtures)
   remove   scripts/init/init.test.mjs  (test needs removed fixtures)
   reset    CHANGELOG.md  (fresh [Unreleased])
-  write    .github/workflows/context-integrity.yml  (derived-repo CI)
+  replace  .github/workflows/context-integrity.yml  (flutter preset: install, lint, test, build; strict context:validate)
   write    package.json  (habit-tracker 0.1.0)
   append   .gitignore  (6 preset lines)
   run      context:render

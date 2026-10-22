@@ -25,5 +25,11 @@
     "Bundled asset files are public; never ship a secret as an asset or through `--dart-define` into a release build."
   ],
   "generatedPaths": ["lib/**/*.g.dart", "lib/**/*.freezed.dart"],
-  "gitignore": ["ios/Pods/", ".flutter-plugins*", "android/key.properties", "*.jks"]
+  "gitignore": ["ios/Pods/", ".flutter-plugins*", "android/key.properties", "*.jks"],
+  "ci": {
+    "setup": [
+      { "name": "Setup Flutter", "uses": "subosito/flutter-action@v2", "with": { "channel": "stable", "cache": true } }
+    ],
+    "run": ["install", "lint", "test", "build"]
+  }
 }

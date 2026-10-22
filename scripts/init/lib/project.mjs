@@ -1,9 +1,19 @@
 // What init rewrites to turn the template repository into a project repository.
 
+import YAML from 'yaml';
+
 const GITIGNORE_MARKER = '# sdd preset';
 const EXAMPLE_LINE = /^\s*[-|]\s*Example:/;
 
-export const DERIVED_WORKFLOW = `name: Context Integrity
+export const WORKFLOW_PATH = '.github/workflows/context-integrity.yml';
+
+const STEP_NAMES = { install: 'Install', format: 'Check formatting', lint: 'Lint', typecheck: 'Typecheck', test: 'Test', build: 'Build' };
+// The SDD tooling is Node whatever the app stack is, so every project installs, tests, and runs it.
+const SDD_INSTALL = 'npm ci';
+const SDD_TEST = 'npm test';
+const SDD_VALIDATE = 'npm run context:validate -- --strict';
+
+const WORKFLOW_HEAD = `name: CI
 
 on:
   pull_request:
@@ -15,29 +25,47 @@ permissions:
   contents: read
 
 jobs:
-  validate-context:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install
-        run: npm ci
-
-      - name: Test
-        run: npm test
-
-      - name: Validate context
-        run: npm run context:validate
 `;
+
+// lineWidth 0 keeps a long command on one line instead of folding it.
+function scalar(value) {
+  return YAML.stringify(value, { lineWidth: 0 }).trimEnd();
+}
+
+function renderStep({ name, uses, run, with: inputs }) {
+  const lines = [`      - name: ${scalar(name)}`];
+  if (uses) lines.push(`        uses: ${scalar(uses)}`);
+  if (run) lines.push(`        run: ${scalar(run)}`);
+  if (inputs) {
+    lines.push('        with:');
+    for (const [key, value] of Object.entries(inputs)) lines.push(`          ${key}: ${scalar(value)}`);
+  }
+  return lines.join('\n');
+}
+
+// The template CI validates examples/ and re-runs init; a project runs the commands its app preset
+// lists under `ci.run`, then the SDD tooling tests and strict validation. A Node preset whose install
+// or test is the SDD tooling's own command runs it once.
+export function derivedWorkflow(app) {
+  const appSteps = app.ci.run.map((key) => ({ name: STEP_NAMES[key], run: app.commands[key] }));
+  const runs = new Set(appSteps.map((step) => step.run));
+  const steps = [
+    { name: 'Checkout', uses: 'actions/checkout@v4' },
+    { name: 'Setup Node.js', uses: 'actions/setup-node@v4', with: { 'node-version': 22, cache: 'npm' } },
+    ...app.ci.setup,
+    ...(runs.has(SDD_INSTALL) ? [] : [{ name: 'Install SDD tooling', run: SDD_INSTALL }]),
+    ...appSteps,
+    ...(runs.has(SDD_TEST) ? [] : [{ name: 'Test SDD tooling', run: SDD_TEST }]),
+    { name: 'Validate context', run: SDD_VALIDATE }
+  ];
+  const note = `# Written by npm run init from the ${app.name} app preset; keep the run steps in line with docs/steering/tech.md.\n`;
+  return `${note}${WORKFLOW_HEAD}${steps.map(renderStep).join('\n\n')}\n`;
+}
 
 export function slug(name) {
   return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'project';

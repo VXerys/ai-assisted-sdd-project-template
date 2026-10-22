@@ -25,5 +25,11 @@
     "`./gradlew lint` and `testDebugUnitTest` green before a task is done; `ktlintCheck` needs the ktlint Gradle plugin."
   ],
   "generatedPaths": ["build/**"],
-  "gitignore": [".gradle/", "local.properties"]
+  "gitignore": [".gradle/", "local.properties"],
+  "ci": {
+    "setup": [
+      { "name": "Setup Java", "uses": "actions/setup-java@v4", "with": { "distribution": "temurin", "java-version": "17" } }
+    ],
+    "run": ["lint", "typecheck", "test", "build"]
+  }
 }

@@ -21,5 +21,6 @@
     "Replace the `src/` and `tests/` rows in structure.md with the real layout."
   ],
   "generatedPaths": [],
-  "gitignore": []
+  "gitignore": [],
+  "ci": { "setup": [], "run": [] }
 }
