@@ -22,8 +22,8 @@ Rendered from `.claude/settings.json` and `.claude/commands/sdd/`.
 | Event | Matcher | Script |
 |---|---|---|
 | SessionStart | `startup\|resume\|compact` | `scripts/hooks/session-start.mjs` |
-| PreToolUse | `Edit\|Write\|MultiEdit` | `scripts/hooks/pre-tool-guard.mjs` |
-| PostToolUse | `Edit\|Write\|MultiEdit` | `scripts/hooks/post-tool-render.mjs` |
+| PreToolUse | `Edit\|Write\|MultiEdit\|NotebookEdit\|Read\|Bash\|PowerShell` | `scripts/hooks/pre-tool-guard.mjs` |
+| PostToolUse | `Edit\|Write\|MultiEdit\|NotebookEdit` | `scripts/hooks/post-tool-render.mjs` |
 | Stop | all | `scripts/hooks/stop-handoff-check.mjs` |
 
 | Command | Description |

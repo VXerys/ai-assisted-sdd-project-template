@@ -28,7 +28,7 @@
   "gitignore": [".gradle/", "local.properties"],
   "ci": {
     "setup": [
-      { "name": "Setup Java", "uses": "actions/setup-java@v4", "with": { "distribution": "temurin", "java-version": "17" } }
+      { "name": "Setup Java", "uses": "actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3", "version": "v4.9.1", "with": { "distribution": "temurin", "java-version": "17" } }
     ],
     "run": ["lint", "typecheck", "test", "build"]
   }

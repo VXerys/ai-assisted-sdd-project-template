@@ -65,9 +65,10 @@ test('validatePreset reports every schema violation with its key', () => {
 
 test('app presets declare CI setup steps and run only commands they have, never dev', () => {
   assert.deepEqual(loadPreset('app', 'flutter').ci.run, ['install', 'lint', 'test', 'build']);
-  assert.deepEqual(loadPreset('app', 'flutter').ci.setup.map((step) => step.uses), ['subosito/flutter-action@v2']);
-  assert.deepEqual(loadPreset('app', 'kotlin-android').ci.setup.map((step) => step.uses), ['actions/setup-java@v4']);
-  assert.deepEqual(loadPreset('app', 'python-api').ci.setup.map((step) => step.uses), ['actions/setup-python@v5']);
+  const setup = (name) => loadPreset('app', name).ci.setup.map((step) => `${step.uses.replace(/@.*/, '')} ${step.version}`);
+  assert.deepEqual(setup('flutter'), ['subosito/flutter-action v2.23.0']);
+  assert.deepEqual(setup('kotlin-android'), ['actions/setup-java v4.9.1']);
+  assert.deepEqual(setup('python-api'), ['actions/setup-python v5.6.0']);
   // `npx expo run:android` installs on a device or emulator, which a CI runner does not have.
   assert.ok(!loadPreset('app', 'react-native').ci.run.includes('build'));
   assert.deepEqual(loadPreset('app', 'generic').ci, { setup: [], run: [] });
@@ -86,6 +87,8 @@ test('app presets declare CI setup steps and run only commands they have, never 
   assert.ok(errorsFor({ setup: [{ name: 'Setup', uses: 'a/b@v1', with: { list: [1] } }], run: [] }).some((entry) => entry.includes('ci.setup[0].with')));
   assert.ok(errorsFor({ setup: [{ name: 'Setup', uses: 'a/b@v1', run: 'x' }], run: [] }).some((entry) => entry.includes('ci.setup[0].run is not a known key')));
   assert.ok(errorsFor({ setup: [], run: [], cache: true }).some((entry) => entry.includes('ci.cache is not a known key')));
+  assert.ok(errorsFor({ setup: [{ name: 'Setup', uses: 'a/b@v1', version: 'v1' }], run: [] }).some((entry) => entry.includes('full 40-character commit SHA')));
+  assert.ok(errorsFor({ setup: [{ name: 'Setup', uses: `a/b@${'0'.repeat(40)}` }], run: [] }).some((entry) => entry.includes('ci.setup[0].version')));
 });
 
 test('loadPreset rejects a name that is not a preset file', () => {

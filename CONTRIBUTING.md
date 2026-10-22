@@ -70,7 +70,7 @@ Everything below is about `ai-assisted-sdd-project-template` itself. Node 22, ES
 2. Update the instantiated form when one exists: `docs/product/prd.md` mirrors `docs/_templates/prd.md`; `docs/architecture/overview.md` is the lite form of `docs/_templates/architecture-baseline.md`.
 3. Update the fixtures that carry the shape: `scripts/context/__fixtures__/*` (validator cases) and `examples/todo-api/` (the filled project). Re-render the example from its own directory: `cd examples/todo-api && node ../../scripts/context/render.mjs && node ../../scripts/adapters/sync.mjs`.
 4. Update snapshots with `UPDATE_SNAPSHOTS=1 npm test` (the init dry-run plan in `scripts/init/__fixtures__/dry-run-plan.txt` and the adapter outputs in `scripts/adapters/__fixtures__/`), then review the snapshot diff before committing it.
-5. `npm test`, `npm run context:validate -- --strict`, `npm run example:validate`.
+5. `npm test`, `npm run context:validate -- --strict`, `npm run example:validate`. While iterating, `npm run test:unit` skips the init end-to-end runs in `scripts/init/e2e/` (one file per scenario, so `node --test` runs them in parallel); `npm run test:e2e` runs only those.
 
 ### Add a preset
 

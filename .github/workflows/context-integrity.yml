@@ -9,17 +9,26 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   validate-context:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The owner develops on Windows; path and line-ending bugs only show up there.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -27,8 +36,11 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Test
-        run: npm test
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: End-to-end init tests
+        run: npm run test:e2e
 
       - name: Validate the template repository (strict)
         run: npm run context:validate -- --strict
@@ -38,15 +50,24 @@ jobs:
         working-directory: examples/todo-api
 
   template-init:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, tier: lite, app: node-api, db: postgres }
+          - { os: ubuntu-latest, tier: lite, app: flutter, db: supabase }
+          - { os: ubuntu-latest, tier: full, app: nextjs, db: firebase }
+          - { os: ubuntu-latest, tier: lite, app: python-api, db: none }
+          - { os: windows-latest, tier: lite, app: flutter, db: supabase }
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -55,12 +76,16 @@ jobs:
         run: npm ci
 
       - name: Copy the template
-        run: rsync -a --exclude .git ./ ../template-init/
+        run: node scripts/ci/copy-template.mjs ../template-init
 
-      - name: Initialize a lite node-api project
-        run: node scripts/init/init.mjs --yes --name CI --tier lite --app node-api --db postgres --tools claude --owner ci
+      - name: Initialize a ${{ matrix.tier }} ${{ matrix.app }} + ${{ matrix.db }} project
+        run: node scripts/init/init.mjs --yes --name CI --tier ${{ matrix.tier }} --app ${{ matrix.app }} --db ${{ matrix.db }} --tools claude --owner ci
         working-directory: ../template-init
 
-      - name: Validate the initialized project
-        run: node scripts/context/validate-context.mjs
+      - name: Validate the initialized project (strict)
+        run: node scripts/context/validate-context.mjs --strict
+        working-directory: ../template-init
+
+      - name: Run the initialized project's SDD tests
+        run: npm test
         working-directory: ../template-init

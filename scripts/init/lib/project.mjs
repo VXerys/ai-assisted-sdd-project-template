@@ -37,9 +37,16 @@ function scalar(value) {
   return YAML.stringify(value, { lineWidth: 0 }).trimEnd();
 }
 
-function renderStep({ name, uses, run, with: inputs }) {
+// Actions are pinned to a full commit SHA (GitHub hardening guidance); the trailing release comment
+// is what Dependabot reads to propose updates.
+export const PINNED_ACTIONS = {
+  checkout: { uses: 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262', version: 'v4.4.0' },
+  setupNode: { uses: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020', version: 'v4.4.0' }
+};
+
+function renderStep({ name, uses, version, run, with: inputs }) {
   const lines = [`      - name: ${scalar(name)}`];
-  if (uses) lines.push(`        uses: ${scalar(uses)}`);
+  if (uses) lines.push(`        uses: ${scalar(uses)}${version ? ` # ${version}` : ''}`);
   if (run) lines.push(`        run: ${scalar(run)}`);
   if (inputs) {
     lines.push('        with:');
@@ -55,8 +62,8 @@ export function derivedWorkflow(app) {
   const appSteps = app.ci.run.map((key) => ({ name: STEP_NAMES[key], run: app.commands[key] }));
   const runs = new Set(appSteps.map((step) => step.run));
   const steps = [
-    { name: 'Checkout', uses: 'actions/checkout@v4' },
-    { name: 'Setup Node.js', uses: 'actions/setup-node@v4', with: { 'node-version': 22, cache: 'npm' } },
+    { name: 'Checkout', ...PINNED_ACTIONS.checkout },
+    { name: 'Setup Node.js', ...PINNED_ACTIONS.setupNode, with: { 'node-version': 22, cache: 'npm' } },
     ...app.ci.setup,
     ...(runs.has(SDD_INSTALL) ? [] : [{ name: 'Install SDD tooling', run: SDD_INSTALL }]),
     ...appSteps,
@@ -71,13 +78,16 @@ export function slug(name) {
   return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'project';
 }
 
+// Scripts whose files init removes (examples/, scripts/init/e2e/).
+const TEMPLATE_SCRIPTS = ['example:validate', 'test:e2e'];
+
 // The template's package.json minus what only the template repository runs.
 export function derivedPackageJson(text, { name, description }) {
   const pkg = JSON.parse(text);
   pkg.name = slug(name);
   pkg.version = '0.1.0';
   pkg.description = description;
-  if (pkg.scripts) delete pkg.scripts['example:validate'];
+  if (pkg.scripts) for (const script of TEMPLATE_SCRIPTS) delete pkg.scripts[script];
   return `${JSON.stringify(pkg, null, 2)}\n`;
 }
 

@@ -17,11 +17,17 @@ export const TEMPLATE_ONLY = [
   'scripts/context/__fixtures__/',
   'scripts/adapters/__fixtures__/',
   'scripts/init/__fixtures__/',
+  // Init's own tests assume the template state (inactive handoff, templateMode true) and would
+  // re-run init, or the project's npm test recursively, inside a derived project.
+  'scripts/init/init.test.mjs',
+  'scripts/init/e2e/',
   'scripts/migrate/',
+  'scripts/ci/',
   'examples/',
   'docs/adr/ADR-0001-v2-revamp.md',
   'docs/adr/ADR-0002-v2.1-hardening.md',
-  'docs/MIGRATION-v1-to-v2.md'
+  'docs/MIGRATION-v1-to-v2.md',
+  'docs/research/'
 ];
 
 const TEMPLATE_ONLY_BLOCK = /^[ \t]*<!-- template-only:start -->\n[\s\S]*?^[ \t]*<!-- template-only:end -->\n?/gm;

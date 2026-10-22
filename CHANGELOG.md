@@ -7,10 +7,22 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 ### Fixed
 
 - `npm run init` no longer leaves the template CI in a new project. That workflow validated `examples/` (removed by init) and ran the `template-init` job, so the first CI run of every derived project failed. Init now replaces `.github/workflows/context-integrity.yml` with a `verify` job built from the app preset: Node 22 for the SDD tooling, the preset's toolchain setup, its `ci.run` commands (install, lint, typecheck, test, build where the preset has them), `npm test`, and `npm run context:validate -- --strict`. The dry-run plan shows the replacement.
+- The PreToolUse guard resolved the project root from `CLAUDE_PROJECT_DIR`, which stays on the main checkout when a session works in a git worktree, so an edit to `.claude/worktrees/<name>/docs/context/state.yaml` did not match the `generated` globs. The root is now the git top level of the event's `cwd`, or of the target file inside a nested worktree.
+- The guard covered Edit and Write only. It now also checks Bash and PowerShell commands (writes into generated, frozen, or protected paths; any access to secrets), NotebookEdit, and Read of secret files.
 
 ### Added
 
 - App presets carry a `ci` key (`setup` steps and the `run` command keys), checked by the preset schema. `flutter`, `kotlin-android`, and `python-api` set up Flutter stable, Temurin 17, and Python 3.12; `react-native` leaves out `build`, which needs a device or emulator.
+- `protected` guard rule: in a derived project (`templateMode: false`), an edit to `sdd.config.json`, `.claude/settings.json`, `.claude/commands/`, `.claude/skills/sdd-*`, `.github/workflows/`, or the `scripts/` tooling returns `permissionDecision: ask`, so the owner approves every change to the gate itself.
+- `scripts/lib/shell-targets.mjs`: best-effort extraction of the paths a Bash or PowerShell command writes or reads.
+- `npm run test:unit` and `npm run test:e2e` in the template. The init end-to-end tests moved to `scripts/init/e2e/`, one file per scenario, so `node --test` runs them in parallel; the full suite went from about 419 s to about 107 s on the maintainer's Windows machine.
+- `.github/dependabot.yml` for GitHub Actions and npm.
+
+### Changed
+
+- Every GitHub Action in the template CI, the derived workflow, and the presets is pinned to a full commit SHA with its release as a comment (latest release within the major already in use: checkout 4.4.0, setup-node 4.4.0, setup-java 4.9.1, setup-python 5.6.0, flutter-action 2.23.0). Preset `ci.setup` steps require `version`.
+- Template CI runs on `ubuntu-latest` and `windows-latest`, and initializes five preset combinations (one on Windows), each validated strictly and running the derived project's `npm test`. `rsync` is replaced by `scripts/ci/copy-template.mjs`.
+- `scripts/init/init.test.mjs`, `scripts/init/e2e/`, `scripts/ci/`, and `docs/research/` are template-only; init removes them, and the derived `package.json` drops `test:e2e`.
 
 ## [2.0.0] — 2026-10-15
 

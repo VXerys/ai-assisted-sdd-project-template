@@ -11,8 +11,9 @@ export const CI_COMMAND_KEYS = COMMAND_KEYS.filter((key) => key !== 'dev');
 export const STRUCTURE_KEYS = ['path', 'responsibility', 'rule'];
 const APP_KEYS = ['label', 'language', 'commands', 'structure', 'fileMatch', 'notes', 'generatedPaths', 'gitignore', 'ci'];
 const CI_KEYS = ['setup', 'run'];
-const CI_STEP_KEYS = ['name', 'uses', 'with'];
+const CI_STEP_KEYS = ['name', 'uses', 'version', 'with'];
 const ACTION_REF = /^[\w.-]+\/[\w./-]+@[\w.-]+$/;
+const PINNED_REF = /@[0-9a-f]{40}$/;
 const DB_KEYS = ['label', 'migrationTool', 'migrationCommand', 'migrationPath', 'notes', 'fileMatch', 'gitignore'];
 
 function listPresets(kind) {
@@ -52,6 +53,8 @@ function validateCi(ci, commands) {
       }
       if (typeof step.name !== 'string' || !step.name.trim()) errors.push(`${at}.name must be a non-empty string`);
       if (typeof step.uses !== 'string' || !ACTION_REF.test(step.uses)) errors.push(`${at}.uses must be an action reference owner/repo@version`);
+      else if (!PINNED_REF.test(step.uses)) errors.push(`${at}.uses must pin a full 40-character commit SHA`);
+      if (typeof step.version !== 'string' || !step.version) errors.push(`${at}.version must name the release the SHA belongs to`);
       if (step.with !== undefined && (!isObject(step.with) || !Object.values(step.with).every((value) => ['string', 'number', 'boolean'].includes(typeof value)))) {
         errors.push(`${at}.with must map inputs to strings, numbers, or booleans`);
       }

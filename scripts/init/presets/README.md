@@ -14,7 +14,7 @@ One JSON file per stack; adding a stack is adding a file. `npm run init --app <n
 | `notes` | up to 5 one-line rules | the `{{PRESET_APP_NOTES}}` bullets under "Stack rules" in `tech.md` |
 | `generatedPaths` | globs of generated code (`[]` when none) | merged into `generated` in `sdd.config.json` and `{{GENERATED_CODE_PATHS_OR_NONE}}` in `structure.md` |
 | `gitignore` | `.gitignore` lines (`[]` when none) | appended to `.gitignore` under the `# sdd preset` marker, skipping lines already present |
-| `ci` | `{setup, run}`: `setup` lists GitHub Actions steps `{name, uses, with?}` that install the toolchain; `run` lists, in order, the command keys CI runs, each with a non-`null` command, never `dev` | `.github/workflows/context-integrity.yml`, which init writes in place of the template CI |
+| `ci` | `{setup, run}`: `setup` lists GitHub Actions steps `{name, uses, version, with?}` that install the toolchain, with `uses` pinned to a full commit SHA and `version` naming its release (rendered as a comment Dependabot reads); `run` lists, in order, the command keys CI runs, each with a non-`null` command, never `dev` | `.github/workflows/context-integrity.yml`, which init writes in place of the template CI |
 
 Commands are real commands of that ecosystem, not project-specific npm scripts the preset cannot know, and never contain `reset`, `drop`, or `--force` (`rules.md` forbids them without approval). `generic` sets every command to `null`.
 

@@ -153,6 +153,52 @@ test('pre-tool-guard does nothing when hooks are disabled in sdd.config.json', (
   assert.equal(stdout, '');
 });
 
+test('pre-tool-guard checks Bash and PowerShell commands', () => {
+  const cwd = copyFixture(contextFixtures, 'valid-lite');
+  const shell = (tool, command) => run('pre-tool-guard', cwd, { tool_name: tool, tool_input: { command } }).stdout;
+
+  const bash = json(shell('Bash', 'echo x >> docs/context/BRIEF.md')).hookSpecificOutput;
+  assert.equal(bash.permissionDecision, 'deny');
+  assert.match(bash.permissionDecisionReason, /generated path.*shell command writes docs\/context\/BRIEF\.md/);
+  assert.equal(json(shell('PowerShell', 'Set-Content -Path src/legacy/a.js -Value x')).hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(json(shell('Bash', 'cat .env')).hookSpecificOutput.permissionDecisionReason, /secret.*shell command reads \.env/);
+  assert.equal(shell('Bash', 'npm test && git status'), '');
+});
+
+test('pre-tool-guard refuses Read of a secret file only', () => {
+  const cwd = copyFixture(contextFixtures, 'valid-lite');
+  const readFile = (file) => run('pre-tool-guard', cwd, { tool_name: 'Read', tool_input: { file_path: abs(cwd, file) } }).stdout;
+  assert.equal(json(readFile('.env.local')).hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(readFile('docs/context/state.yaml'), '');
+});
+
+test('pre-tool-guard asks before an edit to the gate in a derived project', () => {
+  const cwd = copyFixture(contextFixtures, 'valid-lite');
+  const output = json(run('pre-tool-guard', cwd, edit(abs(cwd, 'sdd.config.json'))).stdout).hookSpecificOutput;
+  assert.equal(output.permissionDecision, 'ask');
+  assert.match(output.permissionDecisionReason, /SDD configuration or check code/);
+});
+
+test('pre-tool-guard resolves the root of a nested git worktree', () => {
+  const main = copyFixture(contextFixtures, 'valid-lite');
+  fs.mkdirSync(abs(main, '.git'));
+  const worktree = abs(main, '.claude/worktrees/w1');
+  fs.cpSync(path.join(contextFixtures, 'valid-lite'), worktree, { recursive: true });
+  fs.writeFileSync(path.join(worktree, '.git'), 'gitdir: ../../../.git/worktrees/w1\n');
+  const target = path.join(worktree, 'docs', 'context', 'state.yaml');
+
+  for (const cwd of [worktree, main]) {
+    const result = spawnSync(process.execPath, [hook('pre-tool-guard')], {
+      input: JSON.stringify({ session_id: 'wt', cwd, ...edit(target) }),
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: main }
+    });
+    const output = json(result.stdout).hookSpecificOutput;
+    assert.equal(output.permissionDecision, 'deny', cwd);
+    assert.match(output.permissionDecisionReason, /^SDD guard: docs\/context\/state\.yaml is a generated path/);
+  }
+});
+
 test('post-tool-render re-renders the context after a tasks.md edit', () => {
   const cwd = copyFixture(contextFixtures, 'valid-lite');
   const before = read(cwd, 'docs/context/state.yaml');

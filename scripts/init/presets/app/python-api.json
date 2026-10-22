@@ -28,7 +28,7 @@
   "gitignore": [".venv/", "__pycache__/"],
   "ci": {
     "setup": [
-      { "name": "Setup Python", "uses": "actions/setup-python@v5", "with": { "python-version": "3.12" } }
+      { "name": "Setup Python", "uses": "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065", "version": "v5.6.0", "with": { "python-version": "3.12" } }
     ],
     "run": ["install", "lint", "typecheck", "test", "build"]
   }

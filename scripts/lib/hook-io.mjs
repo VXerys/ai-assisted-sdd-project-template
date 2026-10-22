@@ -24,8 +24,42 @@ export function readPayload() {
   }
 }
 
-export function projectRoot(payload) {
-  return process.env.CLAUDE_PROJECT_DIR || payload.cwd || process.cwd();
+// CLAUDE_PROJECT_DIR stays on the main checkout when a session works in a git worktree, while
+// payload.cwd follows it; a target file inside a nested worktree (`.claude/worktrees/x/`) wins over both,
+// so its own sdd.config.json applies and its paths match the generated globs.
+export function projectRoot(payload, targetPath = null) {
+  const declared = process.env.CLAUDE_PROJECT_DIR;
+  const fromCwd = payload.cwd ? gitRoot(payload.cwd) : null;
+  let session;
+  if (declared) session = fromCwd && (isInside(fromCwd, declared) || isLinkedWorktree(fromCwd)) ? fromCwd : declared;
+  else session = fromCwd || payload.cwd || process.cwd();
+  if (!targetPath) return session;
+  const nested = gitRoot(path.dirname(path.resolve(payload.cwd || session, String(targetPath).replace(/\\/g, '/'))));
+  return nested && isInside(nested, session) ? nested : session;
+}
+
+function gitRoot(start) {
+  let current = path.resolve(start);
+  for (;;) {
+    if (fs.existsSync(path.join(current, '.git'))) return current;
+    const parent = path.dirname(current);
+    if (parent === current) return null;
+    current = parent;
+  }
+}
+
+// A linked worktree has a `.git` file pointing at the main repository instead of a `.git` directory.
+function isLinkedWorktree(root) {
+  try {
+    return fs.statSync(path.join(root, '.git')).isFile();
+  } catch {
+    return false;
+  }
+}
+
+function isInside(child, parent) {
+  const relative = path.relative(parent, child);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
 // Falls back to defaults so the guard still protects secrets in a project without sdd.config.json.
