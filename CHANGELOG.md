@@ -9,8 +9,17 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 - `npm run init` no longer leaves the template CI in a new project. That workflow validated `examples/` (removed by init) and ran the `template-init` job, so the first CI run of every derived project failed. Init now replaces `.github/workflows/context-integrity.yml` with a `verify` job built from the app preset: Node 22 for the SDD tooling, the preset's toolchain setup, its `ci.run` commands (install, lint, typecheck, test, build where the preset has them), `npm test`, and `npm run context:validate -- --strict`. The dry-run plan shows the replacement.
 - The PreToolUse guard resolved the project root from `CLAUDE_PROJECT_DIR`, which stays on the main checkout when a session works in a git worktree, so an edit to `.claude/worktrees/<name>/docs/context/state.yaml` did not match the `generated` globs. The root is now the git top level of the event's `cwd`, or of the target file inside a nested worktree.
 - The guard covered Edit and Write only. It now also checks Bash and PowerShell commands (writes into generated, frozen, or protected paths; any access to secrets), NotebookEdit, and Read of secret files.
+- The shell guard read heredoc bodies as arguments and expanded a bare `**` against the secret patterns, so `git commit -F - <<EOF` or `grep -r x **` was refused. A heredoc body now counts only as code fed to an interpreter, and reads never expand wildcards.
 
 ### Added
+
+- ADR-0003 amends ADR-0002 after the 2026-10-22 benchmark: tooling stays in the template with one CLI until extraction, copier-style upgrades, hook scope for cloud sessions, adapters without duplicated rules, and `/sdd:*` commands kept.
+- `npm run sdd -- <command>` (`scripts/sdd/cli.mjs`, also `bin: sdd`): `brief`, `validate`, `render`, `sync`, `guard --check`, `status`, `check`, `upgrade`.
+- `sdd upgrade --from <template checkout>`: rebuilds the old and new template output from the answers recorded at init, updates unedited managed files, 3-way merges edited ones with `git merge-file`, leaves conflict markers or `.rej` files, runs version-keyed migrations from `scripts/sdd/migrations/`, then renders, syncs, and validates. `--dry-run`, `--to`, `--base-ref`, `--answers`, `--conflict inline|rej`; a dirty tree is refused.
+- `init` records `template: {version, commit, answers}` in `sdd.config.json`, writes `.sdd/manifest.json` with the hash of every managed file, and accepts `--date`. `managed` in `sdd.config.json` replaces the default managed list.
+- `sdd guard --check` runs in the derived CI workflow and the template CI (checkout with full history), so sessions and tools without hooks hit the same gate.
+- Claude Code adapter `.claude/rules/<name>.md`: `always` steering files not inlined in `AGENTS.md` load at launch, `fileMatch` files load through `paths:` when a matching file is read or edited.
+- In a cloud session (`CLAUDE_CODE_REMOTE=true`) without `node_modules`, SessionStart runs `npm ci` before loading the brief.
 
 - App presets carry a `ci` key (`setup` steps and the `run` command keys), checked by the preset schema. `flutter`, `kotlin-android`, and `python-api` set up Flutter stable, Temurin 17, and Python 3.12; `react-native` leaves out `build`, which needs a device or emulator.
 - `protected` guard rule: in a derived project (`templateMode: false`), an edit to `sdd.config.json`, `.claude/settings.json`, `.claude/commands/`, `.claude/skills/sdd-*`, `.github/workflows/`, or the `scripts/` tooling returns `permissionDecision: ask`, so the owner approves every change to the gate itself.
@@ -22,7 +31,11 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 - Every GitHub Action in the template CI, the derived workflow, and the presets is pinned to a full commit SHA with its release as a comment (latest release within the major already in use: checkout 4.4.0, setup-node 4.4.0, setup-java 4.9.1, setup-python 5.6.0, flutter-action 2.23.0). Preset `ci.setup` steps require `version`.
 - Template CI runs on `ubuntu-latest` and `windows-latest`, and initializes five preset combinations (one on Windows), each validated strictly and running the derived project's `npm test`. `rsync` is replaced by `scripts/ci/copy-template.mjs`.
-- `scripts/init/init.test.mjs`, `scripts/init/e2e/`, `scripts/ci/`, and `docs/research/` are template-only; init removes them, and the derived `package.json` drops `test:e2e`.
+- `scripts/init/init.test.mjs`, `scripts/init/e2e/`, `scripts/ci/`, `docs/research/`, and ADR-0003 are template-only; init removes them, and the derived `package.json` drops `test:e2e`.
+- `AGENTS.md` inlines only `rules.md` and `tech.md` (281 to 148 lines in the template; warning cap 150, was 400). Other `always` files are pointers in its Source of truth table, `fileMatch` files are one line each. Cursor, Kiro, and Copilot adapters carry only the steering files `AGENTS.md` does not inline (Copilot gets `applyTo: "**"` for `always` files), and a sync removes generated adapter files whose source is gone; `--check` reports them.
+- PreToolUse no longer injects `fileMatch` steering as `additionalContext`; `.claude/rules/` replaces it, and `.claude/.sdd-session/` is no longer written.
+- `/sdd:task`, `/sdd:handoff`, `/sdd:bug`, and `/sdd:render` set `disable-model-invocation: true`, so only the owner starts them.
+- `.sdd/` joins the protected paths.
 
 ## [2.0.0] — 2026-10-15
 

@@ -57,6 +57,10 @@ export function normalizeConfig(raw) {
     frozen: raw.frozen ?? [],
     limits: { ...DEFAULT_LIMITS, ...(raw.limits ?? {}) },
     templateMode: raw.templateMode === true,
+    git: { baseBranch: raw.git?.baseBranch ?? 'main' },
+    // ADR-0003: what `sdd upgrade` may rewrite, and the template version and init answers it rebuilds the base from.
+    managed: Array.isArray(raw.managed) ? raw.managed : null,
+    template: raw.template && typeof raw.template === 'object' ? raw.template : null,
     validate: {
       requiredFiles: validate.requiredFiles ?? [],
       generatedFiles: validate.generatedFiles ?? raw.generated ?? [],

@@ -12,6 +12,8 @@ const STEP_NAMES = { install: 'Install', format: 'Check formatting', lint: 'Lint
 const SDD_INSTALL = 'npm ci';
 const SDD_TEST = 'npm test';
 const SDD_VALIDATE = 'npm run context:validate -- --strict';
+// The hookless counterpart of the PreToolUse guard (ADR-0003); a pull request is checked against its base branch.
+const SDD_GUARD = 'npm run sdd -- guard --check --base "${{ github.base_ref || github.event.repository.default_branch }}"';
 
 const WORKFLOW_HEAD = `name: CI
 
@@ -62,12 +64,14 @@ export function derivedWorkflow(app) {
   const appSteps = app.ci.run.map((key) => ({ name: STEP_NAMES[key], run: app.commands[key] }));
   const runs = new Set(appSteps.map((step) => step.run));
   const steps = [
-    { name: 'Checkout', ...PINNED_ACTIONS.checkout },
+    // Full history, so the guard check can find the merge base with the pull request's base branch.
+    { name: 'Checkout', ...PINNED_ACTIONS.checkout, with: { 'fetch-depth': 0 } },
     { name: 'Setup Node.js', ...PINNED_ACTIONS.setupNode, with: { 'node-version': 22, cache: 'npm' } },
     ...app.ci.setup,
     ...(runs.has(SDD_INSTALL) ? [] : [{ name: 'Install SDD tooling', run: SDD_INSTALL }]),
     ...appSteps,
     ...(runs.has(SDD_TEST) ? [] : [{ name: 'Test SDD tooling', run: SDD_TEST }]),
+    { name: 'Guard check', run: SDD_GUARD },
     { name: 'Validate context', run: SDD_VALIDATE }
   ];
   const note = `# Written by npm run init from the ${app.name} app preset; keep the run steps in line with docs/steering/tech.md.\n`;

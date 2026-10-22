@@ -11,6 +11,7 @@ import { APP_PRESETS, DB_PRESETS, loadPreset, COMMAND_KEYS } from './lib/presets
 import { fillPlaceholders, remainingPlaceholders } from './lib/fill.mjs';
 import { LITE_PRUNE, TEMPLATE_ONLY, isPruned, relink, stripTemplateOnly } from './lib/prune.mjs';
 import { WORKFLOW_PATH, derivedWorkflow, derivedPackageJson, mergeGitignore, stripExampleLines } from './lib/project.mjs';
+import { DEFAULT_MANAGED, MANIFEST_PATH, writeManifest } from '../sdd/upgrade.mjs';
 
 const USAGE = `Usage: npm run init -- [flags]
 
@@ -27,6 +28,7 @@ Flags (a missing flag is asked for; --yes takes the default instead):
   --tools <list>         comma-separated: ${TOOLS.join(', ')}   default: claude
   --owner <name>         owner written into frontmatter     default: git user.name
   --lang <language>      language of the project content    default: English
+  --date <YYYY-MM-DD>    date written into the documents    default: today (sdd upgrade replays the recorded one)
   --yes                  accept defaults, never prompt
   --dry-run              print the plan, change nothing
   --force                run again on a project whose templateMode is already false
@@ -95,6 +97,7 @@ async function main() {
 
   console.log(`Init plan: ${answers.name} (tier ${answers.tier}, app ${answers.app}, db ${answers.db}, tools ${answers.tools.join(',')})`);
   for (const action of plan.actions) console.log(`  ${action.verb.padEnd(8)} ${action.target}${action.note ? `  (${action.note})` : ''}`);
+  console.log(`  write    ${MANIFEST_PATH}  (hashes of the managed files, for sdd upgrade)`);
   for (const script of ['context:render', 'adapters:sync', 'context:validate']) console.log(`  run      ${script}`);
 
   if (args.dryRun) {
@@ -104,6 +107,7 @@ async function main() {
   }
 
   for (const action of plan.actions) action.apply();
+  writeManifest(root, plan.version, plan.managed);
   console.log('');
   const render = runScript(root, 'scripts/context/render.mjs');
   const sync = runScript(root, 'scripts/adapters/sync.mjs');
@@ -115,7 +119,7 @@ async function main() {
 
 function parseArgs(argv) {
   const args = { tools: null };
-  const valued = ['name', 'description', 'tier', 'app', 'db', 'tools', 'owner', 'lang'];
+  const valued = ['name', 'description', 'tier', 'app', 'db', 'tools', 'owner', 'lang', 'date'];
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--yes') args.yes = true;
@@ -169,7 +173,8 @@ async function collectAnswers(args, root) {
   answers.tools = [...new Set(answers.tools.split(',').map((tool) => tool.trim()).filter(Boolean))];
   for (const tool of answers.tools) if (!TOOLS.includes(tool)) throw new Error(`unknown tool '${tool}'; choose from ${TOOLS.join(', ')}`);
   if (!answers.description) answers.description = describe(answers.name, answers.app);
-  answers.date = new Date().toISOString().slice(0, 10);
+  if (args.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(args.date)) throw new Error('--date must be YYYY-MM-DD');
+  answers.date = args.date ?? new Date().toISOString().slice(0, 10);
   return answers;
 }
 
@@ -204,6 +209,15 @@ function gitUserName(root) {
     return execFileSync('git', ['config', 'user.name'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
   } catch {
     return '';
+  }
+}
+
+// The template commit init ran from; null outside a git checkout (sdd upgrade then falls back to v<version>).
+function gitHead(root) {
+  try {
+    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return null;
   }
 }
 
@@ -263,6 +277,13 @@ function buildPlan(root, config, answers) {
   config.tools = answers.tools;
   config.templateMode = false;
   config.generated = [...new Set([...(config.generated ?? []), ...answers.appPreset.generatedPaths])];
+  // sdd upgrade rebuilds the base from this version's init with these answers (ADR-0003).
+  const version = JSON.parse(readText(root, 'package.json')).version;
+  config.template = {
+    version,
+    commit: gitHead(root),
+    answers: { name: answers.name, description: answers.description, tier: answers.tier, app: answers.app, db: answers.db, tools: answers.tools, owner: answers.owner, lang: answers.lang, date: answers.date }
+  };
   if (config.validate?.requiredFiles) {
     config.validate.requiredFiles = config.validate.requiredFiles.filter((file) => !isPruned(file, pruned) && !isPruned(file, removed));
     if (dbSteering && !config.validate.requiredFiles.includes(dbSteering)) config.validate.requiredFiles.push(dbSteering);
@@ -320,7 +341,6 @@ function buildPlan(root, config, answers) {
     actions.push({ verb: 'remove', target: file, note: 'test needs removed fixtures', apply: () => fs.rmSync(path.join(root, file), { force: true }) });
   }
   const packageText = readText(root, 'package.json');
-  const version = JSON.parse(packageText).version;
   const changelog = `# Changelog\n\nFormat: Keep a Changelog. Versions follow Semantic Versioning.\n\n## [Unreleased]\n\n- Initialized from ai-assisted-sdd-project-template ${version} on ${answers.date} (tier ${answers.tier}, app ${answers.app}, database ${answers.db}).\n`;
   actions.push({ verb: 'reset', target: 'CHANGELOG.md', note: 'fresh [Unreleased]', apply: () => writeLf(root, 'CHANGELOG.md', changelog) });
 
@@ -338,7 +358,7 @@ function buildPlan(root, config, answers) {
   const gitignore = mergeGitignore(exists(root, '.gitignore') ? readText(root, '.gitignore') : '', [...answers.appPreset.gitignore, ...answers.dbPreset.gitignore]);
   if (gitignore.added) actions.push({ verb: 'append', target: '.gitignore', note: `${gitignore.added} preset lines`, apply: () => writeLf(root, '.gitignore', gitignore.text) });
 
-  return { actions, remaining };
+  return { actions, remaining, version, managed: Array.isArray(config.managed) ? config.managed : DEFAULT_MANAGED };
 }
 
 function runScript(root, script) {

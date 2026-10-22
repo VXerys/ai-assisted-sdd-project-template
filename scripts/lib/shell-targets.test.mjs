@@ -40,6 +40,19 @@ test('a leading cd moves relative targets; inline scripts expose their literals'
   assert.deepEqual(writes(`node -e "console.log('AGENTS.md')"`), []);
 });
 
+test('a heredoc body is content, scanned as code only when an interpreter reads it', () => {
+  const script = "node - <<'EOF'\nconst fs = require('fs');\nfs.writeFileSync('AGENTS.md', '**');\nEOF";
+  assert.deepEqual(writes(script), ['AGENTS.md']);
+  assert.deepEqual(reads(script), []);
+  assert.deepEqual(writes("cat > notes.md <<EOF\nrm AGENTS.md\n**\nEOF"), ['notes.md']);
+  assert.equal(guardShellCommand("git commit -F - <<'EOF'\nfix: touch docs/context/state.yaml and .env\nEOF", config, identity), null);
+});
+
+test('reads never expand wildcards against secret patterns', () => {
+  assert.equal(guardShellCommand('grep -rn x ** --include=*.mjs', config, identity), null);
+  assert.equal(guardShellCommand('cat .env*', config, identity).rule, 'secret');
+});
+
 test('reads cover every path argument except for echo-like commands', () => {
   assert.deepEqual(reads('cat .env.local'), ['.env.local']);
   assert.deepEqual(reads('Get-Content -Path .env'), ['.env']);

@@ -57,6 +57,7 @@ test('derivedPackageJson renames the package, resets the version, and drops the 
 
 // What the template CI carries and a derived repository must not: the example project and the init job.
 const TEMPLATE_CI = /examples\/|template-init|working-directory|init\.mjs/;
+const GUARD_STEP = 'npm run sdd -- guard --check --base "${{ github.base_ref || github.event.repository.default_branch }}"';
 const workflowSteps = (text) => YAML.parse(text).jobs.verify.steps.map((step) => step.run ?? step.uses);
 
 test('derivedWorkflow gives every app preset one verify job without template-only steps', () => {
@@ -87,6 +88,7 @@ test('derivedWorkflow sets up the preset toolchain and runs the SDD tooling step
     'flutter test',
     'flutter build appbundle --release',
     'npm test',
+    GUARD_STEP,
     'npm run context:validate -- --strict'
   ]);
   // A Node preset's install and test are the SDD tooling's own, so they are not repeated.
@@ -98,6 +100,7 @@ test('derivedWorkflow sets up the preset toolchain and runs the SDD tooling step
     'npx tsc --noEmit',
     'npm test',
     'npm run build',
+    GUARD_STEP,
     'npm run context:validate -- --strict'
   ]);
   assert.deepEqual(workflowSteps(derivedWorkflow(loadPreset('app', 'generic'))), [
@@ -105,6 +108,7 @@ test('derivedWorkflow sets up the preset toolchain and runs the SDD tooling step
     PINNED_ACTIONS.setupNode.uses,
     'npm ci',
     'npm test',
+    GUARD_STEP,
     'npm run context:validate -- --strict'
   ]);
   const python = YAML.parse(derivedWorkflow(loadPreset('app', 'python-api'))).jobs.verify.steps;

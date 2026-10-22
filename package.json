@@ -7,6 +7,9 @@
   "engines": {
     "node": ">=22"
   },
+  "bin": {
+    "sdd": "scripts/sdd/cli.mjs"
+  },
   "scripts": {
     "test": "node --test \"scripts/**/*.test.mjs\"",
     "test:unit": "node --test \"scripts/*/*.test.mjs\" \"scripts/*/lib/*.test.mjs\"",
@@ -16,7 +19,8 @@
     "context:render": "node scripts/context/render.mjs",
     "context:validate": "node scripts/context/validate-context.mjs",
     "context:archive-handoff": "node scripts/context/archive-handoff.mjs",
-    "adapters:sync": "node scripts/adapters/sync.mjs"
+    "adapters:sync": "node scripts/adapters/sync.mjs",
+    "sdd": "node scripts/sdd/cli.mjs"
   },
   "dependencies": {
     "yaml": "^2.9.1"

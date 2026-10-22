@@ -47,6 +47,7 @@ Init plan: Habit Tracker (tier lite, app flutter, db supabase, tools claude,kiro
   remove   examples/  (template-only)
   remove   docs/adr/ADR-0001-v2-revamp.md  (template-only)
   remove   docs/adr/ADR-0002-v2.1-hardening.md  (template-only)
+  remove   docs/adr/ADR-0003-v2.1-amendments.md  (template-only)
   remove   docs/MIGRATION-v1-to-v2.md  (template-only)
   remove   docs/research/  (template-only)
   remove   scripts/adapters/sync.test.mjs  (test needs removed fixtures)
@@ -57,6 +58,7 @@ Init plan: Habit Tracker (tier lite, app flutter, db supabase, tools claude,kiro
   replace  .github/workflows/context-integrity.yml  (flutter preset: install, lint, test, build; strict context:validate)
   write    package.json  (habit-tracker 0.1.0)
   append   .gitignore  (6 preset lines)
+  write    .sdd/manifest.json  (hashes of the managed files, for sdd upgrade)
   run      context:render
   run      adapters:sync
   run      context:validate

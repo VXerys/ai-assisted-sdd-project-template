@@ -2,6 +2,7 @@
 description: Open a bug investigation file from the template with the next free BUG id
 argument-hint: <title>
 allowed-tools: Read, Grep, Glob, Write, Bash(git rev-parse:*), Bash(git log:*)
+disable-model-invocation: true
 ---
 
 Title: `$ARGUMENTS`. Stop if empty.

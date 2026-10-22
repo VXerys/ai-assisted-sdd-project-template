@@ -1,6 +1,6 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
 Source: docs/steering/, sdd.config.json.
-source_hash: 769123490bc68191291a8dcdda4bc0a44ec2e1092da6870f73291631d95befdc -->
+source_hash: 233c72b05ade09040b929bd95ad0c5376b437db628a6a4b743b7f14be9139cc9 -->
 
 # Repository contract: Todo API
 
@@ -11,7 +11,7 @@ Rendered from `docs/steering/` and `sdd.config.json` for humans and coding agent
 ## Read first
 
 1. `docs/context/BRIEF.md` (single entry point; rendered, never hand-edited)
-2. `docs/steering/rules.md`, `docs/steering/tech.md`, `docs/steering/structure.md`, `docs/steering/workflow.md`, `docs/steering/product.md`
+2. The Rules and Tech sections below; the other steering files in the table reach each tool through its rule files, otherwise read one before work on its topic
 3. The active feature under `docs/specs/`: `tasks.md`, then the sections it references
 
 Fallback when `BRIEF.md` is absent: `docs/context/NEW_CHAT_PROTOCOL.md`.
@@ -33,11 +33,9 @@ Fallback when `BRIEF.md` is absent: `docs/context/NEW_CHAT_PROTOCOL.md`.
 | Session delta | `docs/handoff/current.md` |
 | Current behavior | code, tests, schema, configuration |
 
-Chat history and provider memory are never a source of truth.
-
 ## Read-only paths
 
-Generated (edit the sources, then run `npm run context:render` or `npm run adapters:sync`): `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`
+Generated (edit the sources, then run `npm run context:render` or `npm run adapters:sync`): `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`, `.claude/rules/`
 
 Frozen (explicit owner approval required): `db/migrations/`
 
@@ -147,167 +145,14 @@ Before adding or replacing a dependency, state the problem it solves, the native
 
 Schema changes are versioned SQL files under `db/migrations/`, reviewed like code. Append-only; destructive changes need explicit approval. The store's own rules are in the `database.md` steering file.
 
-## Structure
-
-Where things live and which direction dependencies point.
-
-### Directory responsibilities
-
-| Path | Responsibility | Rule |
-|---|---|---|
-| `docs/steering/` | canonical project rules, product, stack, structure, workflow | edit by hand; `AGENTS.md` and `CLAUDE.md` are rendered from it by `npm run adapters:sync` |
-| `docs/specs/F-XXX-name/` | one feature: requirements, design, tasks, verification | `tasks.md` is the master for task status |
-| `docs/adr/` | one decision per record | approved ADRs are never rewritten |
-| `docs/architecture/` | cross-feature boundaries and invariants | module reasoning stays in the feature |
-| `docs/context/` | rendered state, brief, assumptions log | only `ASSUMPTIONS.md` is hand-edited |
-| `docs/handoff/current.md` | session delta | updated at the end of every implementation session |
-| `src/routes/` | HTTP routing and request validation | no business logic; parse, validate, delegate, map errors |
-| `src/services/` | use cases and domain rules | framework-free; depends on `src/db/` through the repository functions |
-| `src/db/` | data access and the migration runner | the only module that imports `pg` |
-| `db/migrations/` | versioned SQL migrations | frozen: a new file per change, applied files are never edited |
-| `test/` | unit and HTTP tests | mirrors `src/`; one file per route |
-
-### Generated paths
-
-Never hand-edit. Listed in `sdd.config.json` under `generated`:
-
-- `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`
-- `AGENTS.md`, `CLAUDE.md`
-- Project-specific generated code: none
-
-### Frozen paths
-
-Listed in `sdd.config.json` under `frozen`. Edits need explicit owner approval.
-
-- `db/migrations/`: applied migrations; add a new file instead of editing one
-
-### Dependency direction
-
-```text
-routes -> services -> db
-```
-
-- `services/` never imports Fastify or `pg`; it receives plain objects and returns plain objects or throws a typed error from `src/services/errors.js`.
-- `routes/` is the only layer that knows HTTP; `db/` is the only layer that knows SQL.
-- Project-specific rule: a route handler is at most 20 lines; anything longer moves into a service.
-
-### Naming
-
-- Features: `F-001-short-name`. Tasks: `T-001`. Evidence: `EV-001`. Assumptions: `A-001`. ADRs: `ADR-0001-short-name.md`.
-- Files are `kebab-case.js`; exported functions are `camelCase`; SQL identifiers are `snake_case`.
-
-## Workflow
-
-The spec-driven lifecycle from session start to handoff.
-
-### Start a session
-
-1. Read `docs/context/BRIEF.md`. It is the single entry point: active feature and task, open assumptions, blockers, next action.
-2. If `BRIEF.md` is absent or stale, read in this order: `docs/steering/*.md`, `docs/handoff/current.md`, the active feature's `tasks.md`, then its `requirements.md` and `design.md`.
-3. Confirm branch and worktree match the handoff before editing anything.
-
-### Pick a task
-
-- Take the task the brief names, or the first `planned` task whose `depends_on` are all `done`.
-- Read only the FR ids and design sections the task references, plus the code it touches.
-- Set `status: in_progress` in `tasks.md`. One task in progress per session. In Claude Code, `/sdd:task T-XXX` builds the task prompt from the brief and the spec and follows it.
-
-### Status transitions
-
-```text
-planned -> in_progress -> review -> done
-                |            |
-                v            v
-             blocked      deferred
-```
-
-- `blocked`: an unresolved decision or assumption; log it in `ASSUMPTIONS.md` and stop the task.
-- `review`: implementation complete, evidence recorded, awaiting review.
-- `done`: reviewed, with at least one `EV-XXX` id in `evidence`.
-- `deferred`: removed from current scope with a reason; never deleted.
-
-Feature status in frontmatter: `draft -> review -> approved -> implementing -> verification -> implemented`, or `superseded`. A feature becomes `implemented` only when every task is `done` or `deferred` and no assumption is `open`.
-
-### Evidence
-
-Every check runs through the commands in `tech.md` and is recorded as an EV block in `verification.md` with command, output excerpt, date, commit, and the AC ids it covers. Claims without evidence are not accepted at review.
-
-### Close a session
-
-1. Review `git diff` and `git status`.
-2. Run `npx eslint .` and `npm test`; record evidence.
-3. Update task status in `tasks.md`; run `npm run context:render`, then `npm run context:validate`. After a steering or `sdd.config.json` change, also `npm run adapters:sync`.
-4. Update `docs/handoff/current.md`: objective, changed files, commands and results, uncommitted work, blockers, exact next step. In Claude Code, `/sdd:handoff` writes it and runs render and validate.
-5. Report the next task.
-
-### When to write an ADR
-
-Write one in `docs/adr/` when a decision is expensive to reverse, changes a boundary or trust model, introduces or replaces a framework, provider, store, or major dependency, changes a public contract, or will be questioned later. One decision per ADR; supersede, never rewrite.
-
-### Tiers
-
-This project is `lite`: requirements, design, tasks, verification, each within 80 lines. Move a feature to `full` when it gains shared state beyond the todos table, async communication, an external integration, or a security boundary.
-
-## Product
-
-Short, always-loaded product context. The full product requirements live in `docs/product/prd.md`; this file agrees with it.
-
-### Vision
-
-Todo API is a JSON API for small teams that keeps one shared todo list consistent across a CLI and a web client.
-
-Two people editing the same list from different machines currently overwrite each other's `todo.json`. Working means: every client reads and writes the same list through the API, and a todo closed on one machine disappears from the other within one refresh. Project content (specs, product docs, API messages) is written in English; the framework text stays English.
-
-### Personas
-
-- Maintainer: runs the team list from a terminal; creates and closes todos several times a day; expects a request to finish in under 200 ms.
-- Reviewer: opens the web client once a day to see what is still open; never edits from the browser in this milestone.
-
-### Core use cases
-
-- UC-001: Maintainer, runs `todo add "Rotate the staging key"`, the CLI calls `POST /todos` and prints the new id.
-- UC-002: Reviewer, opens the web client, `GET /todos` returns open todos newest first.
-- UC-003: Maintainer, runs `todo close 42`, the CLI calls `PATCH /todos/42/close`; the todo leaves every client's default list.
-
-### Non-goals
-
-- Authentication and per-user lists: one team, one list, one API key held by both clients.
-- Recurring todos, due dates, assignees, comments.
-- A web client that edits; the browser is read-only in M1.
-
-### Success signals
-
-| Signal | What it tells us | Source |
-|---|---|---|
-| zero reports of a lost todo after two weeks of team use | the shared store replaced the overwritten file | team retro notes |
-| p95 latency of `GET /todos` under 200 ms with 500 todos | the list stays usable from the CLI | `request_duration_ms` log field |
-
-### Constraints that shape product decisions
-
-- The CLI must keep working offline for reads: it caches the last list locally and shows it with a `stale` marker.
-- No personal data beyond free-text titles; titles are never logged.
-
 ## Conditional rules
 
-Apply the section when the edited path matches its pattern.
+Read the file before editing a path that matches its pattern.
 
-### Database: PostgreSQL (`docs/steering/database.md`) applies to `db/**`, `src/db/**`
-
-Rules for every change under `db/**`, `src/db/**`. Generated by `npm run init` from the `postgres` preset, then extended by the team.
-
-- Migration tool: versioned SQL files applied by `src/db/migrate.js`
-- Apply locally: `npm run db:migrate` (runs every unapplied file in `db/migrations/` inside one transaction each)
-- Migration files: `db/migrations/<YYYYMMDDHHMM>_<name>.sql`
-
-#### Rules
-
-- Every change is a new timestamped SQL file wrapped in `BEGIN; ... COMMIT;`; an applied migration is never edited.
-- Applied versions are tracked in the `schema_migrations` table written by `src/db/migrate.js`.
-- Authorization is enforced with one database role per environment (`todo_app`), which owns no DDL; migrations run as `todo_migrator`. No Row Level Security: the API is single-tenant.
-- Destructive changes (drop, type narrowing) need owner approval and a `pg_dump` first; backfills run in batches of 1,000 rows with a progress query.
-- The connection string comes from `DATABASE_URL` and is never committed.
-- Every column that the API reads has a test that inserts through the API and reads through `psql`, so a migration that drifts from the service is caught by `npm test`.
+- `docs/steering/database.md` applies to `db/**`, `src/db/**`: Rules for every change under `db/**`, `src/db/**`. Generated by `npm run init` from the `postgres` preset, then extended by the team.
 
 ## Commands
 
 Project commands: the Commands table in `docs/steering/tech.md` (the Tech section above). Context: `npm run context:render`, then `npm run context:validate`. Adapters: `npm run adapters:sync`.
+
+Without hooks (multi-repository cloud sessions, project threads, tools without hooks): run `npm run sdd -- brief` first, and `npm run sdd -- guard --check` and `npm run sdd -- validate` before claiming done.

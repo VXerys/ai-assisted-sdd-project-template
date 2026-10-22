@@ -13,7 +13,7 @@ const SECRET_EXAMPLES = new Set(['.env.example', '.env.sample', '.env.template']
 // The gate itself: an agent that can rewrite these can switch the checks off. In a derived project
 // the owner approves each edit; in the template repository they are ordinary source.
 export const PROTECTED_PATTERNS = [
-  'sdd.config.json', '.claude/settings.json', '.claude/commands/', '.claude/skills/sdd-*/**', '.github/workflows/',
+  'sdd.config.json', '.sdd/', '.claude/settings.json', '.claude/commands/', '.claude/skills/sdd-*/**', '.github/workflows/',
   'scripts/context/', 'scripts/lib/', 'scripts/hooks/', 'scripts/adapters/', 'scripts/sdd/'
 ];
 
@@ -24,7 +24,8 @@ export function guardDecision(relativePath, config, rawPath = relativePath, acce
   const candidate = relativePath ?? normalizePath(rawPath ?? '');
   if (!candidate) return null;
 
-  const secret = matchesAny(candidate, SECRET_PATTERNS) ?? wildcardHit(candidate, SECRET_PATTERNS);
+  // A read never expands wildcards: `grep -r x **` names no secret, while `cat .env*` does match literally.
+  const secret = matchesAny(candidate, SECRET_PATTERNS) ?? (access === 'write' ? wildcardHit(candidate, SECRET_PATTERNS) : null);
   if (secret && !SECRET_EXAMPLES.has(path.posix.basename(candidate))) {
     return { rule: 'secret', pattern: secret, decision: 'deny', reason: `SDD guard: ${candidate} is a secret file (${secret}); agents never read or edit it. Ask the owner to change it.` };
   }

@@ -5,7 +5,7 @@ alwaysApply: false
 ---
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
 Source: docs/steering/, sdd.config.json.
-source_hash: 2f0709d98d3777b8e6588b4e18296ef112538b907a66d0a4cda1c4a7bc48856b -->
+source_hash: 067e3a52cdb480660d7c5e4e7f9c2a25cdec67fa7e408699325014bb03072356 -->
 # Database
 
 Rules for the PostgreSQL layer; loaded only when a database file is edited.

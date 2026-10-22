@@ -1,6 +1,7 @@
 ---
 description: Render context views, sync tool adapters, and validate the repository
 allowed-tools: Bash(npm run context:render:*), Bash(npm run adapters:sync:*), Bash(npm run context:validate:*), Read
+disable-model-invocation: true
 ---
 
 1. Run `npm run context:render`.

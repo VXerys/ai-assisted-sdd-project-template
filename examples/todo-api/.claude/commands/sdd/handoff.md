@@ -1,6 +1,7 @@
 ---
 description: Update docs/handoff/current.md from this session, then render and validate
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git branch:*), Bash(git rev-parse:*), Bash(npm run context:render:*), Bash(npm run context:validate:*)
+disable-model-invocation: true
 ---
 
 1. Collect facts: `git status --short`, `git diff --stat`, branch, `HEAD`, the task statuses this session changed in `docs/specs/*/tasks.md`, the commands that ran and their results, open assumptions added to `docs/context/ASSUMPTIONS.md`.

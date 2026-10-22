@@ -27,7 +27,7 @@ Where things live and which direction dependencies point.
 Never hand-edit. Listed in `sdd.config.json` under `generated`:
 
 - `docs/context/state.yaml`, `docs/context/PROJECT_STATE.md`, `docs/context/PROGRESS.md`, `docs/context/BRIEF.md`
-- `AGENTS.md`, `CLAUDE.md`
+- `AGENTS.md`, `CLAUDE.md`, `.claude/rules/`
 - Project-specific generated code: none
 
 ## Frozen paths

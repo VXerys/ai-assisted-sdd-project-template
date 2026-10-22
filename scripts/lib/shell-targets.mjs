@@ -2,7 +2,7 @@
 // It is a tripwire for the PreToolUse guard, not a shell parser: obfuscated commands get through,
 // which is why `npm run guard:check` in CI re-checks the diff itself.
 
-const OPERATORS = ['&&', '||', '>>', '2>>', '&>', '2>', '1>', '>', '|', ';', '&', '<', '\n'];
+const OPERATORS = ['&&', '||', '>>', '2>>', '&>', '2>', '1>', '>', '|', ';', '&', '<<-', '<<', '<', '\n'];
 const REDIRECTS = new Set(['>', '>>', '1>', '2>', '2>>', '&>']);
 const SEPARATORS = new Set(['&&', '||', '|', ';', '&', '\n']);
 
@@ -75,7 +75,7 @@ function segments(tokens) {
       const target = tokens[index + 1];
       if (target && !target.operator) redirects.push(target.value);
       index += 1;
-    } else if (token.operator && token.value === '<') {
+    } else if (token.operator && token.value.startsWith('<')) {
       index += 1;
     } else if (token.operator && SEPARATORS.has(token.value)) {
       result.push({ words, redirects });
@@ -116,9 +116,22 @@ function pathArguments(args, powershellStyle) {
   return { named, positional };
 }
 
-// Returns {writes, reads, cwdChanges}: raw path strings as written in the command, plus `cd` targets in order.
+const HEREDOC = /<<-?\s*(['"]?)([A-Za-z_][\w-]*)\1[^\n]*\n([\s\S]*?)\n[ \t]*\2[ \t]*(?=\n|$)/g;
+const INTERPRETER_STDIN = /(?:^|[\s;&|])(?:node|python3?|ruby|perl|pwsh|powershell)(?:\.exe)?(?:\s+-)?\s*<</i;
+
+// A heredoc body is content, not arguments; it only matters when an interpreter runs it as code.
+export function splitHeredocs(text) {
+  const bodies = [];
+  const command = text.replace(HEREDOC, (match, quote, tag, body) => {
+    bodies.push(body);
+    return match.slice(0, match.indexOf('\n'));
+  });
+  return { command, bodies };
+}
+
+// Returns {writes, reads}: raw path strings as written in the command, resolved against any `cd` before them.
 export function shellTargets(command) {
-  const text = String(command ?? '');
+  const { command: text, bodies } = splitHeredocs(String(command ?? ''));
   let dir = null;
   const writes = [];
   const reads = [];
@@ -150,8 +163,9 @@ export function shellTargets(command) {
   }
 
   // Inline scripts (`node -e "fs.writeFileSync('x')"`): any quoted literal next to a write API counts as a write.
-  if (INLINE_CODE.test(text) && WRITE_API.test(text)) {
-    for (const match of text.matchAll(/(['"`])([^'"`\s]+?)\1/g)) write(match[2]);
+  const code = [INLINE_CODE.test(text) ? text : '', INTERPRETER_STDIN.test(text) ? bodies.join('\n') : ''].join('\n');
+  if (WRITE_API.test(code)) {
+    for (const match of code.matchAll(/(['"`])([^'"`\s*?]+?)\1/g)) if (/[./]/.test(match[2])) write(match[2]);
   }
   return { writes: unique(writes), reads: unique(reads) };
 }

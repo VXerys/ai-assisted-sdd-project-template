@@ -10,6 +10,7 @@
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    ".claude/rules/",
     ".cursor/rules/",
     ".github/copilot-instructions.md",
     ".github/instructions/",

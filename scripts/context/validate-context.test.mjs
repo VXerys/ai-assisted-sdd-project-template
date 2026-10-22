@@ -237,7 +237,8 @@ test('a nested directory with its own sdd.config.json is left to its own validat
   const { status, out } = run(validator, cwd);
   assert.equal(status, 0, out);
   assert.doesNotMatch(out, /duplicate id/);
-  assert.match(out, /; 20 Markdown files, 2 feature/);
+  // 20 documents plus the three .claude/rules adapters (product, structure, workflow).
+  assert.match(out, /; 23 Markdown files, 2 feature/);
 });
 
 test('the shipped examples/todo-api project validates with 0 errors on its own', () => {

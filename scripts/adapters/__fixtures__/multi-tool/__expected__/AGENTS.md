@@ -1,6 +1,6 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
 Source: docs/steering/, sdd.config.json.
-source_hash: 2f0709d98d3777b8e6588b4e18296ef112538b907a66d0a4cda1c4a7bc48856b -->
+source_hash: 067e3a52cdb480660d7c5e4e7f9c2a25cdec67fa7e408699325014bb03072356 -->
 
 # Repository contract: Todo API
 
@@ -11,7 +11,7 @@ Rendered from `docs/steering/` and `sdd.config.json` for humans and coding agent
 ## Read first
 
 1. `docs/context/BRIEF.md` (single entry point; rendered, never hand-edited)
-2. `docs/steering/rules.md`, `docs/steering/tech.md`, `docs/steering/structure.md`, `docs/steering/workflow.md`, `docs/steering/product.md`
+2. The Rules and Tech sections below; the other steering files in the table reach each tool through its rule files, otherwise read one before work on its topic
 3. The active feature under `docs/specs/`: `tasks.md`, then the sections it references
 
 Fallback when `BRIEF.md` is absent: `docs/context/NEW_CHAT_PROTOCOL.md`.
@@ -33,11 +33,9 @@ Fallback when `BRIEF.md` is absent: `docs/context/NEW_CHAT_PROTOCOL.md`.
 | Session delta | `docs/handoff/current.md` |
 | Current behavior | code, tests, schema, configuration |
 
-Chat history and provider memory are never a source of truth.
-
 ## Read-only paths
 
-Generated (edit the sources, then run `npm run context:render` or `npm run adapters:sync`): `docs/context/state.yaml`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/`
+Generated (edit the sources, then run `npm run context:render` or `npm run adapters:sync`): `docs/context/state.yaml`, `docs/context/BRIEF.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.claude/rules/`, `.cursor/rules/`, `.github/copilot-instructions.md`, `.github/instructions/`, `.kiro/steering/`
 
 Frozen (explicit owner approval required): `src/legacy/`
 
@@ -64,44 +62,11 @@ Stack and commands.
 | Test | `npm test` |
 | Context validation | `npm run context:validate` |
 
-## Structure
-
-| Path | Responsibility |
-|---|---|
-| `src/` | application code |
-| `src/legacy/` | frozen until F-002 lands |
-
-## Workflow
-
-Task status: `planned | in_progress | blocked | review | done | deferred`.
-
-```markdown
-# Not a heading: fenced example stays untouched
-```
-
-## Product
-
-Short product context for every session.
-
-### Vision
-
-Todo API is a JSON API for small teams that keeps a shared todo list consistent across clients.
-
-### Non-goals
-
-- Recurring todos.
-
 ## Conditional rules
 
-Apply the section when the edited path matches its pattern.
+Read the file before editing a path that matches its pattern.
 
-### Database (`docs/steering/database.md`) applies to `src/db/**`, `migrations/**`
-
-Rules for the PostgreSQL layer; loaded only when a database file is edited.
-
-#### Migrations
-
-- Append-only; never edit an applied migration.
+- `docs/steering/database.md` applies to `src/db/**`, `migrations/**`: Rules for the PostgreSQL layer; loaded only when a database file is edited.
 
 Read on request:
 
@@ -110,3 +75,5 @@ Read on request:
 ## Commands
 
 Project commands: the Commands table in `docs/steering/tech.md` (the Tech section above). Context: `npm run context:render`, then `npm run context:validate`. Adapters: `npm run adapters:sync`.
+
+Without hooks (multi-repository cloud sessions, project threads, tools without hooks): run `npm run sdd -- brief` first, and `npm run sdd -- guard --check` and `npm run sdd -- validate` before claiming done.

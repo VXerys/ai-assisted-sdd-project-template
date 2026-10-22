@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -41,6 +43,9 @@ jobs:
 
       - name: End-to-end init tests
         run: npm run test:e2e
+
+      - name: Guard check
+        run: npm run sdd -- guard --check --base "${{ github.base_ref || github.event.repository.default_branch }}"
 
       - name: Validate the template repository (strict)
         run: npm run context:validate -- --strict
@@ -88,4 +93,10 @@ jobs:
 
       - name: Run the initialized project's SDD tests
         run: npm test
+        working-directory: ../template-init
+
+      - name: The initialized project's CLI answers
+        run: |
+          npm run sdd -- brief
+          npm run sdd -- status
         working-directory: ../template-init

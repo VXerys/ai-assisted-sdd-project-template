@@ -1,16 +1,14 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
 import path from 'node:path';
 
-const SESSION_DIR = '.claude/.sdd-session';
-
+// fileMatch steering reaches Claude Code through `.claude/rules/*.md` with `paths:` (ADR-0003), which
+// loads on a matching read or edit, so this hook only guards.
 // Lib imports are dynamic so a missing node_modules denies the edit instead of silently disabling the guard.
 try {
-  const [{ runHook, projectRoot, hookConfig, relativeTo, emit }, { guardDecision, guardShellCommand }, { loadSteering, steeringFor }] = await Promise.all([
+  const [{ runHook, projectRoot, hookConfig, relativeTo, emit }, { guardDecision, guardShellCommand }] = await Promise.all([
     import('../lib/hook-io.mjs'),
-    import('../lib/guard.mjs'),
-    import('../lib/steering.mjs')
+    import('../lib/guard.mjs')
   ]);
   const SHELL_TOOLS = new Set(['Bash', 'PowerShell']);
   const READ_TOOLS = new Set(['Read']);
@@ -36,24 +34,8 @@ try {
     const config = hookConfig(root);
     if (!config.hooks.enabled) return;
     const relativePath = relativeTo(root, path.resolve(payload.cwd || root, String(rawPath).replace(/\\/g, '/')));
-
     const decision = guardDecision(relativePath, config, rawPath, READ_TOOLS.has(payload.tool_name) ? 'read' : 'write');
-    if (decision) {
-      refuse(decision);
-      return;
-    }
-    if (relativePath === null || READ_TOOLS.has(payload.tool_name)) return;
-
-    const session = readSession(root, payload.session_id);
-    const fresh = steeringFor(relativePath, loadSteering(root, config)).filter((entry) => !session.surfaced.includes(entry.name));
-    if (!fresh.length) return;
-    session.surfaced.push(...fresh.map((entry) => entry.name));
-    writeSession(root, payload.session_id, session);
-
-    const context = fresh
-      .map((entry) => `SDD steering: ${entry.file} applies to ${relativePath} (pattern ${entry.patterns.join(', ')}). Follow it for this and later edits:\n\n${entry.body.trim()}`)
-      .join('\n\n');
-    emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext: context } });
+    if (decision) refuse(decision);
   });
 } catch (cause) {
   process.stderr.write(`pre-tool-guard: ${cause.message}\n`);
@@ -67,24 +49,4 @@ function expandProjectDir(raw, root) {
     .replace(/^(?:\$\{CLAUDE_PROJECT_DIR\}|\$CLAUDE_PROJECT_DIR|\$env:CLAUDE_PROJECT_DIR)/, root.replace(/\\/g, '/'))
     .replace(/\\/g, '/');
   return process.platform === 'win32' ? expanded.replace(/^\/([A-Za-z])\//, '$1:/') : expanded;
-}
-
-function sessionFile(root, sessionId) {
-  const id = String(sessionId ?? 'default').replace(/[^\w-]/g, '_');
-  return path.join(root, SESSION_DIR, `${id}.json`);
-}
-
-function readSession(root, sessionId) {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(sessionFile(root, sessionId), 'utf8'));
-    return { surfaced: Array.isArray(parsed.surfaced) ? parsed.surfaced : [] };
-  } catch {
-    return { surfaced: [] };
-  }
-}
-
-function writeSession(root, sessionId, session) {
-  const file = sessionFile(root, sessionId);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(session));
 }

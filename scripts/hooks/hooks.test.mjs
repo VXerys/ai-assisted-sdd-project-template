@@ -125,22 +125,12 @@ test('pre-tool-guard normalizes a backslash file_path before matching', () => {
   assert.equal(output.permissionDecision, 'deny');
 });
 
-test('pre-tool-guard surfaces a fileMatch steering file once per session', () => {
+test('pre-tool-guard leaves fileMatch steering to .claude/rules and writes no session state', () => {
   const cwd = copyFixture(adapterFixtures, 'multi-tool');
-  const payload = { session_id: 'abc-123', ...edit(abs(cwd, 'src/db/users.js')) };
-  const first = run('pre-tool-guard', cwd, payload);
-  assert.equal(first.status, 0);
-  const output = json(first.stdout).hookSpecificOutput;
-  assert.equal(output.hookEventName, 'PreToolUse');
-  assert.equal(output.permissionDecision, undefined);
-  assert.match(output.additionalContext, /^SDD steering: docs\/steering\/database\.md applies to src\/db\/users\.js/);
-  assert.match(output.additionalContext, /Append-only; never edit an applied migration/);
-  assert.ok(fs.existsSync(abs(cwd, '.claude/.sdd-session/abc-123.json')));
-
-  assert.equal(run('pre-tool-guard', cwd, payload).stdout, '');
-  assert.equal(run('pre-tool-guard', cwd, { ...payload, tool_input: { file_path: abs(cwd, 'migrations/002.sql') } }).stdout, '');
-  assert.match(run('pre-tool-guard', cwd, { ...payload, session_id: 'other' }).stdout, /database\.md/);
-  assert.equal(run('pre-tool-guard', cwd, { ...payload, tool_input: { file_path: abs(cwd, 'src/api.js') } }).stdout, '');
+  const result = run('pre-tool-guard', cwd, { session_id: 'abc-123', ...edit(abs(cwd, 'src/db/users.js')) });
+  assert.equal(result.status, 0);
+  assert.equal(result.stdout, '');
+  assert.equal(fs.existsSync(abs(cwd, '.claude/.sdd-session')), false);
 });
 
 test('pre-tool-guard does nothing when hooks are disabled in sdd.config.json', () => {

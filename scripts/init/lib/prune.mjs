@@ -26,6 +26,7 @@ export const TEMPLATE_ONLY = [
   'examples/',
   'docs/adr/ADR-0001-v2-revamp.md',
   'docs/adr/ADR-0002-v2.1-hardening.md',
+  'docs/adr/ADR-0003-v2.1-amendments.md',
   'docs/MIGRATION-v1-to-v2.md',
   'docs/research/'
 ];

@@ -2,6 +2,7 @@
 description: Build the task prompt for one T-id from the brief and the spec, then implement it
 argument-hint: <T-id>
 allowed-tools: Read, Grep, Glob, Edit, Write, Bash
+disable-model-invocation: true
 ---
 
 Task id: `$1`. Empty means the task named in `docs/context/BRIEF.md`.
