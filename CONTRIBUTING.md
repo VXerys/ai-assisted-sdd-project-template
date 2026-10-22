@@ -88,5 +88,11 @@ Everything below is about `ai-assisted-sdd-project-template` itself. Node 22, ES
 
 ### Release
 
-Bump `version` in `package.json`, move `[Unreleased]` in `CHANGELOG.md` to a dated version, and tag after the owner approves.
+`.github/workflows/release.yml` runs release-please on every push to `main`: it keeps a release pull request that bumps `package.json` from the conventional commits since the last `v*` tag (`.release-please-manifest.json` starts at 2.0.0). In that pull request, move `[Unreleased]` in `CHANGELOG.md` to the new dated version by hand (`skip-changelog` keeps release-please out of it). Merging it tags `vX.Y.Z` and creates the GitHub release; the owner merges, since a release is an outward action. Every release must be tagged, because `sdd upgrade` rebuilds a project's base from the template commit or the `v<version>` tag.
+
+The `publish-npm` job stays off until the tooling is extracted to `@vxerys/sdd` (ADR-0003). To turn it on: create the npm package, link it to this workflow as a trusted publisher, make the package public (`private` removed), and set the repository variable `NPM_PUBLISH` to `true`.
+
+### Repository settings
+
+Kept by the owner in GitHub, not in files: a ruleset on `main` that requires a pull request, the `validate-context` and `template-init` checks, and a review from code owners (`.github/CODEOWNERS`); private vulnerability reporting on (`SECURITY.md`); and "Allow GitHub Actions to create and approve pull requests" for the release pull request.
 <!-- template-only:end -->

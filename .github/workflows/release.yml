@@ -1,0 +1,60 @@
+name: Release
+
+# release-please keeps a release pull request from the conventional commits on main and, once it is merged,
+# tags the release and bumps package.json. CHANGELOG.md stays hand-written (skip-changelog), so add the
+# release notes to it in that pull request. Template-only: init removes this file.
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  # Off until the tooling is extracted to @vxerys/sdd and published (ADR-0003): it runs only when the
+  # repository variable NPM_PUBLISH is 'true', and trusted publishing (OIDC) needs the npm package linked
+  # to this workflow first. Provenance is public-repository only.
+  publish-npm:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true' && vars.NPM_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm run test:unit
+
+      - name: Publish with provenance
+        run: npm publish --provenance --access public

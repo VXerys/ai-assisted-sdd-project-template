@@ -152,3 +152,7 @@ v2 is a fresh design. A project on v1 of this template stays on v1 until migrate
 ## AI collaboration
 
 A conversational AI drafts requirements, architecture alternatives, design, tasks, and ADR proposals; its output is a proposal until committed. A repository-integrated coding agent inspects real code, implements approved tasks, runs verification, and updates evidence and handoff. Neither invents paths, APIs, schema fields, or commands. See `docs/documentation/AI_COLLABORATION_MODEL.md`.
+
+## License
+
+MIT, see `LICENSE`. `init` removes the template's license, security policy, code owners, and release pipeline, so a project chooses its own.

@@ -77,7 +77,20 @@ Yang sebaiknya dihindari: menimpa file managed yang diedit user (spec-kit, OpenS
 18. `LICENSE` (belum ada; perlu keputusan owner soal lisensi), `SECURITY.md`, `CODEOWNERS`, ruleset `main`.
 19. release-please untuk release PR dari conventional commits, plus job publish terpisah. https://github.com/googleapis/release-please
 
-## 5. Gap riset
+## 5. Tindak lanjut (2026-10-22, sesi yang sama)
+
+Keputusan owner: lisensi MIT, CLI tetap di repo ini, `allow-git` + workflow npm disiapkan tanpa publish, commit lokal per prioritas tanpa push. Rekap ada di `CHANGELOG.md` [Unreleased] dan ADR-0003.
+
+| Prioritas | Branch | Status |
+|---|---|---|
+| P0 (1-5) | `feat/v2.1-phase-1-hardening` | selesai |
+| P1 (6-11) | `feat/v2.1-p1-distribution` | selesai; nomor 11 diputuskan lain: `.claude/commands/` dipertahankan (nama `/sdd:*` adalah kontrak) dan diberi `disable-model-invocation`, tidak dimigrasi ke skills |
+| P2 (12-17) | `feat/v2.1-p2-spec-quality` | selesai |
+| P3 (18-19) | `feat/v2.1-p3-repo-hygiene` | selesai di file; ruleset GitHub, private vulnerability reporting, dan aktivasi `NPM_PUBLISH` adalah pengaturan owner di GitHub |
+
+Belum dikerjakan, tetap di ADR-0002: ekstraksi package `@vxerys/sdd` ke repo terpisah, `sdd verify`, verifier subagent, Stop yang memblokir, klaim multi-agent via draft PR, shim hook untuk tool lain, spec lint, `/sdd:analyze`, `/sdd:clarify`, `examples/flutter-supabase`.
+
+## 6. Gap riset
 
 - Pemetaan hook Claude Code oleh Cursor (halaman 404), daftar trigger Kiro lengkap, dan apakah `MultiEdit` masih ada: UNVERIFIED.
 - Angka token dari vendor (Task Master, spec-workflow, benchmark BMAD) berkualitas rendah; tidak dipakai sebagai dasar keputusan.

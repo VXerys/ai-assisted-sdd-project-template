@@ -28,7 +28,14 @@ export const TEMPLATE_ONLY = [
   'docs/adr/ADR-0002-v2.1-hardening.md',
   'docs/adr/ADR-0003-v2.1-amendments.md',
   'docs/MIGRATION-v1-to-v2.md',
-  'docs/research/'
+  'docs/research/',
+  // The template's own license, policy, owners, and release pipeline; a project chooses its own.
+  'LICENSE',
+  'SECURITY.md',
+  '.github/CODEOWNERS',
+  '.github/workflows/release.yml',
+  'release-please-config.json',
+  '.release-please-manifest.json'
 ];
 
 const TEMPLATE_ONLY_BLOCK = /^[ \t]*<!-- template-only:start -->\n[\s\S]*?^[ \t]*<!-- template-only:end -->\n?/gm;

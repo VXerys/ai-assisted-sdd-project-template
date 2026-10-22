@@ -91,6 +91,8 @@ export function derivedPackageJson(text, { name, description }) {
   pkg.name = slug(name);
   pkg.version = '0.1.0';
   pkg.description = description;
+  // The template's MIT license is not the project's; the owner picks one.
+  delete pkg.license;
   if (pkg.scripts) for (const script of TEMPLATE_SCRIPTS) delete pkg.scripts[script];
   return `${JSON.stringify(pkg, null, 2)}\n`;
 }

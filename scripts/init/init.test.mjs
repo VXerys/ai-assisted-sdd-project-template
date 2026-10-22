@@ -53,6 +53,7 @@ test('derivedPackageJson renames the package, resets the version, and drops the 
   assert.equal(pkg.version, '0.1.0');
   assert.equal(pkg.description, 'Habit Tracker is a Flutter project.');
   assert.deepEqual(Object.keys(pkg.scripts), ['test', 'init']);
+  assert.equal(JSON.parse(derivedPackageJson(JSON.stringify({ name: 'x', license: 'MIT', scripts: {} }), { name: 'P', description: 'd' })).license, undefined);
 });
 
 // What the template CI carries and a derived repository must not: the example project and the init job.
