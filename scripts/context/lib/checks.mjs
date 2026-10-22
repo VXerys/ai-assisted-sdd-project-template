@@ -10,6 +10,7 @@ import { parseAssumptions, ASSUMPTION_STATUSES } from './assumptions.mjs';
 import { parseHandoff } from './handoff.mjs';
 import { taggedLines } from './markdown.mjs';
 import { patternList } from '../../lib/steering.mjs';
+import { matchesGlob } from '../../lib/glob.mjs';
 import { renderOutputs, staleOutputs } from './render.mjs';
 import { renderAdapters, staleAdapters } from '../../adapters/render.mjs';
 
@@ -106,6 +107,8 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
     today: localDate(now)
   };
   for (const feature of features) checkFeature(feature, assumptions, config, now, trust, { error, warning });
+  const repoFiles = walk(root);
+  for (const feature of features) checkTraceLinks(feature, repoFiles, { error, warning });
   checkHandoff(root, config, features, now, { error, warning });
   checkGenerated(root, config, { error });
   checkAdapters(root, config, { error });
@@ -392,6 +395,26 @@ function checkFeature(feature, assumptions, config, now, trust, { error, warning
     if (feature.tasks.length === 0) error(tasksFile, 1, `${feature.id} is implemented without a task`);
     for (const entry of assumptions.filter((item) => item.status === 'open' && item.feature === feature.id)) {
       error(config.paths.assumptions, entry.line, `${entry.id} is open but ${feature.id} is implemented`);
+    }
+  }
+}
+
+// Optional links from a feature to code: `targets` globs in requirements.md frontmatter and `[test: path]`
+// on an acceptance criterion. A dangling link is a warning while the feature is planned, an error once code exists.
+function checkTraceLinks(feature, repoFiles, { error, warning }) {
+  const requirements = feature.files['requirements.md'];
+  if (!requirements) return;
+  const report = ['implementing', 'verification', 'implemented'].includes(feature.status) ? error : warning;
+  const targets = requirements.data?.targets;
+  if (targets !== undefined && targets !== null) {
+    if (!Array.isArray(targets)) error(requirements.path, 1, 'targets must be a list of path globs');
+    else for (const pattern of targets) {
+      if (!repoFiles.some((file) => matchesGlob(file, String(pattern)))) report(requirements.path, 1, `${feature.id} target ${pattern} matches no file`);
+    }
+  }
+  for (const ac of feature.requirements.ac) {
+    for (const file of ac.tests ?? []) {
+      if (!repoFiles.includes(file.replace(/^\.\//, ''))) report(requirements.path, ac.line, `${ac.id} links test ${file}, which does not exist`);
     }
   }
 }

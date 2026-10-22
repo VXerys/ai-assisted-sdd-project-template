@@ -142,11 +142,19 @@ export function parseRequirementIds(text) {
     if (/^##\s/.test(line.text)) current = null;
     const criterion = line.text.match(/^\s*-\s+(AC-\d{3})\s*:\s*(.*)$/);
     if (criterion) {
-      ac.push({ id: criterion[1], line: line.number, text: criterion[2].trim() });
+      ac.push({ id: criterion[1], line: line.number, text: criterion[2].trim(), tests: testLinks(criterion[2]) });
       if (current) current.ac.push(criterion[1]);
     }
   }
   return { fr, ac };
+}
+
+// `[test: test/todos.test.js#creates a todo]` or `[tests: a.test.js, b_test.py::case]` at the end of an
+// acceptance criterion: the file part of each reference, which the validator checks exists.
+export function testLinks(text) {
+  const match = String(text).match(/\[tests?:\s*([^\]]+)\]\s*$/);
+  if (!match) return [];
+  return match[1].split(',').map((entry) => entry.trim().split(/#|::/)[0].trim()).filter(Boolean);
 }
 
 // Discovers docs/specs/F-*/ folders and parses every file in them.

@@ -65,7 +65,7 @@ After init: review `docs/steering/tech.md` and `structure.md` against the real r
 2. Take the task the brief names. In Claude Code, `/sdd:task T-XXX` builds the task prompt from the brief and the spec, sets the task `in_progress`, and implements it. Elsewhere, fill `docs/_templates/task-prompt.md` by hand.
 3. Run the commands in `docs/steering/tech.md` and record each result as an EV block in the feature's `verification.md`; add the id to the task's `evidence`.
 4. Update `tasks.md`, then `npm run context:render` and `npm run context:validate`. The Claude Code PostToolUse hook re-renders after spec edits; the PreToolUse hook denies edits to generated and frozen paths, also through Bash or PowerShell, and refuses any access to secret files.
-5. Close the session with `docs/handoff/current.md`: changed files, commands, uncommitted work, one exact next step. In Claude Code, `/sdd:handoff` writes it; `/sdd:review` fills the code-review template, `/sdd:bug` opens a bug investigation, `/sdd:render` runs the three context commands.
+5. Close the session with `docs/handoff/current.md`: changed files, commands, uncommitted work, one exact next step. In Claude Code, `/sdd:handoff` writes it; `/sdd:review` fills the code-review template, `/sdd:bug` opens a bug investigation, `/sdd:converge` turns the gaps between code and acceptance criteria into tasks, `/sdd:adopt` onboards an existing codebase, `/sdd:render` runs the three context commands.
 
 ## Commands
 
@@ -97,7 +97,7 @@ Details, hooks, and slash commands: `docs/automation/README.md`. The validator c
 
 | Tool | What it gets | Rendered from |
 |---|---|---|
-| Claude Code | `CLAUDE.md` (imports `AGENTS.md`), `.claude/rules/<name>.md` (other `always` files without `paths`, `fileMatch` files with `paths`), four hooks in `.claude/settings.json` (SessionStart injects the brief and installs the tooling in a cloud session, PreToolUse guards generated, frozen, protected, and secret paths including Bash and PowerShell commands, PostToolUse re-renders, Stop warns when the handoff is stale), `/sdd:task`, `/sdd:bug`, `/sdd:review`, `/sdd:handoff`, `/sdd:render` | steering, `.claude/` |
+| Claude Code | `CLAUDE.md` (imports `AGENTS.md`), `.claude/rules/<name>.md` (other `always` files without `paths`, `fileMatch` files with `paths`), four hooks in `.claude/settings.json` (SessionStart injects the brief and installs the tooling in a cloud session, PreToolUse guards generated, frozen, protected, and secret paths including Bash and PowerShell commands, PostToolUse re-renders, Stop warns when the handoff is stale), `/sdd:task`, `/sdd:bug`, `/sdd:review`, `/sdd:converge`, `/sdd:adopt`, `/sdd:handoff`, `/sdd:render` | steering, `.claude/` |
 | Codex, Antigravity | `AGENTS.md` | steering, `sdd.config.json` |
 | Cursor | `AGENTS.md` plus `.cursor/rules/<name>.mdc` for every steering file not inlined in it, with `globs` for `fileMatch` files | steering |
 | GitHub Copilot | `AGENTS.md`, a short `.github/copilot-instructions.md`, and `.github/instructions/<name>.instructions.md` with `applyTo` | steering |

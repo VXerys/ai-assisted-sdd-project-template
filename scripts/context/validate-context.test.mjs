@@ -386,6 +386,27 @@ test('malformed task, requirement, criterion and evidence headings are errors na
   assert.match(out, /verification\.md:\d+\s+error\s+malformed evidence heading '#### EV-001 — POST handler tests pass'; expected '### EV-001 — title'/);
 });
 
+test('targets and AC test links must name existing files: an error once implementing, a warning while draft', () => {
+  const cwd = copyFixture('valid-lite');
+  fs.mkdirSync(path.join(cwd, 'src'), { recursive: true });
+  fs.mkdirSync(path.join(cwd, 'test'), { recursive: true });
+  fs.writeFileSync(path.join(cwd, 'src/todos.js'), 'export {};\n');
+  fs.writeFileSync(path.join(cwd, 'test/todos.test.js'), 'export {};\n');
+  edit(cwd, `${F1}/requirements.md`, 'supersedes: null\n', 'supersedes: null\ntargets: ["src/todos.js", "src/missing/**"]\n');
+  edit(cwd, `${F1}/requirements.md`, 'then 201 and the todo are returned.', 'then 201 and the todo are returned. [test: test/todos.test.js#creates a todo]');
+  edit(cwd, `${F1}/requirements.md`, 'then 400 is returned.', 'then 400 is returned. [tests: test/todos.test.js, test/gone.test.js::empty title]');
+  run(renderer, cwd);
+  const implementing = run(validator, cwd);
+  assert.equal(implementing.status, 1);
+  assert.match(implementing.out, /requirements\.md:1\s+error\s+F-001 target src\/missing\/\*\* matches no file/);
+  assert.match(implementing.out, /requirements\.md:\d+\s+error\s+AC-002 links test test\/gone\.test\.js, which does not exist/);
+  assert.doesNotMatch(implementing.out, /src\/todos\.js matches no file|AC-001 links test/);
+
+  edit(cwd, `${F2}/requirements.md`, 'supersedes: null\n', 'supersedes: null\ntargets: ["src/close/**"]\n');
+  run(renderer, cwd);
+  assert.match(run(validator, cwd).out, /F-002-close-todo\/requirements\.md:1\s+warning\s+F-002 target src\/close\/\*\* matches no file/);
+});
+
 test('a placeholder in a feature file is a warning while draft and an error from review on', () => {
   const cwd = copyFixture('valid-lite');
   fs.appendFileSync(path.join(cwd, `${F2}/design.md`), '\nRoute: {{ROUTE}}\n');

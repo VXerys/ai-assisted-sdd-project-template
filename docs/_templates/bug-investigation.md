@@ -25,6 +25,12 @@ Observed behavior only, without a suspected cause.
 - Impact: affected users or systems, frequency, data or security impact.
 - Environment: commit, runtime and framework version, OS or device, data store version, relevant flags, external service state.
 
+## Unchanged behavior
+
+What the fix must not break, in the same observable terms as Expected. Each item gets its own regression evidence.
+
+- UB-001: When {{NEIGHBORING_CONDITION}}, the system SHALL CONTINUE TO {{CURRENT_CORRECT_BEHAVIOR}}.
+
 ## Reproduction
 
 Preconditions, numbered steps, reproducibility (for example 5/5, intermittent, production-only), smallest known reproduction.
@@ -69,8 +75,8 @@ Record as EV blocks in the feature's `verification.md`, or here when no feature 
 
 - Original reproduction no longer fails: EV-XXX
 - Regression test added: EV-XXX
+- Every UB item still holds, one test or check per item: EV-XXX (UB-001)
 - Static, test, and build checks: EV-XXX
-- Neighboring flow checked: EV-XXX
 
 ## Residual risk and follow-up
 

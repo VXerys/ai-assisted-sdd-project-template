@@ -99,14 +99,26 @@ In a cloud session (`CLAUDE_CODE_REMOTE=true`) without `node_modules`, SessionSt
 
 Windows: the command string was verified under Git Bash, which expands `${CLAUDE_PROJECT_DIR}` (also with a space in the path); cmd.exe passes `${...}` through literally and node fails to find the script. If a Claude Code build runs hooks through cmd.exe, override the commands with `%CLAUDE_PROJECT_DIR%` in `.claude/settings.local.json`.
 
+## Cloud sessions and scheduled tasks
+
+Checked against the Claude Code docs on 2026-10-22 (`code.claude.com/docs/en/cloud-environments`, `.../routines`); recheck when a behavior below matters.
+
+- A cloud session with one repository runs this repository's `.claude/settings.json` hooks and loads `.claude/commands/` and `.claude/rules/`. A session with several repositories, and a project thread, load no repository hooks: the session runs `npm run sdd -- brief` first and `npm run sdd -- guard --check` and `npm run sdd -- validate` before it reports done.
+- Plugins a repository enables are not installed in cloud sessions, and `~/.claude` does not load there; everything the gate needs lives in the repository.
+- A scheduled task (routine) prompt is not owner approval. A routine that would need a prohibited action from `rules.md` stops and reports instead.
+- Routines run at most hourly and push to `claude/`-prefixed branches; protect the default branch and let a pull request carry the change.
+- Before a routine picks work, `npm run sdd -- next --json` names the ready tasks and the ones whose `scope` is disjoint from every `in_progress` or `review` task; a routine takes only a parallel-safe task.
+
 ## Slash commands
 
-`.claude/commands/sdd/<name>.md` becomes `/sdd:<name>`. Each file is an instruction list the agent follows with its own tools; `allowed-tools` limits what the command may run.
+`.claude/commands/sdd/<name>.md` becomes `/sdd:<name>`. Each file is an instruction list the agent follows with its own tools; `allowed-tools` limits what the command may run. Commands that write (`task`, `handoff`, `bug`, `render`, `converge`, `adopt`) set `disable-model-invocation: true`, so only a person starts them.
 
 | Command | Does |
 |---|---|
 | `/sdd:task <T-id>` | finds the task block, reads only the FR, AC, design, and architecture sections it references, prints the filled `docs/_templates/task-prompt.md`, sets the task `in_progress`, implements, records evidence, renders and validates; stops on the stop conditions |
-| `/sdd:bug <title>` | creates `docs/quality/bugs/BUG-XXX-<slug>.md` from `bug-investigation.md` with the next free id; symptom only, no fix |
+| `/sdd:bug <title>` | creates `docs/quality/bugs/BUG-XXX-<slug>.md` from `bug-investigation.md` with the next free id; symptom and the unchanged behavior (`UB-XXX ... SHALL CONTINUE TO ...`) the fix must keep, no fix |
+| `/sdd:converge [F-id]` | gives every AC a verdict (`met`, `partial`, `missing`, `contradicts`) with file and line evidence and appends a `## Convergence` task per gap to `tasks.md`; a converged feature leaves `tasks.md` byte-identical; unrequested behavior is reported, never tasked |
+| `/sdd:adopt` | brownfield onboarding: fills steering from the real repository (commands proven by running them), logs pitfalls and unknowns, and proposes one bounded first feature |
 | `/sdd:review [git-ref]` | fills `code-review.md` against `git diff <ref>`; read-only, prints the review |
 | `/sdd:handoff` | rewrites `docs/handoff/current.md` from the session, then runs render and validate |
 | `/sdd:render` | runs `context:render`, `adapters:sync`, `context:validate` and reports every error line |

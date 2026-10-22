@@ -1,5 +1,7 @@
 import YAML from 'yaml';
 
+import { nextTasks } from './next.mjs';
+
 export const GIT_START = '<!-- GENERATED:GIT_FACTS:START -->';
 export const GIT_END = '<!-- GENERATED:GIT_FACTS:END -->';
 const CHARS_PER_TOKEN = 4;
@@ -104,6 +106,13 @@ function briefSections(model) {
   if (model.handoff.status !== 'active') handoff.push(`Handoff is \`${model.handoff.status}\`.`);
   else handoff.push(model.handoff.nextStep ? `Next step:\n\n${model.handoff.nextStep}` : 'Active handoff without an "Exact next step" section.');
   sections.push({ key: 'handoff', text: handoff.join('\n') });
+
+  const { ready, parallelSafe } = nextTasks(model.features);
+  if (ready.length) {
+    const lines = ['## Ready tasks', ...ready.map((entry) => `- ${entry.feature}/${entry.id} — ${entry.title}${entry.scope?.length ? ` (scope: ${entry.scope.map((pattern) => `\`${pattern}\``).join(', ')})` : ''}`)];
+    lines.push('', `Parallel-safe now: ${parallelSafe.map((entry) => `${entry.feature}/${entry.id}`).join(', ') || 'none (a task needs a scope disjoint from every in_progress or review task)'}`);
+    sections.push({ key: 'ready', text: lines.join('\n') });
+  }
 
   if (feature) {
     const others = feature.tasks.filter((entry) => entry.id !== task?.id && !['done', 'deferred'].includes(entry.status));

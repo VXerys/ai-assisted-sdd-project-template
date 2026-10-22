@@ -13,6 +13,7 @@ const scripts = path.resolve(here, '..');
 const USAGE = `Usage: sdd <command> [options]   (npm run sdd -- <command>)
 
   brief                       print the session brief, with a stale warning
+  next [--json]               the next ready task, every ready task, and which can start in parallel
   validate [--strict]         run the context validator
   render [--check]            render docs/context views
   sync [--check]              sync tool adapters
@@ -24,6 +25,8 @@ const USAGE = `Usage: sdd <command> [options]   (npm run sdd -- <command>)
   upgrade --from <template> [--to <ref>] [--base-ref <ref>] [--answers <file.json>]
           [--dry-run] [--conflict inline|rej]
                               3-way merge a newer template into this project
+  adopt --into <repository> [--dry-run] [init flags]
+                              from the template: add SDD to an existing codebase, never overwriting a file
 `;
 
 const [command, ...rest] = process.argv.slice(2);
@@ -67,6 +70,21 @@ async function main() {
     case 'brief': {
       const { briefText } = await import('../lib/brief.mjs');
       console.log(briefText(root, config()));
+      return 0;
+    }
+    case 'next': {
+      const { loadFeatures } = await import('../context/lib/specs.mjs');
+      const { nextTasks } = await import('../context/lib/next.mjs');
+      const result = nextTasks(loadFeatures(root, config().paths.specs));
+      if (flag('json')) {
+        console.log(JSON.stringify(result, null, 2));
+        return 0;
+      }
+      const label = (task) => `${task.feature}/${task.id} — ${task.title}`;
+      console.log(result.next ? `Next: ${label(result.next)}` : 'No ready task: every planned task waits on a dependency, or none is planned.');
+      for (const task of result.working) console.log(`  working  ${label(task)} (${task.status})`);
+      for (const task of result.ready) console.log(`  ready    ${label(task)}${result.parallelSafe.includes(task) ? '  [parallel-safe]' : ''}`);
+      for (const task of result.waiting) console.log(`  waiting  ${label(task)} on ${task.unmet.join(', ')}`);
       return 0;
     }
     case 'validate':
@@ -122,6 +140,17 @@ async function main() {
       const after = postUpgrade();
       if (result.conflicts.length) console.log('Resolve the conflicts, then run npm run sdd -- validate.');
       return result.conflicts.length ? 1 : after;
+    }
+    case 'adopt': {
+      const { adopt } = await import('./adopt.mjs');
+      if (!config().templateMode) fail('adopt runs from the template repository, not from a project');
+      const into = option('into') ?? fail('adopt needs --into <existing repository>');
+      const initArgs = rest.filter((word, index) => !['--into', '--dry-run'].includes(word) && rest[index - 1] !== '--into');
+      const dryRun = flag('dry-run');
+      const result = adopt(path.resolve(scripts, '..'), into, initArgs, { dryRun });
+      console.log(`\n${result.added.length} added, ${result.skipped.length} skipped (already present), ${result.merged.length} merged.${dryRun ? ' Dry run: nothing changed.' : ''}`);
+      if (!dryRun) console.log('Next, in the repository: npm install, then /sdd:adopt in Claude Code (or follow .claude/commands/sdd/adopt.md) to fill steering from the real code.');
+      return 0;
     }
     case undefined:
     case 'help':
