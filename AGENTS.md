@@ -1,6 +1,6 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
 Source: docs/steering/, sdd.config.json.
-source_hash: 51a2736e950b94a68f38009d909a86131feb013dd7416fa1566307ff21a8976b -->
+source_hash: 87bdd1be694dcdc5919d5a8fa23a9383e8d2de2b87564945185bf3b06a6570ce -->
 
 # Repository contract: {{PROJECT_NAME}}
 
@@ -89,7 +89,7 @@ Stop and report, instead of implementing, when the task would require any prohib
 
 ### Source of truth and conflicts
 
-Requirements own behavior, system architecture owns module decisions, design owns the repository mapping, `tasks.md` owns task status, code and tests own current behavior, `tech.md` owns commands. Chat history and provider memory are never a source of truth.
+Requirements own behavior, system architecture owns module decisions, design owns the repository mapping, `tasks.md` owns task status, code and tests own current behavior, `tech.md` owns commands. Chat history and provider memory, including subagent memory under `.claude/agent-memory/`, are never a source of truth; that directory stays out of git.
 
 When sources conflict: stop the affected work, name both sources, inspect code and git, propose the smallest correction, get approval for product, architecture, security, or data changes, update the canonical source, then continue.
 

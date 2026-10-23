@@ -26,6 +26,9 @@ npm-debug.log*
 # Temporary context tooling
 .context-cache/
 
-# Claude Code: personal settings and per-session hook state
+# Claude Code: personal settings, per-session hook state, worktrees, and subagent memory
+# (provider memory is never a source of truth; see docs/steering/rules.md)
 .claude/settings.local.json
 .claude/.sdd-session/
+.claude/worktrees/
+.claude/agent-memory/

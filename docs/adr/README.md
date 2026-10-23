@@ -53,5 +53,8 @@ Status vocabulary matches the template frontmatter. A proposal that is not taken
 | ADR | Status | Decision | Superseded by |
 |---|---|---|---|
 | [ADR-0001](ADR-0001-v2-revamp.md) | approved | Template v2 revamp: single source of truth, rendered context, enforced traceability | |
+| [ADR-0002](ADR-0002-v2.1-hardening.md) | approved | v2.1 hardening: trusted evidence, guard coverage, multi-agent locks, hookless parity | amended by ADR-0003, ADR-0004 |
+| [ADR-0003](ADR-0003-v2.1-amendments.md) | approved | v2.1 amendments: tooling stays in the template, copier-style upgrade, hook scope, adapter dedupe | |
+| [ADR-0004](ADR-0004-dogfood-first-roadmap.md) | approved | Dogfood-first roadmap: release order, structured evidence, file-lease claims, lite cap 120 | |
 
 Use `docs/_templates/adr.md` for new records.

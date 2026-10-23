@@ -4,6 +4,8 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-10-23
+
 ### Fixed
 
 - `npm run init` no longer leaves the template CI in a new project. That workflow validated `examples/` (removed by init) and ran the `template-init` job, so the first CI run of every derived project failed. Init now replaces `.github/workflows/context-integrity.yml` with a `verify` job built from the app preset: Node 22 for the SDD tooling, the preset's toolchain setup, its `ci.run` commands (install, lint, typecheck, test, build where the preset has them), `npm test`, and `npm run context:validate -- --strict`. The dry-run plan shows the replacement.
@@ -13,6 +15,7 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ### Added
 
+- ADR-0004 (dogfood-first roadmap) settles the order after the 2026-10-23 audit of ten derived projects: release 2.1.0, then upgrade inference and legacy-evidence migration, then pilot upgrades, and only then distribution work; structured EV keys, file-lease task claims with a `Task: T-XXX` commit trailer, and a lite cap of 120 lines are decided for 2.1.x and 2.2. The audit and the repository benchmark behind it are `docs/research/2026-10-23-upgrade-recommendations.md` (template-only).
 - ADR-0003 amends ADR-0002 after the 2026-10-22 benchmark: tooling stays in the template with one CLI until extraction, copier-style upgrades, hook scope for cloud sessions, adapters without duplicated rules, and `/sdd:*` commands kept.
 - `npm run sdd -- <command>` (`scripts/sdd/cli.mjs`, also `bin: sdd`): `brief`, `validate`, `render`, `sync`, `guard --check`, `status`, `check`, `upgrade`.
 - `sdd upgrade --from <template checkout>`: rebuilds the old and new template output from the answers recorded at init, updates unedited managed files, 3-way merges edited ones with `git merge-file`, leaves conflict markers or `.rej` files, runs version-keyed migrations from `scripts/sdd/migrations/`, then renders, syncs, and validates. `--dry-run`, `--to`, `--base-ref`, `--answers`, `--conflict inline|rej`; a dirty tree is refused.
@@ -37,6 +40,8 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ### Changed
 
+- The PreToolUse guard hook sets `onFailure: "block"` (Claude Code 2.1.295+; 2.1.309+ recommended for PowerShell), so a guard that cannot start denies the tool call instead of letting it through. The other hooks keep the default.
+- `.gitignore` covers `.claude/worktrees/` and `.claude/agent-memory/`; `rules.md` names subagent memory as never a source of truth.
 - Every GitHub Action in the template CI, the derived workflow, and the presets is pinned to a full commit SHA with its release as a comment (latest release within the major already in use: checkout 4.4.0, setup-node 4.4.0, setup-java 4.9.1, setup-python 5.6.0, flutter-action 2.23.0). Preset `ci.setup` steps require `version`.
 - Actions moved to their current majors after review of each release's breaking changes (only the node24 runtime and caching defaults, which the pinned inputs already cover): checkout 7.0.1, setup-node 7.1.0, and release-please-action 5.0.0 in the template workflows (Dependabot PR #7); the same checkout and setup-node in the derived workflow (`PINNED_ACTIONS`); setup-java 6.1.0 and setup-python 7.1.0 in the presets. A test fails when a checkout or setup-node pin in the template workflows drifts from `PINNED_ACTIONS`, since Dependabot only updates `.github/workflows/`.
 - Template CI runs on `ubuntu-latest` and `windows-latest`, and initializes five preset combinations (one on Windows), each validated strictly and running the derived project's `npm test`. `rsync` is replaced by `scripts/ci/copy-template.mjs`.

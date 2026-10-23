@@ -1,6 +1,6 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
 Source: docs/steering/, sdd.config.json.
-source_hash: 233c72b05ade09040b929bd95ad0c5376b437db628a6a4b743b7f14be9139cc9 -->
+source_hash: 63cab2b27dcaf8ddd91d83598e0c70d64c091e2bfd29bef6052210dfe128ab3e -->
 # Structure
 
 Where things live and which direction dependencies point.

@@ -1,6 +1,6 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run adapters:sync`.
 Source: docs/steering/, sdd.config.json.
-source_hash: 233c72b05ade09040b929bd95ad0c5376b437db628a6a4b743b7f14be9139cc9 -->
+source_hash: 63cab2b27dcaf8ddd91d83598e0c70d64c091e2bfd29bef6052210dfe128ab3e -->
 
 # Repository contract: Todo API
 
@@ -88,7 +88,7 @@ Stop and report, instead of implementing, when the task would require any prohib
 
 ### Source of truth and conflicts
 
-Requirements own behavior, design owns the repository mapping, `tasks.md` owns task status, code and tests own current behavior, `tech.md` owns commands. Chat history and provider memory are never a source of truth.
+Requirements own behavior, design owns the repository mapping, `tasks.md` owns task status, code and tests own current behavior, `tech.md` owns commands. Chat history and provider memory, including subagent memory under `.claude/agent-memory/`, are never a source of truth; that directory stays out of git.
 
 When sources conflict: stop the affected work, name both sources, inspect code and git, propose the smallest correction, get approval for product, architecture, security, or data changes, update the canonical source, then continue.
 

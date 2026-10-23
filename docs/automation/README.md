@@ -99,6 +99,10 @@ In a cloud session (`CLAUDE_CODE_REMOTE=true`) without `node_modules`, SessionSt
 
 Windows: the command string was verified under Git Bash, which expands `${CLAUDE_PROJECT_DIR}` (also with a space in the path); cmd.exe passes `${...}` through literally and node fails to find the script. If a Claude Code build runs hooks through cmd.exe, override the commands with `%CLAUDE_PROJECT_DIR%` in `.claude/settings.local.json`.
 
+Fail closed: the PreToolUse entry sets `onFailure: "block"`, so when the guard cannot run at all (node missing, the script path not expanded, Git Bash absent) the tool call is denied instead of allowed, the same as an exit code 2 would. The field needs Claude Code 2.1.295 or later; 2.1.309 or later is recommended, since earlier builds let PowerShell hooks fail open. On an older build, remove the field in `.claude/settings.local.json`. The other three hooks keep the default, because a failed brief, render, or handoff check should never stop a session.
+
+Git ignores `.claude/worktrees/` (Claude Code worktree sessions) and `.claude/agent-memory/` (subagents with `memory: project`); `rules.md` names that memory as never a source of truth.
+
 ## Cloud sessions and scheduled tasks
 
 Checked against the Claude Code docs on 2026-10-22 (`code.claude.com/docs/en/cloud-environments`, `.../routines`); recheck when a behavior below matters.

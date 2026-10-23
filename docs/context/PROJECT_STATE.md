@@ -1,10 +1,10 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run context:render`.
 Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
-source_hash: ab904ab50e6049826da9397d722a84a7fc29053d2b548ed9b6d096533eaf4f77 -->
+source_hash: 8aded55e6d83ac3cfaded9b6baf07df6326a0a2bfb69a7f1804d0c0bbbb3d591 -->
 
 # Project State
 
-- Generated at: 2026-10-22T12:18:48.818Z
+- Generated at: 2026-10-23T12:18:08.272Z
 - Project: {{PROJECT_NAME}} (tier `lite`)
 - Active: none / none
 - Open assumptions: 0
@@ -19,15 +19,15 @@ source_hash: ab904ab50e6049826da9397d722a84a7fc29053d2b548ed9b6d096533eaf4f77 --
 <!-- GENERATED:GIT_FACTS:START -->
 ## Git
 
-- Branch: `feat/v2.1-p2-spec-quality`
-- HEAD: `d49981e`
+- Branch: `chore/v2.1-release-prep`
+- HEAD: `958dc7f`
 - Worktree: dirty
 
 Recent commits:
 
-- `d49981e feat(v2.1): P1 — sdd CLI, copier-style upgrade, adapter dedupe, hook scope (ADR-0003)`
-- `dc65ebc feat(v2.1): phase 1 batch C — guard coverage, worktree root, CI matrix, faster tests`
-- `e1039e9 fix(v2.1): init replaces the template CI with a preset verify job`
-- `71b3c85 wip(v2.1): phase 1 batches A and B — bug fixes 1-7, validator trust rules 8-14`
-- `e964956 Merge pull request #5 from VXerys/feat/v2-phase-5-release`
+- `958dc7f Merge pull request #8 from VXerys/chore/align-pinned-actions`
+- `5d825c9 chore(ci): align derived and preset action pins with the template workflows`
+- `7fdf5c3 Merge pull request #7 from VXerys/dependabot/github_actions/actions-03cb10e2b4`
+- `69deed9 chore(deps): bump the actions group with 3 updates`
+- `1666f9d Merge pull request #6 from VXerys/feat/v2.1-p3-repo-hygiene`
 <!-- GENERATED:GIT_FACTS:END -->
