@@ -9,7 +9,7 @@
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit|NotebookEdit|Read|Bash|PowerShell",
-        "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/hooks/pre-tool-guard.mjs\"" }]
+        "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/hooks/pre-tool-guard.mjs\"", "onFailure": "block" }]
       }
     ],
     "PostToolUse": [
