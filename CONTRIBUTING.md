@@ -92,6 +92,10 @@ Everything below is about `ai-assisted-sdd-project-template` itself. Node 22, ES
 
 The `publish-npm` job stays off until the tooling is extracted to `@vxerys/sdd` (ADR-0003). To turn it on: create the npm package, link it to this workflow as a trusted publisher, make the package public (`private` removed), and set the repository variable `NPM_PUBLISH` to `true`.
 
+### Action updates
+
+Dependabot updates the pins in `.github/workflows/` only. When it bumps `actions/checkout` or `actions/setup-node`, carry the same SHA and version into `PINNED_ACTIONS` in `scripts/init/lib/project.mjs` in that pull request (a test in `scripts/init/init.test.mjs` fails until you do), and check the preset `ci.setup` actions in `scripts/init/presets/app/` against their latest releases by hand. Read each major's release notes for breaking changes before merging.
+
 ### Repository settings
 
 Kept by the owner in GitHub, not in files: a ruleset on `main` that requires a pull request, the `validate-context` and `template-init` checks, and a review from code owners (`.github/CODEOWNERS`); private vulnerability reporting on (`SECURITY.md`); and "Allow GitHub Actions to create and approve pull requests" for the release pull request.
