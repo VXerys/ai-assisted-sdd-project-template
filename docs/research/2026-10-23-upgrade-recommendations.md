@@ -269,8 +269,12 @@ Bug dan celah template yang ditemukan pilot, dengan perbaikannya:
 6. Test e2e "project pra-2.1" meng-init dari template versi sekarang sehingga migrasi 2.1.1 benar tidak jalan → skenario test memberi label versi basis 2.0.0.
 7. Dua konflik yang sama di setiap project pra-2.1: `context-integrity.yml` (CI 2.0.0 rusak lalu ditulis ulang owner) dan `package.json` (deskripsi dan skrip tambahan). Delapan project sisanya akan menghasilkan konflik yang sama; kandidat 2.2: merge `package.json` secara struktural (gabungkan `scripts`) dan tandai workflow CI sebagai milik project setelah diedit.
 
+Upgrade kedua, 2.1.1 → 2.1.2, lewat CLI milik project (`npm run sdd -- check`, `status`, `upgrade`): 3 update, 1 add, 1 merge, 0 konflik di kedua pilot; `sdd status` menampilkan tepat tiga managed file yang diedit tangan. Setelahnya kedua pilot lolos `context:validate --strict` dengan 0 error dan 0 warning (loopday: 108 info legacy). Branch `chore/sdd-upgrade-2.1` di kedua project berisi dua commit upgrade, belum di-push.
+
+Temuan tambahan: owner sudah mem-patch validator di ui8-starter (diwarisi loopday) dengan cap tersendiri untuk `verification.md` (`limits.verification`, komentar "Verification grows by one evidence block per task"). Patch itu selamat lewat dua kali 3-way merge, dan itulah sebabnya 8 warning cap lite hilang di loopday. Patch ini adalah jawaban nyata untuk pertanyaan cap di bawah dan layak diangkat ke template di 2.2.
+
 Yang belum selesai dan menunggu keputusan 2.2:
 
-- Cap lite: `verification.md` loopday 101 sampai 250 baris karena evidence bertambah terus (append-only). Keputusan Q6(a) (120 warning, 200 error) tetap membuat F-001 (250 baris) error dan CI strict merah. Usulan: `verification.md` dikecualikan dari cap keras, atau cap per jenis dokumen. INFERENSI dari data pilot, bukan keputusan.
+- Cap lite: `verification.md` loopday 101 sampai 250 baris karena evidence bertambah terus (append-only). Keputusan Q6(a) (120 warning, 200 error) tetap membuat F-001 (250 baris) error dan CI strict merah. Usulan: angkat patch owner (`limits.verification`, cap tersendiri untuk verification) ke template, bersama cap lite 120. INFERENSI dari data pilot, bukan keputusan.
 - `AGENTS.md` kedua pilot 176 sampai 179 baris (cap 150, warning sync): steering project panjang; perlu panduan memangkas atau cap yang realistis.
 - Validator di derived CI berjalan `--strict`, sehingga warning apa pun (cap, assumption open project-wide) memerahkan CI meski `sdd validate` non-strict hijau. Kriteria Q10(a) terpenuhi untuk kedua pilot pada validator 2.1.2; CI strict belum.
