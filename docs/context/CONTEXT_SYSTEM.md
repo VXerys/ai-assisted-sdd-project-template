@@ -90,6 +90,8 @@ Validator output is one line per finding, `path:line  level  message`, sorted by
 | FR without a task | warning while the feature is `draft`, `review`, or `approved`; error from `implementing` |
 | Feature `implemented` with a task not `done` or `deferred`, or with an `open` assumption naming it | error |
 | EV block missing `command`, `output`, `date` (`YYYY-MM-DD`), or `commit`; `covers` empty or naming an unknown AC | error |
+| EV `command` not in the `tech.md` Commands table (unless prefixed `manual:`); EV `commit` not in `git log` | error |
+| The same two checks on a block with `legacy: true` (stamped by `sdd upgrade` on evidence older than the upgrade, ADR-0004) | info: reported, never fails, not promoted by `--strict` |
 | Assumption `status` not `open`, `confirmed`, or `rejected`; `feature` names an unknown feature | error; warning |
 | `last_verified` older than `limits.staleDays` while `implementing` or `verification`; active handoff past `expires_after`; handoff naming an unknown feature or task | warning |
 | Rendered view differs from an in-memory render (`run npm run context:render`); `state.yaml` not valid YAML or not `schema_version: 2`; generated file without its banner | error |

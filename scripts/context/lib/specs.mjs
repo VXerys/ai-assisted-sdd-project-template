@@ -62,6 +62,8 @@ export function parseEvidence(text) {
       date,
       commit,
       covers: parseList(fields.covers),
+      // Stamped by sdd upgrade on evidence that predates the trust rules (ADR-0004).
+      legacy: fields.legacy === 'true',
       fieldLines
     };
   });

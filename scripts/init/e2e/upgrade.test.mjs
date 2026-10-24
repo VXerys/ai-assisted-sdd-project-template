@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-import { LITE_ARGS, copyRepo, init, read } from './helpers.mjs';
+import { LITE_ARGS, copyRepo, init, read, validate } from './helpers.mjs';
+import { localDate } from '../../sdd/migrations/2.1.1.mjs';
 
 function git(cwd, ...args) {
   const result = spawnSync('git', ['-c', 'user.name=sdd-test', '-c', 'user.email=sdd@test.invalid', '-c', 'core.autocrlf=false', ...args], { cwd, encoding: 'utf8' });
@@ -105,4 +106,46 @@ test('sdd upgrade refuses a dirty working tree', () => {
   const result = sdd(project, 'upgrade', '--from', template);
   assert.equal(result.status, 1);
   assert.match(result.out, /uncommitted changes/);
+});
+
+// A project initialized before 2.1.0: no template record, no manifest, evidence from before the upgrade.
+test('sdd upgrade infers the init answers of a project without a template record and stamps older evidence as legacy', () => {
+  const { template, project } = scenario();
+  const baseRef = git(template, 'rev-parse', 'HEAD~1');
+  edit(project, 'sdd.config.json', (text) => `${JSON.stringify({ ...JSON.parse(text), template: undefined }, null, 2)}\n`);
+  fs.rmSync(path.join(project, '.sdd'), { recursive: true, force: true });
+  const feature = path.join(project, 'docs', 'specs', 'F-001-demo');
+  fs.mkdirSync(feature, { recursive: true });
+  const frontmatter = (type) => `---\nid: F-001\ntitle: Demo\ntype: ${type}\nstatus: implementing\ntier: lite\nowner: sehan\ncreated: 2026-01-05\nlast_updated: 2026-01-05\nlast_verified: 2026-01-05\nsupersedes: null\n---\n`;
+  fs.writeFileSync(path.join(feature, 'requirements.md'), `${frontmatter('requirements')}\n# Demo\n\n### FR-001 — Demo\n- AC-001: Given a thing, when it runs, then it passes.\n`);
+  fs.writeFileSync(path.join(feature, 'tasks.md'), `${frontmatter('tasks')}\n# Tasks\n\n### T-001 — Demo\n- status: done\n- requirements: [FR-001]\n- depends_on: []\n- evidence: [EV-001]\n`);
+  const evidence = (id, title, command, date) => `### ${id} — ${title}\n- command: \`${command}\`\n- output:\n  \`\`\`text\n  ok\n  \`\`\`\n- date: ${date}\n- commit: abc1234\n- covers: [AC-001]\n`;
+  fs.writeFileSync(path.join(feature, 'verification.md'), `${frontmatter('verification')}\n# Verification\n\n${evidence('EV-001', 'before the upgrade', 'flutter test && flutter build apk', '2026-01-05')}\n${evidence('EV-002', 'after the upgrade', 'flutter test && flutter build apk', localDate(new Date()))}`);
+  git(project, 'add', '-A');
+  git(project, 'commit', '-q', '-m', 'a 2.0 project with evidence');
+
+  const check = sdd(project, 'check', '--from', template);
+  assert.equal(check.status, 1, check.out);
+  assert.match(check.out, /no template record/);
+
+  const result = sdd(project, 'upgrade', '--from', template, '--base-ref', baseRef);
+  assert.match(result.out, /Init answers inferred: name \(sdd\.config\.json\), description \(docs\/steering\/product\.md\)/);
+  assert.match(result.out, /owner \(docs\/product\/prd\.md\)/);
+  assert.match(result.out, /migrate {2}2\.1\.1 \(after\)/);
+  const config = JSON.parse(read(project, 'sdd.config.json'));
+  assert.equal(config.template.version, '9.9.9');
+  assert.deepEqual(
+    [config.template.answers.name, config.template.answers.app, config.template.answers.db, config.template.answers.tools, config.template.answers.owner],
+    ['Habit Tracker', 'flutter', 'supabase', ['claude', 'kiro'], 'sehan']
+  );
+  assert.ok(fs.existsSync(path.join(project, '.sdd', 'manifest.json')));
+
+  const verification = read(project, 'docs/specs/F-001-demo/verification.md').replace(/\r\n/g, '\n');
+  assert.match(verification, /- date: 2026-01-05\n- commit: abc1234\n- covers: \[AC-001\]\n- legacy: true\n/);
+  assert.doesNotMatch(verification.split('### EV-002')[1], /legacy/);
+  const validation = validate(project);
+  assert.match(validation.out, /info\s+EV-001 command `flutter test && flutter build apk` is not in the tech\.md Commands table \(legacy evidence\)/);
+  assert.match(validation.out, /info\s+EV-001 commit abc1234 is not in git log \(legacy evidence\)/);
+  assert.match(validation.out, /error\s+EV-002 command `flutter test && flutter build apk` is not in the tech\.md Commands table/);
+  assert.match(validation.out, /error\s+EV-002 commit abc1234 is not in git log/);
 });

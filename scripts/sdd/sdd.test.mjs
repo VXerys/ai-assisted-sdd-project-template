@@ -5,7 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-import { compareVersions, mergeText, planFile } from './upgrade.mjs';
+import { compareVersions, inferAnswers, mergeText, planFile } from './upgrade.mjs';
+import { stampLegacyEvidence } from './migrations/2.1.1.mjs';
 import { guardCheck } from './guard-check.mjs';
 import { normalizeConfig } from '../context/lib/config.mjs';
 
@@ -54,4 +55,51 @@ test('guardCheck fails on a changed secret or frozen path, warns on protected, a
   const byFile = Object.fromEntries(findings.map((finding) => [finding.file, `${finding.level} ${finding.rule}`]));
   assert.deepEqual(byFile, { '.env.local': 'error secret', 'sdd.config.json': 'warning protected', 'src/legacy/a.js': 'error frozen' });
   assert.equal(guardCheck(root, config, { strict: true }).findings.find((finding) => finding.rule === 'protected').level, 'error');
+});
+
+test('inferAnswers reads the init answers back from sdd.config.json, product.md, prd.md, and git', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-infer-'));
+  const git = (...args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  git('init', '-q', '-b', 'main');
+  git('config', 'user.name', 'git-user');
+  fs.mkdirSync(path.join(root, 'docs', 'steering'), { recursive: true });
+  fs.mkdirSync(path.join(root, 'docs', 'product'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'docs', 'steering', 'product.md'), '---\ninclusion: always\n---\n\n# Product\n\n## Vision\n\nHabit Tracker logs a daily reading session from a phone.\n\nProject content (specs, product docs, UI copy) is written in Indonesian; the framework text stays English.\n');
+  fs.writeFileSync(path.join(root, 'docs', 'product', 'prd.md'), '---\nid: PRD\ntitle: Habit Tracker\nowner: "sehan"\ncreated: 2026-10-20\n---\n\n# PRD\n');
+  const config = normalizeConfig({ project: { name: 'Habit Tracker', tier: 'lite' }, stack: { app: 'flutter', database: 'supabase' }, tools: ['claude', 'kiro'], templateMode: false });
+
+  const full = inferAnswers(root, config);
+  assert.deepEqual(full.missing, []);
+  assert.deepEqual(full.answers, {
+    name: 'Habit Tracker', description: 'Habit Tracker logs a daily reading session from a phone.', tier: 'lite', app: 'flutter', db: 'supabase',
+    tools: ['claude', 'kiro'], owner: 'sehan', lang: 'Indonesian', date: '2026-10-20'
+  });
+  assert.equal(full.sources.owner, 'docs/product/prd.md');
+  assert.equal(full.sources.date, 'docs/product/prd.md');
+
+  // Without the documents, init's own defaults and git stand in; nothing is missing.
+  fs.rmSync(path.join(root, 'docs'), { recursive: true });
+  const bare = inferAnswers(root, config);
+  assert.deepEqual(bare.missing, []);
+  assert.equal(bare.answers.description, 'Habit Tracker is a flutter project.');
+  assert.equal(bare.answers.owner, 'git-user');
+  assert.equal(bare.sources.owner, 'git config user.name');
+  assert.equal(bare.answers.lang, 'English');
+  assert.equal(bare.sources.lang, 'default');
+  assert.match(bare.answers.date, /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(bare.sources.date, 'default');
+});
+
+test('stampLegacyEvidence marks evidence dated before the upgrade and leaves newer or stamped blocks alone', () => {
+  const block = (id, title, date, extra = []) => [`### ${id} — ${title}`, '- command: `echo pass`', '- output:', '  ```text', '  ok', '  ```', `- date: ${date}`, ...extra, '- commit: abc1234', '- covers: [AC-001]', ''];
+  const outputLast = ['### EV-004 — output last', '- date: 2026-01-01', '- commit: abc1234', '- covers: [AC-001]', '- command: `echo pass`', '- output:', '  ```text', '  ok', '  ```', ''];
+  const text = ['# Verification', '', ...block('EV-001', 'old', '2026-01-05'), ...block('EV-002', 'today', '2026-10-23'), ...block('EV-003', 'stamped', '2026-01-01', ['- legacy: true']), ...outputLast, '## Coverage', ''].join('\n');
+
+  const { text: stamped, stamped: count } = stampLegacyEvidence(text, '2026-10-23');
+  assert.equal(count, 2);
+  assert.equal(stamped.match(/^- legacy: true$/gm).length, 3);
+  assert.match(stamped.split('### EV-002')[0], /- covers: \[AC-001\]\n- legacy: true\n/);
+  assert.doesNotMatch(stamped.split('### EV-002')[1].split('### EV-003')[0], /legacy/);
+  assert.match(stamped.split('### EV-004')[1], /  ```\n- legacy: true\n\n## Coverage/);
+  assert.deepEqual(stampLegacyEvidence(stamped, '2026-10-23'), { text: stamped, stamped: 0 });
 });

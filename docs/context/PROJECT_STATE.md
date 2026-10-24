@@ -19,15 +19,15 @@ source_hash: 8aded55e6d83ac3cfaded9b6baf07df6326a0a2bfb69a7f1804d0c0bbbb3d591 --
 <!-- GENERATED:GIT_FACTS:START -->
 ## Git
 
-- Branch: `chore/v2.1-release-prep`
-- HEAD: `958dc7f`
+- Branch: `feat/v2.1.1-upgrade-infer-legacy`
+- HEAD: `30de315`
 - Worktree: dirty
 
 Recent commits:
 
+- `30de315 Merge pull request #10 from VXerys/release-please--branches--main--components--ai-assisted-sdd-project-template`
+- `08f123a chore(main): release 2.1.0`
+- `a55b8cd Merge pull request #9 from VXerys/chore/v2.1-release-prep`
+- `9502353 feat(v2.1): ADR-0004 dogfood-first roadmap, fail-closed guard, release notes for 2.1.0`
 - `958dc7f Merge pull request #8 from VXerys/chore/align-pinned-actions`
-- `5d825c9 chore(ci): align derived and preset action pins with the template workflows`
-- `7fdf5c3 Merge pull request #7 from VXerys/dependabot/github_actions/actions-03cb10e2b4`
-- `69deed9 chore(deps): bump the actions group with 3 updates`
-- `1666f9d Merge pull request #6 from VXerys/feat/v2.1-p3-repo-hygiene`
 <!-- GENERATED:GIT_FACTS:END -->

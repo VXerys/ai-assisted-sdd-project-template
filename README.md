@@ -1,6 +1,6 @@
 # AI-Assisted SDD Project Template
 
-A repository template for spec-driven development with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents. Version 2.1.0; see [`CHANGELOG.md`](CHANGELOG.md) and [ADR-0001](docs/adr/ADR-0001-v2-revamp.md) to [ADR-0004](docs/adr/ADR-0004-dogfood-first-roadmap.md).
+A repository template for spec-driven development with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents. Version 2.1.1; see [`CHANGELOG.md`](CHANGELOG.md) and [ADR-0001](docs/adr/ADR-0001-v2-revamp.md) to [ADR-0004](docs/adr/ADR-0004-dogfood-first-roadmap.md).
 
 ## Spec-driven development, in short
 
@@ -114,7 +114,7 @@ Details, hooks, and slash commands: `docs/automation/README.md`. The validator c
 2. In the project, with a clean working tree: `npm run sdd -- check --from ../ai-assisted-sdd-project-template`, then `npm run sdd -- upgrade --from ../ai-assisted-sdd-project-template --dry-run`, then without `--dry-run`.
 3. Upgrade rebuilds the old and the new template output from your recorded answers, takes the new file where you never edited it, 3-way merges where you did, and leaves conflict markers (or `<file>.rej` with `--conflict rej`). It never touches steering, specs, product documents, ADRs, the handoff, or assumptions. It then renders, syncs, and validates.
 
-A project initialized before 2.1.0 has no `template` record: pass `--base-ref v2.0.0 --answers answers.json` (name, description, tier, app, db, tools, owner, lang, date). The managed list can be replaced with `managed` in `sdd.config.json`.
+A project initialized before 2.1.0 has no `template` record. `sdd check` says so and exits 1; `sdd upgrade` then uses `v2.0.0` as the base and infers the init answers from `sdd.config.json` (name, tier, app, db, tools), `docs/product/prd.md` (owner, date), `docs/steering/product.md` (description, language), and git, printing where each came from; `--answers answers.json` overrides them and `--infer-answers` ignores a recorded set. The 2.1.1 migration stamps every evidence block dated before the upgrade with `legacy: true`, so the validator reports an unknown command or commit on it as `info` (never failing, also under `--strict`) while new evidence must satisfy both rules. The managed list can be replaced with `managed` in `sdd.config.json`.
 
 Distribution: the tooling ships inside this template until it is extracted to the `@vxerys/sdd` package (ADR-0003). A project that depends on it from a GitHub tag needs `allow-git=root` in its `.npmrc`, because npm 12 blocks git dependencies by default.
 

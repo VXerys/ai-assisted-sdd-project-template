@@ -50,6 +50,9 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
   const add = (file, line, level, message) => findings.push({ file, line: line ?? 1, level, message });
   const error = (file, line, message) => add(file, line, 'error', message);
   const warning = (file, line, message) => add(file, line, 'warning', message);
+  // Reported but never failing, also under --strict: the derived CI validates strictly, and legacy
+  // evidence must not turn it red the moment a project upgrades (ADR-0004).
+  const info = (file, line, message) => add(file, line, 'info', message);
   const isTemplate = (file) => file.includes('/_templates/');
 
   for (const file of config.validate.requiredFiles) {
@@ -106,7 +109,7 @@ export function validateRepo(root, config, { now = new Date() } = {}) {
     commands: parseTechCommands(exists(root, `${config.paths.steering}/tech.md`) ? readText(root, `${config.paths.steering}/tech.md`) : ''),
     today: localDate(now)
   };
-  for (const feature of features) checkFeature(feature, assumptions, config, now, trust, { error, warning });
+  for (const feature of features) checkFeature(feature, assumptions, config, now, trust, { error, warning, info });
   const repoFiles = walk(root);
   for (const feature of features) checkTraceLinks(feature, repoFiles, { error, warning });
   checkHandoff(root, config, features, now, { error, warning });
@@ -261,7 +264,7 @@ function shortestPath(graph, from, to) {
   return null;
 }
 
-function checkFeature(feature, assumptions, config, now, trust, { error, warning }) {
+function checkFeature(feature, assumptions, config, now, trust, { error, warning, info }) {
   const files = feature.files;
   for (const name of ['requirements.md', 'tasks.md', 'verification.md']) {
     if (!files[name]) error(`${feature.dir}/${name}`, 1, `${feature.id} is missing ${name}`);
@@ -339,13 +342,16 @@ function checkFeature(feature, assumptions, config, now, trust, { error, warning
     }
     if (ev.covers.length === 0) error(verificationFile, ev.fieldLines.covers ?? ev.line, `${ev.id} covers no acceptance criterion`);
     for (const ac of ev.covers) if (!acIds.has(ac)) error(verificationFile, ev.fieldLines.covers ?? ev.line, `${ev.id} covers unknown ${ac}`);
+    // Evidence stamped legacy by sdd upgrade predates the two trust rules; they are reported, not enforced.
+    const trustIssue = ev.legacy ? info : error;
+    const legacyNote = ev.legacy ? ' (legacy evidence)' : '';
     if (ev.command && !MANUAL_COMMAND.test(ev.command) && !trust.commands.has(ev.command)) {
-      error(verificationFile, ev.fieldLines.command ?? ev.line, `${ev.id} command \`${ev.command}\` is not in the tech.md Commands table (prefix manual: for a manual check)`);
+      trustIssue(verificationFile, ev.fieldLines.command ?? ev.line, `${ev.id} command \`${ev.command}\` is not in the tech.md Commands table${ev.legacy ? legacyNote : ' (prefix manual: for a manual check)'}`);
     }
     if (ev.date && ev.date > trust.today) error(verificationFile, ev.fieldLines.date ?? ev.line, `${ev.id} date ${ev.date} is in the future`);
     if (ev.commit && !(config.templateMode && ev.commit === PLACEHOLDER_COMMIT)) {
       if (trust.git.reason) warning(verificationFile, ev.fieldLines.commit ?? ev.line, `${ev.id} commit ${ev.commit} cannot be checked: ${trust.git.reason}`);
-      else if (!trust.git.has(ev.commit)) error(verificationFile, ev.fieldLines.commit ?? ev.line, `${ev.id} commit ${ev.commit} is not in git log`);
+      else if (!trust.git.has(ev.commit)) trustIssue(verificationFile, ev.fieldLines.commit ?? ev.line, `${ev.id} commit ${ev.commit} is not in git log${legacyNote}`);
     }
   }
 
