@@ -273,6 +273,28 @@ Upgrade kedua, 2.1.1 → 2.1.2, lewat CLI milik project (`npm run sdd -- check`,
 
 Temuan tambahan: owner sudah mem-patch validator di ui8-starter (diwarisi loopday) dengan cap tersendiri untuk `verification.md` (`limits.verification`, komentar "Verification grows by one evidence block per task"). Patch itu selamat lewat dua kali 3-way merge, dan itulah sebabnya 8 warning cap lite hilang di loopday. Patch ini adalah jawaban nyata untuk pertanyaan cap di bawah dan layak diangkat ke template di 2.2.
 
+### Rollout delapan project sisanya (2026-10-24, VERIFIED)
+
+Semua lewat `node <template>/scripts/sdd/cli.mjs upgrade --from <template> --to v2.1.2` dari direktori project, di branch lokal `chore/sdd-upgrade-2.1`, tanpa push. Konflik `package.json` diselesaikan dengan satu skrip (skrip project dipertahankan, `engines`, `bin`, `sdd`, dan deskripsi dari template; identitas dari template hanya bila project masih membawa nama starter), konflik workflow CI dengan skrip kedua (langkah project dipertahankan, Guard check dari template).
+
+| Project | Basis | `sdd validate` | Strict | Catatan |
+|---|---|---|---|---|
+| bookmate-web | main | 0 error, 8 warning, 39 info | 8 error | A-001 sampai A-007 punya baris `feature:` kosong, diisi `none`; satu `verification.md` 201 baris di atas cap full 200 |
+| inzta-investor-portal | main | 0 error, 2 warning, 30 info | 2 error | CI 2.0.0 tidak pernah diedit, jadi workflow baru masuk tanpa konflik; `package.json` 3 hunk |
+| trivia-app | main | 0 error, 2 warning, 198 info | 2 error | `package.json` masih bernama `mangcoding-ui8-starter`, identitas diambil dari template; patch validator owner ikut ter-merge |
+| sechan-portfolio | main | 0 error, 5 warning, 49 info | 5 error | handoff kedaluwarsa plus cap; `-f011` dan `-marquee` adalah worktree repo yang sama, menerima upgrade lewat `main` |
+| fluxa-web | main | 0 error, 2 warning | 2 error | `docs/design/` untracked di-stash lalu dikembalikan; A-001 dan A-002 tanpa baris `feature:` sama sekali, ditambah `none`; worktree dikembalikan ke `feat/F-003-T-001-spec` |
+| interior-serang-web | dilewati | | | 0 commit, 19 file untracked: tidak ada basis branch; perlu commit awal dari owner |
+
+Sepuluh project turunan: sembilan di 2.1.2 dengan 0 error non-strict (kriteria Q10(a) terpenuhi), satu menunggu commit awal. Strict masih merah di tujuh project karena warning (cap, assumption open project-wide, handoff kedaluwarsa).
+
+Kandidat 2.1.3 dari rollout:
+
+1. Pemeriksaan tree kotor mengabaikan file untracked di luar managed path (fluxa-web).
+2. Migrasi: assumption tanpa baris `feature:` mendapat `feature: none` (9 entri di dua project).
+3. Merge `package.json` secara struktural: gabungkan `scripts`, ambil identitas template hanya bila nama masih nama starter (kedua skrip resolusi di sesi ini adalah prototipenya).
+4. Workflow CI yang sudah ditulis ulang owner: pertahankan langkah project, tambahkan Guard check, atau tulis versi template sebagai `.rej`.
+
 Yang belum selesai dan menunggu keputusan 2.2:
 
 - Cap lite: `verification.md` loopday 101 sampai 250 baris karena evidence bertambah terus (append-only). Keputusan Q6(a) (120 warning, 200 error) tetap membuat F-001 (250 baris) error dan CI strict merah. Usulan: angkat patch owner (`limits.verification`, cap tersendiri untuk verification) ke template, bersama cap lite 120. INFERENSI dari data pilot, bukan keputusan.
