@@ -1,6 +1,6 @@
 {
   "name": "ai-assisted-sdd-project-template",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "private": true,
   "description": "Stack-agnostic spec-driven development and context-engineering repository template.",
   "license": "MIT",
