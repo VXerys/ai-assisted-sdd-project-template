@@ -333,6 +333,16 @@ test('a done task whose evidence covers no criterion of one of its FRs is an err
   assert.match(out, /tasks\.md:\d+\s+error\s+T-001 is done but its evidence covers no acceptance criterion of FR-002/);
 });
 
+test('a done task whose evidence is all legacy reports the uncovered FR as info, not an error', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, `${F1}/tasks.md`, '- status: done\n- requirements: [FR-001]', '- status: done\n- requirements: [FR-001, FR-002]');
+  edit(cwd, `${F1}/verification.md`, '- commit: a1b2c3d', '- commit: a1b2c3d\n- legacy: true');
+  run(renderer, cwd);
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 0, out);
+  assert.match(out, /tasks\.md:\d+\s+info\s+T-001 is done but its evidence covers no acceptance criterion of FR-002 \(legacy evidence\)/);
+});
+
 test('a task jumping planned to done is an error naming the skipped states; planned to blocked is accepted', () => {
   const cwd = copyFixture('valid-lite');
   edit(cwd, `${F1}/tasks.md`, '- status: planned\n- requirements: [FR-001, FR-002]', '- status: done\n- requirements: [FR-001, FR-002]');
@@ -384,6 +394,18 @@ test('an assumption without a feature is an error, and so is an unknown feature 
   assert.equal(status, 1);
   assert.match(out, /ASSUMPTIONS\.md:\d+\s+error\s+A-002 has no feature/);
   assert.match(out, /ASSUMPTIONS\.md:\d+\s+error\s+A-001 references unknown feature F-009/);
+});
+
+test('feature: none marks a project-wide assumption: accepted when resolved, a warning while open, shown in every brief', () => {
+  const cwd = copyFixture('valid-lite');
+  edit(cwd, 'docs/context/ASSUMPTIONS.md', '- status: confirmed\n- feature: F-001', '- status: confirmed\n- feature: none');
+  edit(cwd, 'docs/context/ASSUMPTIONS.md', '- status: open\n- feature: F-001', '- status: open\n- feature: none');
+  run(renderer, cwd);
+  const { status, out } = run(validator, cwd);
+  assert.equal(status, 0, out);
+  assert.doesNotMatch(out, /A-001/);
+  assert.match(out, /ASSUMPTIONS\.md:\d+\s+warning\s+A-002 is open and project-wide \(feature: none\); it blocks no task/);
+  assert.match(read(cwd, 'docs/context/BRIEF.md'), /- A-002 — [^\n]+ \(project-wide\)/);
 });
 
 test('malformed task, requirement, criterion and evidence headings are errors naming the expected form', () => {

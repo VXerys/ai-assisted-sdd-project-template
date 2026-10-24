@@ -189,7 +189,7 @@ function checkAdrs(root, { error }) {
   }
 }
 
-function checkAssumptions(root, config, features, { error }) {
+function checkAssumptions(root, config, features, { error, warning }) {
   const file = config.paths.assumptions;
   if (!exists(root, file)) return [];
   const entries = parseAssumptions(parseFrontmatter(readText(root, file)).body);
@@ -200,7 +200,10 @@ function checkAssumptions(root, config, features, { error }) {
     seen.add(entry.id);
     if (!ASSUMPTION_STATUSES.includes(entry.status)) error(file, entry.fieldLines.status ?? entry.line, `${entry.id} has unknown status '${entry.status ?? ''}'`);
     if (!entry.feature) error(file, entry.fieldLines.feature ?? entry.line, `${entry.id} has no feature`);
-    else if (!featureIds.has(entry.feature)) error(file, entry.fieldLines.feature ?? entry.line, `${entry.id} references unknown feature ${entry.feature}`);
+    // `none` is a project-wide assumption (license, platform, team rule); open, it gates no task, so it only warns.
+    else if (entry.feature === 'none') {
+      if (entry.status === 'open') warning(file, entry.fieldLines.feature ?? entry.line, `${entry.id} is open and project-wide (feature: none); it blocks no task, so name the feature it affects or resolve it`);
+    } else if (!featureIds.has(entry.feature)) error(file, entry.fieldLines.feature ?? entry.line, `${entry.id} references unknown feature ${entry.feature}`);
   }
   return entries;
 }
@@ -368,11 +371,14 @@ function checkFeature(feature, assumptions, config, now, trust, { error, warning
     if (task.status === 'done') {
       const usable = task.evidence.filter((ev) => evidenceById.get(ev)?.covers.length);
       if (usable.length === 0) error(tasksFile, task.fieldLines.evidence ?? task.line, `${task.id} is done without evidence that covers an acceptance criterion`);
+      // A task whose evidence all predates the trust rules is reported, not failed, like the legacy EV checks.
+      const legacyOnly = task.evidence.length > 0 && task.evidence.every((ev) => evidenceById.get(ev)?.legacy);
+      const coverageIssue = legacyOnly ? info : error;
       const covered = new Set(task.evidence.flatMap((ev) => evidenceById.get(ev)?.covers ?? []));
       for (const fr of task.requirements) {
         const criteria = acByFr.get(fr);
         if (criteria && ![...criteria].some((ac) => covered.has(ac))) {
-          error(tasksFile, task.fieldLines.evidence ?? task.line, `${task.id} is done but its evidence covers no acceptance criterion of ${fr}`);
+          coverageIssue(tasksFile, task.fieldLines.evidence ?? task.line, `${task.id} is done but its evidence covers no acceptance criterion of ${fr}${legacyOnly ? ' (legacy evidence)' : ''}`);
         }
       }
     }

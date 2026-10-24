@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 
 import { compareVersions, inferAnswers, initArgs, mergeText, planFile } from './upgrade.mjs';
 import { stampLegacyEvidence } from './migrations/2.1.1.mjs';
+import { ensureIgnoreEntries } from './migrations/2.1.2.mjs';
 import { guardCheck } from './guard-check.mjs';
 import { normalizeConfig } from '../context/lib/config.mjs';
 
@@ -99,6 +100,16 @@ test('initArgs passes only the flags the target init version lists in its usage'
   assert.equal(args[args.indexOf('--tools') + 1], 'claude,kiro');
   assert.ok(initArgs(answers, `${usage200}  --date <YYYY-MM-DD>\n`).includes('--date'));
   assert.ok(initArgs(answers, 'ERROR: something else').includes('--date'), 'unreadable usage passes every flag');
+});
+
+test('ensureIgnoreEntries appends only the Claude Code entries a .gitignore lacks', () => {
+  const partial = 'node_modules/\n.env\n.claude/settings.local.json\n';
+  const { text, added } = ensureIgnoreEntries(partial);
+  assert.equal(added, 3);
+  assert.match(text, /^node_modules\/\n\.env\n\.claude\/settings\.local\.json\n\n# Claude Code: [^\n]+\n\.claude\/\.sdd-session\/\n\.claude\/worktrees\/\n\.claude\/agent-memory\/\n$/);
+  assert.deepEqual(ensureIgnoreEntries(text), { text, added: 0 });
+  assert.equal(ensureIgnoreEntries('').added, 4);
+  assert.equal(ensureIgnoreEntries('.claude/worktrees\r\n').added, 3, 'a trailing slash or CRLF does not hide an entry');
 });
 
 test('stampLegacyEvidence marks evidence dated before the upgrade and leaves newer or stamped blocks alone', () => {

@@ -4,6 +4,17 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ## [Unreleased]
 
+## [2.1.2] — 2026-10-24
+
+### Fixed
+
+- An assumption with `feature: none`, the convention derived projects use for a project-wide assumption (license, platform, team rule), was an error ("references unknown feature none"); the first pilot upgrade failed validation on it alone. `none` is accepted now; a project-wide assumption that is still `open` is a warning, since it gates no task. The brief lists it as project-wide.
+- A `done` task whose evidence is all `legacy: true` and covers no acceptance criterion of one of its FRs is reported as `info`, like the legacy evidence checks, instead of an error (the second pilot, loopday-app, had four such tasks and nothing else). A task with any post-upgrade evidence keeps the error.
+
+### Added
+
+- Migration `scripts/sdd/migrations/2.1.2.mjs` appends the Claude Code entries a project's `.gitignore` lacks (`.claude/settings.local.json`, `.claude/.sdd-session/`, `.claude/worktrees/`, `.claude/agent-memory/`), since `.gitignore` is never managed and a project with worktree sessions would otherwise commit them.
+
 ## [2.1.1] — 2026-10-24
 
 ### Fixed

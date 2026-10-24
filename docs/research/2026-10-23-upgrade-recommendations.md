@@ -246,6 +246,31 @@ Ukuran: S (jam), M (hari), L (minggu). Prioritas: P0 sebelum rilis 2.1.0, P1 pat
 - Repo benchmark kemarin hanya spec-kit yang dicek ulang (1.2.3); OpenSpec, BMAD, cc-sdd, agent-os, superpowers tidak.
 - Inferensi bagian 3 (jawaban init bisa disimpulkan; EV legacy jadi warning) belum diuji pada project nyata.
 
-## 9. Keputusan yang menunggu owner
+## 9. Keputusan owner
 
-Pertanyaan keputusan (positioning, rilis 2.1.0, bentuk trust evidence, publish npm, model klaim, bahasa docs, pilot upgrade, data skripsi) diajukan di sesi 2026-10-23 dan akan dicatat sebagai ADR-0004 setelah dijawab.
+Dijawab 2026-10-23 dan dicatat di ADR-0004: dogfood dulu; rilis 2.1.0 segera; evidence tetap ketat dengan EV terstruktur, `sdd verify`, dan EV legacy; klaim lease file dengan trailer `Task:`; cap lite 120 dengan error di atas 200; pilot pada mangcoding-ui8-starter lalu loopday-app; `sdd stats` dan `CITATION.cff` di P2; fase expand dibuka saat 10 project lolos `sdd validate` non-strict.
+
+## 10. Hasil pilot (2026-10-24, VERIFIED)
+
+Rilis: v2.1.0 (2026-10-23), v2.1.1 (2026-10-24, inferensi answers dan migrasi EV legacy), v2.1.2 (perbaikan dari pilot). Semua lewat release-please setelah owner mengaktifkan izin "Allow GitHub Actions to create and approve pull requests".
+
+| Pilot | 2.0.0 → 2.1.1 | Konflik | Validator 2.1.1 (milik project) | Validator 2.1.2, non-strict | Validator 2.1.2, strict |
+|---|---|---|---|---|---|
+| mangcoding-ui8-starter (0 feature) | 43 update, 15 add, 1 merge | `context-integrity.yml`, `package.json` | 1 error (`A-001 feature: none`) | 0 / 0 / 0 | 0 error |
+| loopday-app (8 feature, 44 task, 59 EV) | 43 update, 15 add, 1 merge, 59 EV dicap `legacy` | sama | 5 error, 104 info | 0 error, 8 warning (cap lite), 108 info | 8 error (cap lite) |
+
+Bug dan celah template yang ditemukan pilot, dengan perbaikannya:
+
+1. `init` 2.0.0 menolak `--date`, jadi rebuild base gagal untuk semua project pra-2.1 → 2.1.1: hanya flag yang tercantum di usage `init` versi target yang dikirim (`initArgs`).
+2. Project pra-2.1 tidak punya skrip `sdd` → README: upgrade pertama memakai CLI template dari direktori project.
+3. Konvensi `feature: none` untuk assumption lintas-project dipakai semua project turunan dan ditolak validator 2.1 → 2.1.2: `none` diterima; yang masih `open` jadi warning; brief menampilkannya sebagai project-wide.
+4. Task `done` yang seluruh evidence-nya legacy dan tidak menutup AC dari FR-nya (4 di loopday) → 2.1.2: `info`, bukan error.
+5. `.gitignore` tidak managed, jadi entri Claude Code 2.1 tidak sampai ke project → migrasi 2.1.2 menambahkannya bila belum ada.
+6. Test e2e "project pra-2.1" meng-init dari template versi sekarang sehingga migrasi 2.1.1 benar tidak jalan → skenario test memberi label versi basis 2.0.0.
+7. Dua konflik yang sama di setiap project pra-2.1: `context-integrity.yml` (CI 2.0.0 rusak lalu ditulis ulang owner) dan `package.json` (deskripsi dan skrip tambahan). Delapan project sisanya akan menghasilkan konflik yang sama; kandidat 2.2: merge `package.json` secara struktural (gabungkan `scripts`) dan tandai workflow CI sebagai milik project setelah diedit.
+
+Yang belum selesai dan menunggu keputusan 2.2:
+
+- Cap lite: `verification.md` loopday 101 sampai 250 baris karena evidence bertambah terus (append-only). Keputusan Q6(a) (120 warning, 200 error) tetap membuat F-001 (250 baris) error dan CI strict merah. Usulan: `verification.md` dikecualikan dari cap keras, atau cap per jenis dokumen. INFERENSI dari data pilot, bukan keputusan.
+- `AGENTS.md` kedua pilot 176 sampai 179 baris (cap 150, warning sync): steering project panjang; perlu panduan memangkas atau cap yang realistis.
+- Validator di derived CI berjalan `--strict`, sehingga warning apa pun (cap, assumption open project-wide) memerahkan CI meski `sdd validate` non-strict hijau. Kriteria Q10(a) terpenuhi untuk kedua pilot pada validator 2.1.2; CI strict belum.

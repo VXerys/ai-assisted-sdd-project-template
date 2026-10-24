@@ -12,7 +12,8 @@ function banner(model) {
 }
 
 function openAssumptions(model, featureId = null) {
-  return model.assumptions.filter((entry) => entry.status === 'open' && (featureId === null || entry.feature === featureId));
+  // A project-wide assumption (feature: none) applies to every feature, so every brief shows it.
+  return model.assumptions.filter((entry) => entry.status === 'open' && (featureId === null || entry.feature === featureId || entry.feature === 'none'));
 }
 
 function activeFeature(model) {
@@ -99,7 +100,7 @@ function briefSections(model) {
 
   const open = openAssumptions(model, feature ? feature.id : null);
   const assumptions = ['## Open assumptions'];
-  assumptions.push(...(open.length ? open.map((entry) => `- ${entry.id} — ${entry.title}${entry.feature ? ` (${entry.feature})` : ''}`) : ['None.']));
+  assumptions.push(...(open.length ? open.map((entry) => `- ${entry.id} — ${entry.title}${entry.feature === 'none' ? ' (project-wide)' : entry.feature ? ` (${entry.feature})` : ''}`) : ['None.']));
   sections.push({ key: 'assumptions', text: assumptions.join('\n') });
 
   const handoff = ['## Handoff'];
