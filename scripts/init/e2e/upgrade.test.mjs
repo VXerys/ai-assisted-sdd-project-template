@@ -21,8 +21,10 @@ function sdd(cwd, ...args) {
 const edit = (cwd, file, change) => fs.writeFileSync(path.join(cwd, file), change(read(cwd, file).replace(/\r\n/g, '\n')));
 
 // A template repository with history, a project cloned and initialized from it, then a template release.
-function scenario() {
+// `baseVersion` relabels the first commit, so migrations keyed above it run on the upgrade.
+function scenario({ baseVersion = null } = {}) {
   const template = copyRepo('upgrade-template');
+  if (baseVersion) edit(template, 'package.json', (text) => text.replace(/"version": "[^"]+"/, `"version": "${baseVersion}"`));
   git(template, 'init', '-q', '-b', 'main');
   git(template, 'add', '-A');
   git(template, 'commit', '-q', '-m', 'template 1');
@@ -108,9 +110,9 @@ test('sdd upgrade refuses a dirty working tree', () => {
   assert.match(result.out, /uncommitted changes/);
 });
 
-// A project initialized before 2.1.0: no template record, no manifest, evidence from before the upgrade.
+// A project initialized from 2.0.0: no template record, no manifest, evidence from before the upgrade.
 test('sdd upgrade infers the init answers of a project without a template record and stamps older evidence as legacy', () => {
-  const { template, project } = scenario();
+  const { template, project } = scenario({ baseVersion: '2.0.0' });
   const baseRef = git(template, 'rev-parse', 'HEAD~1');
   edit(project, 'sdd.config.json', (text) => `${JSON.stringify({ ...JSON.parse(text), template: undefined }, null, 2)}\n`);
   fs.rmSync(path.join(project, '.sdd'), { recursive: true, force: true });

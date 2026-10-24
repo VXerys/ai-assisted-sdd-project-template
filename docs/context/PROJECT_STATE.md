@@ -1,10 +1,10 @@
 <!-- GENERATED FILE — DO NOT EDIT. Rendered by `npm run context:render`.
 Source: sdd.config.json, docs/steering/, docs/specs/F-*/, docs/context/ASSUMPTIONS.md, docs/handoff/current.md.
-source_hash: 8aded55e6d83ac3cfaded9b6baf07df6326a0a2bfb69a7f1804d0c0bbbb3d591 -->
+source_hash: 95ce1e1f0a2017e66f16b29fc303c97b0e8422774c4fe00c5ac3ac09b1dc21ee -->
 
 # Project State
 
-- Generated at: 2026-10-23T12:18:08.272Z
+- Generated at: 2026-10-24T02:00:36.899Z
 - Project: {{PROJECT_NAME}} (tier `lite`)
 - Active: none / none
 - Open assumptions: 0
@@ -19,15 +19,15 @@ source_hash: 8aded55e6d83ac3cfaded9b6baf07df6326a0a2bfb69a7f1804d0c0bbbb3d591 --
 <!-- GENERATED:GIT_FACTS:START -->
 ## Git
 
-- Branch: `feat/v2.1.1-upgrade-infer-legacy`
-- HEAD: `30de315`
+- Branch: `main`
+- HEAD: `e8d0b48`
 - Worktree: dirty
 
 Recent commits:
 
-- `30de315 Merge pull request #10 from VXerys/release-please--branches--main--components--ai-assisted-sdd-project-template`
-- `08f123a chore(main): release 2.1.0`
-- `a55b8cd Merge pull request #9 from VXerys/chore/v2.1-release-prep`
-- `9502353 feat(v2.1): ADR-0004 dogfood-first roadmap, fail-closed guard, release notes for 2.1.0`
-- `958dc7f Merge pull request #8 from VXerys/chore/align-pinned-actions`
+- `e8d0b48 Merge pull request #12 from VXerys/release-please--branches--main--components--ai-assisted-sdd-project-template`
+- `500fb05 chore(main): release 2.1.1`
+- `a296e63 Merge pull request #11 from VXerys/feat/v2.1.1-upgrade-infer-legacy`
+- `a56c229 fix(upgrade): pass only the init flags the base template version accepts`
+- `4b7fd7e feat(upgrade): infer init answers for pre-2.1 projects and stamp older evidence as legacy`
 <!-- GENERATED:GIT_FACTS:END -->

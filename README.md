@@ -1,6 +1,6 @@
 # AI-Assisted SDD Project Template
 
-A repository template for spec-driven development with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents. Version 2.1.1; see [`CHANGELOG.md`](CHANGELOG.md) and [ADR-0001](docs/adr/ADR-0001-v2-revamp.md) to [ADR-0004](docs/adr/ADR-0004-dogfood-first-roadmap.md).
+A repository template for spec-driven development with AI coding agents. Stack-agnostic: web, mobile (Flutter, Kotlin, React Native), and server projects with any data store use the same documents. Version 2.1.2; see [`CHANGELOG.md`](CHANGELOG.md) and [ADR-0001](docs/adr/ADR-0001-v2-revamp.md) to [ADR-0004](docs/adr/ADR-0004-dogfood-first-roadmap.md).
 
 ## Spec-driven development, in short
 

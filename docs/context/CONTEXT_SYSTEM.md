@@ -55,7 +55,7 @@ The active pair is derived, never typed into a rendered file: the first `in_prog
 
 ## BRIEF.md is the entry point
 
-`docs/context/BRIEF.md` is rendered from steering, the active feature's `tasks.md` and `requirements.md`, open assumptions, and the handoff, within `limits.briefTokens` from `sdd.config.json` (default 3000, estimated at four characters per token). Sections in priority order: project one-liner (first prose line under `## Vision` in `product.md`); active feature and task with its body, acceptance criteria, and scope; the `## Stop conditions` and `## Prohibited` sections of `rules.md` verbatim; generated and frozen paths; open assumptions for the active feature; the handoff's `## Exact next step`; other open tasks of the active feature; the feature table. When the budget is exceeded the lowest-priority sections are cut first and a final line names what was cut. A session starts there and loads other documents only as the brief or the task points to them.
+`docs/context/BRIEF.md` is rendered from steering, the active feature's `tasks.md` and `requirements.md`, open assumptions, and the handoff, within `limits.briefTokens` from `sdd.config.json` (default 3000, estimated at four characters per token). Sections in priority order: project one-liner (first prose line under `## Vision` in `product.md`); active feature and task with its body, acceptance criteria, and scope; the `## Stop conditions` and `## Prohibited` sections of `rules.md` verbatim; generated and frozen paths; open assumptions for the active feature and project-wide ones (`feature: none`); the handoff's `## Exact next step`; other open tasks of the active feature; the feature table. When the budget is exceeded the lowest-priority sections are cut first and a final line names what was cut. A session starts there and loads other documents only as the brief or the task points to them.
 
 ## Fallback read order when BRIEF.md is absent or stale
 
@@ -92,7 +92,8 @@ Validator output is one line per finding, `path:line  level  message`, sorted by
 | EV block missing `command`, `output`, `date` (`YYYY-MM-DD`), or `commit`; `covers` empty or naming an unknown AC | error |
 | EV `command` not in the `tech.md` Commands table (unless prefixed `manual:`); EV `commit` not in `git log` | error |
 | The same two checks on a block with `legacy: true` (stamped by `sdd upgrade` on evidence older than the upgrade, ADR-0004) | info: reported, never fails, not promoted by `--strict` |
-| Assumption `status` not `open`, `confirmed`, or `rejected`; `feature` names an unknown feature | error; warning |
+| Assumption `status` not `open`, `confirmed`, or `rejected`; `feature` missing or naming an unknown feature (`none` means project-wide) | error |
+| Project-wide assumption (`feature: none`) that is still `open`: it gates no task | warning |
 | `last_verified` older than `limits.staleDays` while `implementing` or `verification`; active handoff past `expires_after`; handoff naming an unknown feature or task | warning |
 | Rendered view differs from an in-memory render (`run npm run context:render`); `state.yaml` not valid YAML or not `schema_version: 2`; generated file without its banner | error |
 | Adapter differs from a clean `adapters:sync` while `tools` is non-empty (`run npm run adapters:sync`) | error |
