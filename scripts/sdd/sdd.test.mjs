@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-import { compareVersions, inferAnswers, mergeText, planFile } from './upgrade.mjs';
+import { compareVersions, inferAnswers, initArgs, mergeText, planFile } from './upgrade.mjs';
 import { stampLegacyEvidence } from './migrations/2.1.1.mjs';
 import { guardCheck } from './guard-check.mjs';
 import { normalizeConfig } from '../context/lib/config.mjs';
@@ -88,6 +88,17 @@ test('inferAnswers reads the init answers back from sdd.config.json, product.md,
   assert.equal(bare.sources.lang, 'default');
   assert.match(bare.answers.date, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(bare.sources.date, 'default');
+});
+
+test('initArgs passes only the flags the target init version lists in its usage', () => {
+  const answers = { name: 'Habit Tracker', description: 'x', tier: 'lite', app: 'flutter', db: 'supabase', tools: ['claude', 'kiro'], owner: 'sehan', lang: 'English', date: '2026-10-20' };
+  const usage200 = 'Flags:\n  --name <text>\n  --description <text>\n  --tier lite|full\n  --app <preset>\n  --db <preset>\n  --tools <list>\n  --owner <name>\n  --lang <language>\n  --yes\n  --dry-run\n';
+  const args = initArgs(answers, usage200);
+  assert.ok(!args.includes('--date'), '2.0.0 init has no --date');
+  assert.deepEqual(args.slice(0, 5), ['--yes', '--name', 'Habit Tracker', '--description', 'x']);
+  assert.equal(args[args.indexOf('--tools') + 1], 'claude,kiro');
+  assert.ok(initArgs(answers, `${usage200}  --date <YYYY-MM-DD>\n`).includes('--date'));
+  assert.ok(initArgs(answers, 'ERROR: something else').includes('--date'), 'unreadable usage passes every flag');
 });
 
 test('stampLegacyEvidence marks evidence dated before the upgrade and leaves newer or stamped blocks alone', () => {

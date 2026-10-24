@@ -161,6 +161,20 @@ function resolveRef(from, ref) {
   }
 }
 
+// The init flags for one template version. An older init rejects a flag it does not know (2.0.0 has no
+// --date), so only the flags its usage text lists are passed; unreadable usage text passes every flag.
+export function initArgs(answers, helpText = '') {
+  const listed = new Set([...String(helpText).matchAll(/--([a-z]+)/g)].map((match) => match[1]));
+  const accepted = listed.has('name') ? listed : new Set(ANSWER_KEYS);
+  const args = ['--yes'];
+  for (const key of ANSWER_KEYS) {
+    if (!accepted.has(key)) continue;
+    const value = Array.isArray(answers[key]) ? answers[key].join(',') : answers[key];
+    if (value !== undefined && value !== null && value !== '') args.push(`--${key}`, String(value));
+  }
+  return args;
+}
+
 // Extracts the template at `commit` and runs that version's own init with the recorded answers.
 export function renderTemplate(from, commit, answers, yamlSource) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-upgrade-'));
@@ -169,12 +183,10 @@ export function renderTemplate(from, commit, answers, yamlSource) {
   const untar = spawnSync('tar', ['-x', '-C', dir], { input: archive.stdout });
   if (untar.status !== 0) throw new Error(`tar failed: ${untar.stderr}`);
   fs.cpSync(yamlSource, path.join(dir, 'node_modules', 'yaml'), { recursive: true });
-  const args = ['--yes'];
-  for (const key of ANSWER_KEYS) {
-    const value = Array.isArray(answers[key]) ? answers[key].join(',') : answers[key];
-    if (value !== undefined && value !== null && value !== '') args.push(`--${key}`, String(value));
-  }
-  const run = spawnSync(process.execPath, [path.join(dir, 'scripts', 'init', 'init.mjs'), ...args], { cwd: dir, encoding: 'utf8' });
+  const initScript = path.join(dir, 'scripts', 'init', 'init.mjs');
+  const help = spawnSync(process.execPath, [initScript, '--help'], { cwd: dir, encoding: 'utf8' });
+  const args = initArgs(answers, `${help.stdout ?? ''}${help.stderr ?? ''}`);
+  const run = spawnSync(process.execPath, [initScript, ...args], { cwd: dir, encoding: 'utf8' });
   const config = JSON.parse(fs.readFileSync(path.join(dir, 'sdd.config.json'), 'utf8'));
   if (config.templateMode !== false) throw new Error(`init of ${commit.slice(0, 12)} did not complete:\n${run.stdout}\n${run.stderr}`);
   return dir;

@@ -6,6 +6,10 @@ Format: Keep a Changelog. Versions follow Semantic Versioning.
 
 ## [2.1.1] — 2026-10-24
 
+### Fixed
+
+- `sdd upgrade` rebuilt the 2.0.0 base by running that version's `init` with `--date`, a flag it does not accept, so every pre-2.1 project failed before the first file was compared (found by the first pilot upgrade). Only the flags the target `init` lists in its usage are passed now.
+
 ### Added
 
 - `sdd upgrade` on a project without a `template` record (initialized before 2.1.0) infers the init answers instead of needing `--answers`: name, tier, app, db, and tools from `sdd.config.json`, owner and date from `docs/product/prd.md`, description and language from `docs/steering/product.md`, git for what is left, init's defaults last; it prints the source of every answer. `--infer-answers` ignores a recorded set; `--answers` still wins. The base defaults to `v2.0.0` for such a project, and `sdd check` exits 1 for it instead of 0.
