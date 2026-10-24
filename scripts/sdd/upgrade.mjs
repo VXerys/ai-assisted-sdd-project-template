@@ -24,9 +24,69 @@ export const DEFAULT_MANAGED = [
 ];
 
 const ANSWER_KEYS = ['name', 'description', 'tier', 'app', 'db', 'tools', 'owner', 'lang', 'date'];
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export const sha256 = (text) => crypto.createHash('sha256').update(lf(text)).digest('hex');
 const lf = (text) => String(text).replace(/\r\n/g, '\n');
+const localDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+// Reads the init answers back from a project that recorded none (initialized before 2.1.0, ADR-0004):
+// the stack and tools from sdd.config.json, the rest from the documents init filled, with init's own
+// defaults where a document no longer carries the value. Only name, tier, app, db, and tools reach
+// managed files, so those must be exact; the others only shape documents upgrade never touches.
+export function inferAnswers(root, config) {
+  const text = (file) => (fs.existsSync(path.join(root, file)) ? lf(fs.readFileSync(path.join(root, file), 'utf8')) : '');
+  const field = (doc, key) => {
+    const value = doc.match(new RegExp(`^${key}:[ \\t]*"?([^"\\n]*?)"?[ \\t]*$`, 'm'))?.[1].trim();
+    return value && !value.includes('{{') ? value : null;
+  };
+  const tryGit = (args) => {
+    try {
+      return git(root, args).trim() || null;
+    } catch {
+      return null;
+    }
+  };
+  const product = text('docs/steering/product.md');
+  const prd = text('docs/product/prd.md');
+  const lines = product.split('\n');
+  const vision = lines.findIndex((line) => /^##\s+Vision\b/i.test(line));
+  const description = vision === -1 ? null : lines.slice(vision + 1).map((line) => line.trim()).find((line) => line && !/^(#|<!--|\{\{)/.test(line)) ?? null;
+  const lang = product.match(/is written in ([^;.\n]+)/)?.[1].trim() ?? null;
+  const created = field(prd, 'created');
+  const owner = field(prd, 'owner');
+
+  const found = {
+    name: [config.project?.name, 'sdd.config.json'],
+    tier: [config.project?.tier, 'sdd.config.json'],
+    app: [config.stack?.app, 'sdd.config.json'],
+    db: [config.stack?.database, 'sdd.config.json'],
+    tools: [config.tools?.length ? config.tools : null, 'sdd.config.json'],
+    description: [description, 'docs/steering/product.md'],
+    owner: owner ? [owner, 'docs/product/prd.md'] : [tryGit(['config', 'user.name']), 'git config user.name'],
+    lang: [lang, 'docs/steering/product.md'],
+    date: created && DATE.test(created) ? [created, 'docs/product/prd.md'] : [tryGit(['log', '--reverse', '--format=%cs'])?.split('\n')[0] ?? null, 'git log']
+  };
+  const name = found.name[0];
+  const app = found.app[0];
+  const defaults = { description: name && app ? `${name} is a ${app} project.` : null, lang: 'English', date: localDate(new Date()) };
+  const answers = {};
+  const sources = {};
+  const missing = [];
+  for (const key of ANSWER_KEYS) {
+    const [value, source] = found[key];
+    if (value) {
+      answers[key] = value;
+      sources[key] = source;
+    } else if (defaults[key]) {
+      answers[key] = defaults[key];
+      sources[key] = 'default';
+    } else {
+      missing.push(key);
+    }
+  }
+  return { answers, sources, missing };
+}
 
 export function managedFiles(root, patterns) {
   return walk(root).filter((file) => !file.startsWith('node_modules/') && !file.startsWith('.git/') && matchesAny(file, patterns));
@@ -101,6 +161,20 @@ function resolveRef(from, ref) {
   }
 }
 
+// The init flags for one template version. An older init rejects a flag it does not know (2.0.0 has no
+// --date), so only the flags its usage text lists are passed; unreadable usage text passes every flag.
+export function initArgs(answers, helpText = '') {
+  const listed = new Set([...String(helpText).matchAll(/--([a-z]+)/g)].map((match) => match[1]));
+  const accepted = listed.has('name') ? listed : new Set(ANSWER_KEYS);
+  const args = ['--yes'];
+  for (const key of ANSWER_KEYS) {
+    if (!accepted.has(key)) continue;
+    const value = Array.isArray(answers[key]) ? answers[key].join(',') : answers[key];
+    if (value !== undefined && value !== null && value !== '') args.push(`--${key}`, String(value));
+  }
+  return args;
+}
+
 // Extracts the template at `commit` and runs that version's own init with the recorded answers.
 export function renderTemplate(from, commit, answers, yamlSource) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sdd-upgrade-'));
@@ -109,12 +183,10 @@ export function renderTemplate(from, commit, answers, yamlSource) {
   const untar = spawnSync('tar', ['-x', '-C', dir], { input: archive.stdout });
   if (untar.status !== 0) throw new Error(`tar failed: ${untar.stderr}`);
   fs.cpSync(yamlSource, path.join(dir, 'node_modules', 'yaml'), { recursive: true });
-  const args = ['--yes'];
-  for (const key of ANSWER_KEYS) {
-    const value = Array.isArray(answers[key]) ? answers[key].join(',') : answers[key];
-    if (value !== undefined && value !== null && value !== '') args.push(`--${key}`, String(value));
-  }
-  const run = spawnSync(process.execPath, [path.join(dir, 'scripts', 'init', 'init.mjs'), ...args], { cwd: dir, encoding: 'utf8' });
+  const initScript = path.join(dir, 'scripts', 'init', 'init.mjs');
+  const help = spawnSync(process.execPath, [initScript, '--help'], { cwd: dir, encoding: 'utf8' });
+  const args = initArgs(answers, `${help.stdout ?? ''}${help.stderr ?? ''}`);
+  const run = spawnSync(process.execPath, [initScript, ...args], { cwd: dir, encoding: 'utf8' });
   const config = JSON.parse(fs.readFileSync(path.join(dir, 'sdd.config.json'), 'utf8'));
   if (config.templateMode !== false) throw new Error(`init of ${commit.slice(0, 12)} did not complete:\n${run.stdout}\n${run.stderr}`);
   return dir;
@@ -138,10 +210,12 @@ export function compareVersions(a, b) {
 
 export function check(config, { from, to = 'HEAD' }) {
   const current = config.template?.version;
-  if (!current) return { behind: null, current: null, latest: null, message: 'sdd.config.json has no template.version; this project predates 2.1.0' };
   const commit = resolveRef(from, to);
   if (!commit) throw new Error(`${to} is not a commit in ${from}`);
   const latest = versionAt(from, commit);
+  if (!current) {
+    return { behind: true, current: null, latest, message: `sdd.config.json has no template record (initialized before 2.1.0); template ${latest} is available: run sdd upgrade --from ${from}, the init answers are inferred` };
+  }
   const behind = compareVersions(current, latest) < 0;
   return { behind, current, latest, message: behind ? `template ${latest} is available (project on ${current}); run sdd upgrade --from ${from}` : `up to date with template ${latest}` };
 }
@@ -167,8 +241,15 @@ export async function upgrade(root, config, options, log = console.log) {
   const { from, to = 'HEAD', dryRun = false, conflict = 'inline' } = options;
   if (!['inline', 'rej'].includes(conflict)) throw new Error('--conflict must be inline or rej');
   const template = config.template ?? {};
-  const answers = options.answers ?? template.answers;
-  if (!answers) throw new Error('sdd.config.json has no template.answers; pass --answers <file.json> with name, tier, app, db, tools, owner, lang, date');
+  let answers = options.answers ?? (options.inferAnswers ? null : template.answers) ?? null;
+  let inference = null;
+  if (!answers) {
+    inference = inferAnswers(root, config);
+    if (inference.missing.length) {
+      throw new Error(`cannot infer the init answers for ${inference.missing.join(', ')}; pass --answers <file.json> with name, description, tier, app, db, tools, owner, lang, date`);
+    }
+    answers = inference.answers;
+  }
   if (!fs.existsSync(path.join(from, '.git'))) throw new Error(`${from} is not a git checkout of the template`);
 
   if (!dryRun) {
@@ -176,8 +257,10 @@ export async function upgrade(root, config, options, log = console.log) {
     if (dirty) throw new Error('the working tree has uncommitted changes; commit or stash them first');
   }
   // A repository created with GitHub's "Use this template" starts a new history, so the recorded
-  // commit may be unknown to the template checkout; the release tag of the recorded version is next.
-  const candidates = options.baseRef ? [options.baseRef] : [template.commit, template.version && `v${template.version}`].filter(Boolean);
+  // commit may be unknown to the template checkout; the release tag of the recorded version is next,
+  // and a project without any record was initialized from 2.0.0, the first version with sdd.config.json.
+  const recorded = [template.commit, template.version && `v${template.version}`].filter(Boolean);
+  const candidates = options.baseRef ? [options.baseRef] : recorded.length ? recorded : ['v2.0.0'];
   const baseCommit = candidates.map((ref) => resolveRef(from, ref)).find(Boolean);
   if (!baseCommit) throw new Error(`base ${candidates.join(' or ') || '(none)'} is not in ${from}; run git fetch --tags there or pass --base-ref`);
   const newCommit = resolveRef(from, to);
@@ -188,6 +271,11 @@ export async function upgrade(root, config, options, log = console.log) {
   const yamlSource = path.join(root, 'node_modules', 'yaml');
   if (!fs.existsSync(yamlSource)) throw new Error('node_modules/yaml is missing; run npm ci first');
   log(`Upgrade ${fromVersion} (${baseCommit.slice(0, 12)}) -> ${toVersion} (${newCommit.slice(0, 12)})${dryRun ? ', dry run' : ''}`);
+  if (inference) {
+    const inferred = ANSWER_KEYS.filter((key) => inference.sources[key] !== 'default').map((key) => `${key} (${inference.sources[key]})`);
+    const defaulted = ANSWER_KEYS.filter((key) => inference.sources[key] === 'default').map((key) => `${key}=${inference.answers[key]}`);
+    log(`Init answers inferred: ${inferred.join(', ')}${defaulted.length ? `; defaults: ${defaulted.join(', ')}` : ''}`);
+  }
   const baseDir = renderTemplate(from, baseCommit, answers, yamlSource);
   const newDir = renderTemplate(from, newCommit, answers, yamlSource);
 

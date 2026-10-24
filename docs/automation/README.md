@@ -66,7 +66,7 @@ npm run context:validate
 npm run context:validate -- --strict   # warnings become errors
 ```
 
-Output: `path:line  level  message` per finding, then a summary. Exit 1 on any error. A stale rendered view is an error that says `run npm run context:render`; a stale adapter says `run npm run adapters:sync`.
+Output: `path:line  level  message` per finding, then a summary. Exit 1 on any error. A stale rendered view is an error that says `run npm run context:render`; a stale adapter says `run npm run adapters:sync`. `--strict` turns warnings into errors; `info` findings (the command and commit checks on evidence that `sdd upgrade` stamped `legacy: true`) are reported and never fail.
 
 ### Archive current handoff
 

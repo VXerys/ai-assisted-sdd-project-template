@@ -23,8 +23,9 @@ const USAGE = `Usage: sdd <command> [options]   (npm run sdd -- <command>)
   check --from <template> [--to <ref>]
                               exit 1 when the template has a newer version
   upgrade --from <template> [--to <ref>] [--base-ref <ref>] [--answers <file.json>]
-          [--dry-run] [--conflict inline|rej]
-                              3-way merge a newer template into this project
+          [--infer-answers] [--dry-run] [--conflict inline|rej]
+                              3-way merge a newer template into this project; a project without a
+                              template record (before 2.1.0) has its init answers inferred
   adopt --into <repository> [--dry-run] [init flags]
                               from the template: add SDD to an existing codebase, never overwriting a file
 `;
@@ -130,7 +131,7 @@ async function main() {
       const answers = answersFile ? JSON.parse(fs.readFileSync(path.resolve(answersFile), 'utf8')) : undefined;
       const dryRun = flag('dry-run');
       const result = await upgrade(root, config(), {
-        from: path.resolve(from), to: option('to', 'HEAD'), baseRef: option('base-ref'), answers, dryRun, conflict: option('conflict', 'inline')
+        from: path.resolve(from), to: option('to', 'HEAD'), baseRef: option('base-ref'), answers, inferAnswers: flag('infer-answers'), dryRun, conflict: option('conflict', 'inline')
       });
       console.log(`\n${result.updated.length} updated, ${result.added.length} added, ${result.deleted.length} deleted, ${result.merged.length} merged, ${result.conflicts.length} conflict(s), ${result.reported.length} to review.`);
       if (dryRun) {

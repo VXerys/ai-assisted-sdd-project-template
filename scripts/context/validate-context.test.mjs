@@ -299,6 +299,22 @@ test('an EV command outside the tech.md Commands table is an error unless prefix
   assert.equal(manual.status, 0, manual.out);
 });
 
+test('legacy evidence reports an unknown command and a missing commit as info, which --strict does not promote', () => {
+  const cwd = copyFixture('valid-lite');
+  gitInit(cwd);
+  edit(cwd, `${F1}/verification.md`, '- command: `npm test`', '- command: `echo pass`');
+  edit(cwd, `${F1}/verification.md`, '- commit: a1b2c3d', '- commit: deadbee\n- legacy: true');
+  run(renderer, cwd);
+  const plain = run(validator, cwd);
+  assert.equal(plain.status, 0, plain.out);
+  assert.match(plain.out, /verification\.md:\d+\s+info\s+EV-001 command `echo pass` is not in the tech\.md Commands table \(legacy evidence\)/);
+  assert.match(plain.out, /verification\.md:\d+\s+info\s+EV-001 commit deadbee is not in git log \(legacy evidence\)/);
+  assert.match(plain.out, /0 error\(s\), \d+ warning\(s\), 2 info;/);
+  const strict = run(validator, cwd, ['--strict']);
+  assert.match(strict.out, /info\s+EV-001 command/);
+  assert.doesNotMatch(strict.out, /error\s+EV-001/);
+});
+
 test('an EV date after today is an error', () => {
   const cwd = copyFixture('valid-lite');
   edit(cwd, `${F1}/verification.md`, '- date: 2026-10-14', '- date: 2999-01-01');

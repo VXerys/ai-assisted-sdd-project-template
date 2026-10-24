@@ -18,7 +18,7 @@ Evidence that acceptance criteria hold at a named commit. A claim without a comm
 
 ## Evidence block format
 
-Every evidence block uses exactly this shape; the key-value lines are parsed. `command`, `output`, `date`, `commit`, and `covers` are mandatory.
+Every evidence block uses exactly this shape; the key-value lines are parsed. `command`, `output`, `date`, `commit`, and `covers` are mandatory. `command` is a command from the `tech.md` Commands table, or `manual: <what was checked>`; `commit` is a commit in this repository's history. `legacy: true` is written by `sdd upgrade` on blocks recorded before the project took these rules; the validator then reports those two checks as `info` instead of errors. Never add it by hand.
 
 ````markdown
 ### EV-001 — title

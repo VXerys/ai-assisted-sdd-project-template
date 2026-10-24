@@ -15,13 +15,15 @@ if (!config) {
 }
 
 const { findings, files, features } = validateRepo(root, config);
-if (strict) for (const finding of findings) finding.level = 'error';
+// Strict promotes warnings only; info findings (legacy evidence) are reported and never fail.
+if (strict) for (const finding of findings) if (finding.level === 'warning') finding.level = 'error';
 
 for (const line of formatFindings(findings)) console.log(line);
 
 const errorCount = findings.filter((finding) => finding.level === 'error').length;
-const warningCount = findings.length - errorCount;
-const summary = `${errorCount} error(s), ${warningCount} warning(s); ${files} Markdown files, ${features} feature(s)${strict ? ', strict' : ''}.`;
+const warningCount = findings.filter((finding) => finding.level === 'warning').length;
+const infoCount = findings.length - errorCount - warningCount;
+const summary = `${errorCount} error(s), ${warningCount} warning(s)${infoCount ? `, ${infoCount} info` : ''}; ${files} Markdown files, ${features} feature(s)${strict ? ', strict' : ''}.`;
 
 if (errorCount > 0) {
   console.error(`\nContext validation failed: ${summary}`);
