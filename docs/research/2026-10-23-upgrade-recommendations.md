@@ -283,7 +283,7 @@ Semua lewat `node <template>/scripts/sdd/cli.mjs upgrade --from <template> --to 
 | inzta-investor-portal | main | 0 error, 2 warning, 30 info | 2 error | CI 2.0.0 tidak pernah diedit, jadi workflow baru masuk tanpa konflik; `package.json` 3 hunk |
 | trivia-app | main | 0 error, 2 warning, 198 info | 2 error | `package.json` masih bernama `mangcoding-ui8-starter`, identitas diambil dari template; patch validator owner ikut ter-merge |
 | sechan-portfolio | main | 0 error, 5 warning, 49 info | 5 error | handoff kedaluwarsa plus cap; `-f011` dan `-marquee` adalah worktree repo yang sama, menerima upgrade lewat `main` |
-| fluxa-web | main | 0 error, 2 warning | 2 error | `docs/design/` untracked di-stash lalu dikembalikan; A-001 dan A-002 tanpa baris `feature:` sama sekali, ditambah `none`; worktree dikembalikan ke `feat/F-003-T-001-spec` |
+| fluxa-web | main | 0 error, 2 warning | 2 error | folder docs/design untracked di-stash lalu dikembalikan; A-001 dan A-002 tanpa baris `feature:` sama sekali, ditambah `none`; worktree dikembalikan ke `feat/F-003-T-001-spec` |
 | interior-serang-web | dilewati | | | 0 commit, 19 file untracked: tidak ada basis branch; perlu commit awal dari owner |
 
 Sepuluh project turunan: sembilan di 2.1.2 dengan 0 error non-strict (kriteria Q10(a) terpenuhi), satu menunggu commit awal. Strict masih merah di tujuh project karena warning (cap, assumption open project-wide, handoff kedaluwarsa).
